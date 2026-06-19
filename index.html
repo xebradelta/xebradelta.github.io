@@ -337,6 +337,95 @@
       color: rgba(242,237,230,0.85);
     }
 
+    /* ─── INDEX / TOOLS DIRECTORY ─── */
+    .index-block {
+      grid-column: 1 / -1;
+      padding: 4rem;
+      border-bottom: 1px solid var(--rule);
+    }
+
+    .index-intro {
+      font-size: 0.82rem;
+      line-height: 1.85;
+      color: #3a3530;
+      font-weight: 300;
+      max-width: 640px;
+      margin-bottom: 2rem;
+    }
+
+    .tools-list {
+      border-top: 1px solid var(--rule);
+    }
+
+    .tool-row {
+      display: grid;
+      grid-template-columns: 7rem 1fr auto 1.5rem;
+      align-items: center;
+      gap: 2rem;
+      padding: 1.7rem 0;
+      border-bottom: 1px solid var(--rule);
+      text-decoration: none;
+      color: var(--ink);
+      opacity: 0;
+      transform: translateY(16px);
+      transition: opacity 0.5s ease, transform 0.5s ease,
+                  background 0.2s ease, padding 0.2s ease;
+    }
+
+    .tool-row.visible { opacity: 1; transform: translateY(0); }
+
+    .tool-row:hover {
+      background: var(--ink);
+      color: var(--paper);
+      padding-left: 1.5rem;
+      padding-right: 1.5rem;
+    }
+
+    .tool-path {
+      font-family: var(--display);
+      font-weight: 700;
+      font-size: 0.95rem;
+      letter-spacing: -0.02em;
+      color: var(--accent);
+    }
+
+    .tool-body h3 {
+      font-family: var(--display);
+      font-weight: 400;
+      font-size: 1rem;
+      letter-spacing: -0.01em;
+      margin-bottom: 0.35rem;
+    }
+
+    .tool-body p {
+      font-size: 0.76rem;
+      line-height: 1.6;
+      color: var(--muted);
+      font-weight: 300;
+    }
+
+    .tool-row:hover .tool-body p { color: rgba(242,237,230,0.7); }
+
+    .tool-tag {
+      font-size: 0.56rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--muted);
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .tool-row:hover .tool-tag { color: rgba(242,237,230,0.6); }
+
+    .tool-arrow {
+      font-size: 1.1rem;
+      color: var(--accent);
+      text-align: right;
+      transition: transform 0.2s ease;
+    }
+
+    .tool-row:hover .tool-arrow { transform: translateX(4px); }
+
     /* ─── HOVER GLITCH on mark ─── */
     .xd-mark:hover .xd-delta {
       animation: glitch 0.3s steps(2, end);
@@ -363,6 +452,15 @@
       footer { grid-template-columns: 1fr; padding: 2rem; }
       .footer-links { flex-wrap: wrap; }
       .accent-block { padding: 2.5rem 2rem; }
+      .index-block { padding: 2.5rem 2rem; }
+      .tool-row {
+        grid-template-columns: 1fr;
+        gap: 0.5rem;
+        padding: 1.4rem 0;
+      }
+      .tool-row:hover { padding-left: 1rem; padding-right: 1rem; }
+      .tool-tag { text-align: left; }
+      .tool-arrow { display: none; }
     }
   </style>
 </head>
@@ -464,6 +562,29 @@
       <p style="margin-top: 1.25rem;">These tools are released openly. Take them, use them, adapt them. No ceremony required.</p>
     </div>
 
+    <!-- INDEX / TOOLS DIRECTORY -->
+    <div class="index-block">
+      <div class="section-label">The index — what's here</div>
+      <p class="index-intro">
+        Everything published under this site, listed plainly. Each entry lives at its own path. More get added as they're made.
+      </p>
+      <div class="tools-list">
+
+        <!-- TOOL ENTRY — copy this block to add a new one -->
+        <a class="tool-row" href="/dare/">
+          <div class="tool-path">/dare</div>
+          <div class="tool-body">
+            <h3>Perfect Balance</h3>
+            <p>A guided run-through of the Darebee Perfect Balance challenge — a daily balance-training program you can follow start to finish.</p>
+          </div>
+          <div class="tool-tag">Fitness · Darebee</div>
+          <div class="tool-arrow">→</div>
+        </a>
+        <!-- /TOOL ENTRY -->
+
+      </div>
+    </div>
+
     <!-- APPROACH -->
     <section>
       <div class="section-label">Approach</div>
@@ -503,7 +624,7 @@
       });
     }, { threshold: 0.1 });
 
-    document.querySelectorAll('section, .principle').forEach(el => observer.observe(el));
+    document.querySelectorAll('section, .principle, .tool-row').forEach(el => observer.observe(el));
   </script>
 </body>
 </html>
