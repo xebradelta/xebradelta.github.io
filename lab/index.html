@@ -19,6 +19,9 @@
   .label{font-size:.6rem;letter-spacing:.2em;text-transform:uppercase;color:var(--accent);margin:3rem 0 1rem;display:flex;align-items:center;gap:.75rem}
   .label::after{content:'';flex:1;height:1px;background:var(--rule)}
   p.note{font-size:.82rem;color:#3a3530;max-width:640px;margin-bottom:1.5rem}
+  /* appearance picker */
+  .appearance{border:1px solid var(--rule);padding:1.1rem 1.25rem;margin-top:1.75rem;display:flex;flex-wrap:wrap;align-items:center;gap:.7rem}
+  .appearance .ttl{font-size:.6rem;letter-spacing:.2em;text-transform:uppercase;color:var(--accent);margin-right:.4rem}
   /* gallery */
   .gallery{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--rule);border:1px solid var(--rule)}
   .cell{background:var(--paper);padding:1rem .5rem 1.2rem;text-align:center}
@@ -28,7 +31,7 @@
   /* player */
   .player{display:grid;grid-template-columns:1fr 1fr;gap:2rem;align-items:center;border:1px solid var(--rule);padding:1.5rem;margin-top:.5rem}
   .stage{position:relative;background:var(--paper)}
-  .stage svg{width:100%;height:auto;transition:none}
+  .stage svg{width:100%;height:auto}
   .stage.flip svg{transform:scaleX(-1)}
   .readout{font-family:var(--display);font-weight:700;font-size:3.2rem;line-height:1;letter-spacing:-.03em}
   .side{font-size:.72rem;letter-spacing:.2em;text-transform:uppercase;color:var(--accent);margin-top:.4rem}
@@ -55,14 +58,19 @@
 <div class="wrap">
 
   <h1>Figure <span>Lab</span></h1>
-  <div class="sub">One rig · many poses · zero redraws — STEADY engine prototype</div>
+  <div class="sub">One rig · four styles · zero redraws — STEADY engine prototype</div>
+
+  <!-- APPEARANCE PICKER -->
+  <div class="appearance" id="appearance">
+    <span class="ttl">Appearance</span>
+  </div>
 
   <!-- 1. CONSISTENCY PROOF -->
   <div class="label">One figure, every pose</div>
   <p class="note">
-    Every figure below is the <strong>same rig</strong> — identical proportions, line weight, and style.
-    The only thing that changes between them is a short list of joint angles. That's the whole trick:
-    poses are <em>data</em>, not drawings, so they can never drift out of style.
+    Every figure below is the <strong>same rig</strong> — identical proportions and pose data. The only thing
+    that changes is a short list of joint angles, and the <em>style</em> you pick above. Poses are data, not
+    drawings, so they can never drift out of style.
   </p>
   <div class="gallery" id="gallery"></div>
 
@@ -70,7 +78,7 @@
   <div class="label">Guided hold — the figure animates from the same rig</div>
   <p class="note">
     Pick a pose and press play. The figure <em>interpolates</em> its joint angles to get there, then runs a
-    timed hold that flips sides for you. Motion stays perfectly on-model because it's the same figure the whole time.
+    timed hold that flips sides for you — in whichever style you chose.
   </p>
   <div class="player">
     <div class="stage" id="stage"></div>
@@ -89,9 +97,9 @@
   <!-- 3. PROGRAM AS DATA -->
   <div class="label">The program is just data</div>
   <p class="note">
-    A 30-day plan is a small list that points at poses in the library and sets a hold duration. Swap this list and
-    you have a brand-new program — same engine, same figures. Here's <strong>STEADY</strong>, an original
-    balance &amp; stillness plan (sample), generated from the data below.
+    A 30-day plan is a small list that points at poses and sets a hold duration. Swap the list and you have a
+    new program — same engine, same figures. Here's <strong>STEADY</strong>, an original balance &amp;
+    stillness plan (sample).
   </p>
   <div class="days" id="days"></div>
   <pre id="code"></pre>
@@ -100,22 +108,17 @@
 
 <script>
 /* ============================================================
-   FIGURE RIG  —  the single source of truth for all artwork
+   FIGURE RIG  —  single source of truth (proportions + skeleton)
    ============================================================ */
-const D2R = Math.PI/180;
-// segment from p, length L, angle (deg) measured from DOWNWARD vertical, + = toward screen-right
+const D2R=Math.PI/180;
 const seg   = (p,L,d)=>({x:p.x+L*Math.sin(d*D2R), y:p.y+L*Math.cos(d*D2R)});
-// segment measured from UPWARD vertical (for spine/neck)
 const segUp = (p,L,d)=>({x:p.x+L*Math.sin(d*D2R), y:p.y-L*Math.cos(d*D2R)});
-
-// proportions — change ONCE here and every pose/program updates
-const DIM = {head:18, neck:14, torso:78, shoulderW:28, hipW:18, upper:42, fore:38, thigh:56, shin:54};
-const HIP = {x:150, y:196};
+const lerpP = (a,b,t)=>({x:a.x+(b.x-a.x)*t, y:a.y+(b.y-a.y)*t});
+const DIM={head:17,neck:12,torso:78,shoulderW:26,hipW:16,upper:42,fore:38,thigh:56,shin:54};
+const HIP={x:150,y:196};
 
 function build(p){
-  const pelvis=HIP;
-  const shoulder=segUp(pelvis,DIM.torso,p.lean);
-  const head=segUp(shoulder,DIM.neck+DIM.head,p.head);
+  const pelvis=HIP, shoulder=segUp(pelvis,DIM.torso,p.lean), head=segUp(shoulder,DIM.neck+DIM.head,p.head);
   const sL={x:shoulder.x-DIM.shoulderW,y:shoulder.y}, sR={x:shoulder.x+DIM.shoulderW,y:shoulder.y};
   const hL={x:pelvis.x-DIM.hipW,y:pelvis.y},          hR={x:pelvis.x+DIM.hipW,y:pelvis.y};
   const eL=seg(sL,DIM.upper,p.upperL), wL=seg(eL,DIM.fore,p.foreL);
@@ -125,131 +128,174 @@ function build(p){
   return {pelvis,shoulder,head,sL,sR,hL,hR,eL,wL,eR,wR,kL,kR,fL,fR};
 }
 
-function svgFor(p){
-  const J=build(p), ink='#0e0e0e', acc='#c94f1e';
-  const L=(a,b,w)=>`<line x1="${a.x.toFixed(1)}" y1="${a.y.toFixed(1)}" x2="${b.x.toFixed(1)}" y2="${b.y.toFixed(1)}" stroke="${ink}" stroke-width="${w}" stroke-linecap="round"/>`;
-  return `<svg viewBox="0 0 300 330" xmlns="http://www.w3.org/2000/svg">
-    <ellipse cx="150" cy="314" rx="64" ry="7" fill="${acc}" opacity="0.14"/>
-    ${L(J.hL,J.kL,14)}${L(J.kL,J.fL,13)}
-    ${L(J.hR,J.kR,14)}${L(J.kR,J.fR,13)}
-    ${L(J.sL,J.eL,13)}${L(J.eL,J.wL,12)}
-    ${L(J.sR,J.eR,13)}${L(J.eR,J.wR,12)}
-    ${L(J.hL,J.hR,15)}
-    ${L(J.pelvis,J.shoulder,16)}
-    ${L(J.sL,J.sR,14)}
-    <circle cx="${J.head.x.toFixed(1)}" cy="${J.head.y.toFixed(1)}" r="${DIM.head}" fill="${ink}"/>
-  </svg>`;
+/* drawing helpers */
+function cap(A,rA,B,rB){
+  const dx=B.x-A.x,dy=B.y-A.y,L=Math.hypot(dx,dy);
+  if(L<=Math.abs(rA-rB)+0.5){const c=rA>=rB?A:B,r=Math.max(rA,rB);return `<circle cx="${c.x.toFixed(1)}" cy="${c.y.toFixed(1)}" r="${r.toFixed(1)}"/>`;}
+  const ang=Math.atan2(dy,dx),phi=Math.asin((rA-rB)/L),t=Math.PI/2+phi;
+  const P=(c,r,a)=>`${(c.x+r*Math.cos(a)).toFixed(1)} ${(c.y+r*Math.sin(a)).toFixed(1)}`;
+  return `<path d="M ${P(A,rA,ang+t)} L ${P(B,rB,ang+t)} A ${rB} ${rB} 0 0 0 ${P(B,rB,ang-t)} L ${P(A,rA,ang-t)} A ${rA} ${rA} 0 0 0 ${P(A,rA,ang+t)} Z"/>`;
+}
+const C  = (p,r)=>`<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${r}"/>`;
+const LN = (a,b,w,col)=>`<line x1="${a.x.toFixed(1)}" y1="${a.y.toFixed(1)}" x2="${b.x.toFixed(1)}" y2="${b.y.toFixed(1)}" stroke="${col}" stroke-width="${w}" stroke-linecap="round"/>`;
+const SHADOW='<ellipse cx="150" cy="314" rx="56" ry="7" fill="#c94f1e" opacity=".15"/>';
+
+function bodyParts(J){
+  const neckTop={x:J.head.x,y:J.head.y+DIM.head*0.55};
+  const limbs=cap(J.hL,11,J.kL,8)+cap(J.kL,8,J.fL,6)+cap(J.hR,11,J.kR,8)+cap(J.kR,8,J.fR,6)
+    +cap(J.sL,9,J.eL,6.5)+cap(J.eL,6.5,J.wL,5)+cap(J.sR,9,J.eR,6.5)+cap(J.eR,6.5,J.wR,5)
+    +C(J.wL,5.5)+C(J.wR,5.5)+C(J.fL,6)+C(J.fR,6);
+  const trunk=cap(J.shoulder,15,J.pelvis,15)+cap(J.sL,11,J.sR,11)+cap(J.hL,12,J.hR,12)+cap(J.shoulder,7,neckTop,7);
+  return {all:limbs+trunk+C(J.head,DIM.head), head:C(J.head,DIM.head), spine:cap(J.shoulder,15,J.pelvis,15)};
 }
 
 /* ============================================================
-   POSE LIBRARY  —  each pose = a handful of joint angles
-   (original movements, our own names/cues)
+   STYLE RENDERERS  —  swap the look, keep the data
+   ============================================================ */
+function styleLine(J){           // D · Editorial Line (default)
+  const ink='#16150f';
+  return `${SHADOW}
+   ${LN(J.hL,J.kL,11,ink)}${LN(J.kL,J.fL,11,ink)}${LN(J.hR,J.kR,11,ink)}${LN(J.kR,J.fR,11,ink)}
+   ${LN(J.sL,J.eL,11,ink)}${LN(J.eL,J.wL,11,ink)}${LN(J.sR,J.eR,11,ink)}${LN(J.eR,J.wR,11,ink)}
+   ${LN(J.hL,J.hR,12,ink)}${LN(J.pelvis,J.shoulder,13,ink)}${LN(J.sL,J.sR,12,ink)}
+   <circle cx="${J.head.x.toFixed(1)}" cy="${J.head.y.toFixed(1)}" r="${DIM.head-1}" fill="#f2ede6" stroke="${ink}" stroke-width="6"/>`;
+}
+function styleInk(J){            // A · Ink Silhouette
+  const b=bodyParts(J);
+  return `${SHADOW}
+   <g fill="#16150f" stroke="#16150f" stroke-width="5.5" stroke-linejoin="round" stroke-linecap="round">${b.all}</g>
+   <g fill="#23201b">${b.all}</g><g fill="#6b6055" opacity=".22">${b.spine}${b.head}</g>`;
+}
+function styleAthlete(J){        // B · Flat-Design Athlete
+  const b=bodyParts(J), midL=lerpP(J.hL,J.kL,.55), midR=lerpP(J.hR,J.kR,.55);
+  const shirt=cap(J.shoulder,15,J.pelvis,13)+cap(J.sL,11,J.sR,11)+cap(J.sL,9,J.eL,6.5)+cap(J.sR,9,J.eR,6.5)+cap(J.shoulder,7,{x:J.head.x,y:J.head.y+DIM.head*.55},7);
+  const shorts=cap(J.hL,12,J.hR,12)+cap(J.hL,11,midL,9)+cap(J.hR,11,midR,9);
+  const eyes=C({x:J.head.x-5,y:J.head.y-3},2.1)+C({x:J.head.x+5,y:J.head.y-3},2.1);
+  return `${SHADOW}
+   <g fill="#3a2418" stroke="#3a2418" stroke-width="5" stroke-linejoin="round" stroke-linecap="round">${b.all}</g>
+   <g fill="#dca06f">${b.all}</g>
+   <g fill="#2c2722">${shorts}</g>
+   <g fill="#c94f1e">${shirt}</g>
+   <g fill="#dca06f">${b.head}${C(J.wL,5.5)}${C(J.wR,5.5)}${C(J.fL,6)}${C(J.fR,6)}</g>
+   <g fill="#2c2722">${eyes}</g>`;
+}
+function styleSticker(J){        // C · Bold Sticker
+  const b=bodyParts(J);
+  return `${SHADOW}
+   <g fill="#f7f4ee" stroke="#f7f4ee" stroke-width="16" stroke-linejoin="round" stroke-linecap="round">${b.all}</g>
+   <g fill="#16150f" stroke="#16150f" stroke-width="9" stroke-linejoin="round" stroke-linecap="round">${b.all}</g>
+   <g fill="#e8923c">${b.all}</g>
+   <g fill="#fff" opacity=".25">${b.spine}${b.head}</g>`;
+}
+
+const STYLES = {
+  D:{name:'D · Line',     fn:styleLine},
+  A:{name:'A · Ink',      fn:styleInk},
+  B:{name:'B · Athlete',  fn:styleAthlete},
+  C:{name:'C · Sticker',  fn:styleSticker},
+};
+let currentStyle = (localStorage.getItem('xd_style') || 'D');
+if(!STYLES[currentStyle]) currentStyle='D';
+
+function svgFigure(pose){
+  const J=build(pose);
+  return `<svg viewBox="0 0 300 330" xmlns="http://www.w3.org/2000/svg">${STYLES[currentStyle].fn(J)}</svg>`;
+}
+
+/* ============================================================
+   POSE LIBRARY + PROGRAM (data — original content)
    ============================================================ */
 const POSES = {
-  stand: {name:'Single-Leg Stand', cue:'Tall and steady. Weight even, gaze fixed on one point.',
+  stand:{name:'Single-Leg Stand', cue:'Tall and steady. Weight even, gaze fixed on one point.',
     lean:0,head:0, upperL:-12,foreL:-10, upperR:12,foreR:10, thighL:-4,shinL:-4, thighR:4,shinR:4},
-  tree:  {name:'Tree', cue:'Foot to the inner standing leg. Hands rise overhead.',
+  tree:{name:'Tree', cue:'Foot to the inner standing leg. Hands rise overhead.',
     lean:0,head:0, upperL:195,foreL:188, upperR:165,foreR:172, thighL:-50,shinL:35, thighR:3,shinR:3},
-  star:  {name:'T-Balance', cue:'One leg lifts to the side. Arms reach wide and long.',
+  star:{name:'T-Balance', cue:'One leg lifts to the side. Arms reach wide and long.',
     lean:0,head:0, upperL:-110,foreL:-100, upperR:110,foreR:100, thighL:-42,shinL:-42, thighR:4,shinR:4},
-  chair: {name:'Chair Hold', cue:'Sit back into an invisible chair. Arms reach forward and up.',
+  chair:{name:'Chair Hold', cue:'Sit back into an invisible chair. Arms reach forward and up.',
     lean:6,head:0, upperL:192,foreL:196, upperR:168,foreR:164, thighL:-22,shinL:-2, thighR:22,shinR:2},
 };
-const POSE_IDS = Object.keys(POSES);
-
-/* ============================================================
-   PROGRAM  —  STEADY: an original 30-day plan (just data)
-   ============================================================ */
+const POSE_IDS=Object.keys(POSES);
 const STEADY = {
   title:'STEADY', subtitle:'30 Days of Balance & Stillness',
-  levels:[{id:'easy',label:'Settle',sec:20},{id:'mid',label:'Steady',sec:40},{id:'hard',label:'Ironclad',sec:60}],
-  // 30 days: cycle the library, hold grows a little each week
-  schedule: Array.from({length:30}, (_,i)=>({
-    day:i+1,
-    pose: POSE_IDS[i % POSE_IDS.length],
-    sec: 20 + Math.floor(i/7)*10            // 20s wk1 → 50s wk5
-  }))
+  schedule: Array.from({length:30},(_,i)=>({day:i+1, pose:POSE_IDS[i%POSE_IDS.length], sec:20+Math.floor(i/7)*10}))
 };
 
 /* ============================================================
-   RENDER  —  gallery, program grid, code sample
+   RENDER  —  gallery, program grid, code, appearance picker
    ============================================================ */
-document.getElementById('gallery').innerHTML = POSE_IDS.map(id=>{
-  const p=POSES[id];
-  return `<div class="cell">${svgFor(p)}<div class="nm">${p.name}</div><div class="cue">${p.cue}</div></div>`;
-}).join('');
-
+function renderGallery(){
+  document.getElementById('gallery').innerHTML = POSE_IDS.map(id=>{
+    const p=POSES[id];
+    return `<div class="cell">${svgFigure(p)}<div class="nm">${p.name}</div><div class="cue">${p.cue}</div></div>`;
+  }).join('');
+}
 document.getElementById('days').innerHTML = STEADY.schedule.map(d=>
-  `<div class="day"><div class="d">Day ${d.day}</div><div class="pn">${POSES[d.pose].name}</div><div class="du">${d.sec}s / side</div></div>`
-).join('');
-
+  `<div class="day"><div class="d">Day ${d.day}</div><div class="pn">${POSES[d.pose].name}</div><div class="du">${d.sec}s / side</div></div>`).join('');
 document.getElementById('code').innerHTML =
-`<span class="tag">// a pose is just angles — the rig draws it</span>
+`<span class="tag">// a pose is just angles — every style draws it</span>
 tree: { <span class="k">name</span>:'Tree',
-        <span class="k">thighL</span>:-50, <span class="k">shinL</span>:35,   <span class="tag">// lifted leg, foot tucked in</span>
-        <span class="k">upperL</span>:195, <span class="k">upperR</span>:165 <span class="tag">// arms overhead</span> }
+        <span class="k">thighL</span>:-50, <span class="k">shinL</span>:35,
+        <span class="k">upperL</span>:195, <span class="k">upperR</span>:165 }
 
 <span class="tag">// a program is just a list pointing at poses</span>
-schedule: [
-  { <span class="k">day</span>:1, <span class="k">pose</span>:'stand', <span class="k">sec</span>:20 },
-  { <span class="k">day</span>:2, <span class="k">pose</span>:'tree',  <span class="k">sec</span>:20 },
-  ...
-]`;
+schedule: [ { <span class="k">day</span>:1, <span class="k">pose</span>:'stand', <span class="k">sec</span>:20 }, ... ]`;
+
+/* appearance picker */
+const appBar=document.getElementById('appearance');
+Object.keys(STYLES).forEach(id=>{
+  const b=document.createElement('button');
+  b.textContent=STYLES[id].name; b.dataset.style=id;
+  b.className = (id===currentStyle?'on':'');
+  b.onclick=()=>{
+    currentStyle=id; localStorage.setItem('xd_style',id);
+    appBar.querySelectorAll('button').forEach(x=>x.classList.toggle('on', x.dataset.style===id));
+    renderGallery(); paint(stageData);
+  };
+  appBar.appendChild(b);
+});
 
 /* ============================================================
    GUIDED-HOLD PLAYER  —  same rig, animated + timed
    ============================================================ */
 const stage=document.getElementById('stage'), clock=document.getElementById('clock'),
       sidelbl=document.getElementById('sidelbl'), cueEl=document.getElementById('cue');
-let current='tree', anim=null, timer=null;
+let current='tree', anim=null, timer=null, stageData=POSES[current];
 
 document.getElementById('poseBtns').innerHTML = POSE_IDS.map(id=>
   `<button data-id="${id}">${POSES[id].name}</button>`).join('');
-
-function paint(pose){ stage.innerHTML = svgFor(pose); }
-function lerp(a,b,t){ const o={}; for(const k in a) o[k]=a[k]+(b[k]-a[k])*t; return o; }
-
+function paint(pose){ stage.innerHTML = svgFigure(pose); }
+function lerpPose(a,b,t){ const o={}; for(const k in a) o[k]=a[k]+(b[k]-a[k])*t; return o; }
+function markBtn(){ document.querySelectorAll('#poseBtns button').forEach(b=>b.classList.toggle('on', b.dataset.id===current)); }
 function animateTo(id, then){
   cancelAnimationFrame(anim);
-  const from = stageData || POSES[id], to = POSES[id];
-  const start = performance.now(), dur=650;
+  const from=stageData||POSES[id], to=POSES[id], start=performance.now(), dur=650;
   (function frame(now){
-    const t = Math.min(1,(now-start)/dur), e = t<.5 ? 2*t*t : 1-Math.pow(-2*t+2,2)/2; // easeInOut
-    stageData = lerp(from,to,e); paint(stageData);
+    const t=Math.min(1,(now-start)/dur), e=t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+    stageData=lerpPose(from,to,e); paint(stageData);
     if(t<1) anim=requestAnimationFrame(frame); else if(then) then();
   })(start);
 }
-let stageData = POSES[current];
-paint(stageData);
-cueEl.textContent = POSES[current].cue;
-markBtn();
-
-function markBtn(){ document.querySelectorAll('#poseBtns button').forEach(b=>
-  b.classList.toggle('on', b.dataset.id===current)); }
-
 document.querySelectorAll('#poseBtns button').forEach(b=>b.onclick=()=>{
-  stopTimer(); current=b.dataset.id; cueEl.textContent=POSES[current].cue;
-  markBtn(); animateTo(current);
+  stopTimer(); current=b.dataset.id; cueEl.textContent=POSES[current].cue; markBtn(); animateTo(current);
 });
-
-function stopTimer(){ clearInterval(timer); timer=null; stage.classList.remove('flip');
-  document.getElementById('play').textContent='▶ Start hold'; }
-
-document.getElementById('play').onclick = ()=>{
+function stopTimer(){ clearInterval(timer); timer=null; stage.classList.remove('flip'); document.getElementById('play').textContent='▶ Start hold'; }
+document.getElementById('play').onclick=()=>{
   if(timer){ stopTimer(); sidelbl.textContent='— paused —'; return; }
   document.getElementById('play').textContent='⏸ Pause';
-  const total = STEADY.schedule.find(d=>d.pose===current)?.sec || 20;
-  let side=0, left=total;          // side 0 = right, 1 = left
-  const tick=()=>{
-    clock.textContent=left;
-    sidelbl.textContent = (side? 'LEFT side':'RIGHT side');
-    stage.classList.toggle('flip', side===1);
-    if(left<=0){ side^=1; left=total; if(side===0){ /* completed both */ } }
-    left--;
-  };
+  const total=STEADY.schedule.find(d=>d.pose===current)?.sec || 20;
+  let side=0,left=total;
+  const tick=()=>{ clock.textContent=left; sidelbl.textContent=(side?'LEFT side':'RIGHT side');
+    stage.classList.toggle('flip', side===1); if(left<=0){ side^=1; left=total; } left--; };
   animateTo(current, ()=>{ tick(); timer=setInterval(tick,1000); });
 };
-document.getElementById('reset').onclick = ()=>{ stopTimer(); clock.textContent='20'; sidelbl.textContent='— ready —'; animateTo(current); };
+document.getElementById('reset').onclick=()=>{ stopTimer(); clock.textContent='20'; sidelbl.textContent='— ready —'; animateTo(current); };
+
+/* init */
+renderGallery();
+cueEl.textContent=POSES[current].cue;
+markBtn();
+paint(stageData);
 </script>
 </body>
 </html>
