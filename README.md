@@ -18,7 +18,7 @@ GitHub Pages serves this repo at the domain root, and treats any folder's
 | File in this repo        | Lives at                              |
 | ------------------------ | ------------------------------------- |
 | `index.html`             | `https://xebradelta.github.io/`       |
-| `dare/index.html`        | `https://xebradelta.github.io/dare/`  |
+| `example/index.html`     | `https://xebradelta.github.io/example/`|
 | `<name>/index.html`      | `https://xebradelta.github.io/<name>/`|
 
 This is the same "folder + index.html = a clean URL" convention used on the
@@ -39,8 +39,7 @@ For a small, self-contained HTML tool or page:
 ```
 xebradelta.github.io/
 ├── index.html          → /          (this homepage / hub)
-├── dare/index.html     → /dare/
-└── pushups/index.html  → /pushups/  (example of a new one)
+└── pushups/index.html  → /pushups/  (example of a new tool folder)
 ```
 
 ### Listing it on the homepage
@@ -85,8 +84,7 @@ either way.
 
 ## Notes on bundled (Claude Design) files
 
-Some tools here are **bundled single-file exports** (e.g. `dare/index.html`).
-These are self-contained — the app, fonts, and assets are packed into one HTML
+Some tools here are **bundled single-file exports**. These are self-contained — the app, fonts, and assets are packed into one HTML
 file — so they need no build step and just work as static files. They also
 require JavaScript to render and aren't meant to be hand-edited; to change one,
 re-export it from the source and replace the file.
