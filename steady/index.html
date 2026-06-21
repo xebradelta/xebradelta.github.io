@@ -67,6 +67,7 @@
   .s-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem}
   .s-day{font-size:.56rem;letter-spacing:.2em;text-transform:uppercase;color:var(--accent)}
   .s-exit{font-size:.62rem;color:var(--muted);background:none;border:none;cursor:pointer;letter-spacing:.05em}
+  .s-count{font-size:.56rem;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin:.4rem 0 .1rem}
   .s-name{font-family:var(--display);font-weight:400;font-size:1.5rem;letter-spacing:-.02em;margin:.2rem 0}
   .s-cue{font-size:.76rem;color:#3a3530;min-height:2.6em;max-width:380px;margin:0 auto .5rem}
   .s-stage{width:230px;height:260px;margin:.3rem auto 0}
@@ -129,6 +130,7 @@
       <div class="s-day" id="sDay">Day 1</div>
       <button class="s-exit" id="sExit">✕ Exit</button>
     </div>
+    <div class="s-count" id="sCount"></div>
     <div class="s-name" id="sName">Pose</div>
     <div class="s-cue" id="sCue"></div>
     <div class="s-stage" id="sStage"></div>
@@ -258,13 +260,12 @@ function renderHome(){
       <div class="day">Program complete</div><h2>All 30 days done 🎉</h2>
       <p>Beautifully steady. Tap any day below to revisit a hold.</p></div>`;
   } else {
-    const pose=POSES[SCHEDULE[nd-1]];
     $('todayCard').innerHTML=`
-      <div class="fig">${svgFigure(pose,style)}</div>
+      <div class="fig">${svgFigure(POSES.tree,style)}</div>
       <div class="meta">
         <div class="day">Today · Day ${nd}</div>
-        <h2>${pose.name}</h2>
-        <p>${pose.cue}</p>
+        <h2>Full Session</h2>
+        <p>${WORKOUT.length} holds · about ${estMin()} min · ${LEVELS[level].label}. Move through the complete STEADY set, one hold at a time.</p>
         <button class="cta" style="margin-top:.8rem" onclick="startSession(${nd})">Begin Day ${nd}</button>
       </div>`;
   }
@@ -279,7 +280,7 @@ function renderHome(){
   // grid
   $('dayGrid').innerHTML=SCHEDULE.map((pid,i)=>{
     const day=i+1, isDone=done.includes(day), isToday=day===nd;
-    return `<div class="cellday ${isDone?'done':''} ${isToday?'today':''}" title="Day ${day} · ${POSES[pid].name}" onclick="startSession(${day})">${isDone?'✓':day}</div>`;
+    return `<div class="cellday ${isDone?'done':''} ${isToday?'today':''}" title="Day ${day} · Full session" onclick="startSession(${day})">${isDone?'✓':day}</div>`;
   }).join('');
 }
 function setLevel(k){level=k;LS.setItem('xd_steady_level',k);renderHome();}
@@ -290,7 +291,16 @@ function setStyle(k){style=k;LS.setItem('xd_style',k);renderHome();if(sess)paint
    ============================================================ */
 let sess=null, anim=null, stageData=null;
 function paint(el,pose){el.innerHTML=svgFigure(pose,style);}
-function paintSession(){if(sess)paint($('sStage'),stageData||POSES[sess.poseId]);}
+function paintSession(){if(sess)paint($('sStage'),stageData||POSES[sess.steps[sess.idx].poseId]);}
+// a daily session runs the whole circuit, in a deliberate flow
+const WORKOUT=['mountain','grounded','toestand','tree','sidelift','highknee','tbalance','figure4','eagle','widesquat','warrior','star','crescent'];
+function estMin(){const hold=LEVELS[level].sec;let s=0;WORKOUT.forEach((pid,i)=>{s+=(i===0?3:4);s+=POSES[pid].sided?hold*2:hold;});return Math.max(1,Math.round(s/60));}
+function sessionPlan(){const hold=LEVELS[level].sec,steps=[];
+ WORKOUT.forEach((pid,i)=>{const pose=POSES[pid],pn=i+1;
+  steps.push({type:'trans',poseId:pid,poseNum:pn,label:i===0?'Get ready':'Next up',sec:i===0?3:4,flip:false});
+  if(pose.sided)steps.push({type:'hold',poseId:pid,poseNum:pn,label:'Right side',sec:hold,flip:false},{type:'hold',poseId:pid,poseNum:pn,label:'Left side',sec:hold,flip:true});
+  else steps.push({type:'hold',poseId:pid,poseNum:pn,label:'Hold',sec:hold,flip:false});});
+ return steps;}
 function lerpPose(a,b,t){const o={};for(const k in a)if(typeof a[k]==='number')o[k]=a[k]+((b[k]||0)-a[k])*t;return o;}
 function animateTo(pose,then){cancelAnimationFrame(anim);const from=stageData||pose,start=performance.now(),dur=600;
  (function f(now){const t=Math.min(1,(now-start)/dur),e=t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
@@ -298,37 +308,34 @@ function animateTo(pose,then){cancelAnimationFrame(anim);const from=stageData||p
   if(t<1)anim=requestAnimationFrame(f);else if(then)then();})(start);}
 
 function startSession(day){
-  const poseId=SCHEDULE[day-1], pose=POSES[poseId], hold=LEVELS[level].sec;
-  const phases=[{k:'ready',label:'Get ready',sec:3,flip:false}];
-  if(pose.sided){phases.push({k:'hold',label:'Right side',sec:hold,flip:false},{k:'hold',label:'Left side',sec:hold,flip:true});}
-  else{phases.push({k:'hold',label:'Hold',sec:hold,flip:false});}
-  sess={day,poseId,phases,idx:0,remaining:phases[0].sec,paused:false,timer:null};
+  sess={day,steps:sessionPlan(),idx:0,paused:false,timer:null,remaining:0};
   stageData=null;
   $('sDay').textContent='Day '+day;
-  $('sName').textContent=pose.name;
-  $('sCue').textContent=pose.cue;
   $('sStage').classList.remove('flip');
   $('sPause').textContent='Pause';
   showView('session');
-  animateTo(pose,()=>{runPhase();});
+  enterStep();
 }
-function runPhase(){
-  const ph=sess.phases[sess.idx];
-  $('sStage').classList.toggle('flip',ph.flip);
-  $('sPhase').textContent=ph.label;
-  sess.remaining=ph.sec;
-  updateTick();
-  clearInterval(sess.timer);
-  sess.timer=setInterval(()=>{if(sess.paused)return;sess.remaining--;updateTick();if(sess.remaining<=0)advance();},1000);
+function enterStep(){
+  const st=sess.steps[sess.idx], pose=POSES[st.poseId];
+  $('sName').textContent=pose.name;
+  $('sCue').textContent=pose.cue;
+  $('sCount').textContent='Pose '+st.poseNum+' / '+WORKOUT.length;
+  $('sPhase').textContent=st.label;
+  $('sStage').classList.toggle('flip',st.flip);
+  sess.remaining=st.sec;
+  const begin=()=>{updateTick();clearInterval(sess.timer);
+    sess.timer=setInterval(()=>{if(sess.paused)return;sess.remaining--;updateTick();if(sess.remaining<=0)advance();},1000);};
+  if(st.type==='trans') animateTo(pose,begin); else begin();
 }
 function updateTick(){
-  const ph=sess.phases[sess.idx];
+  const st=sess.steps[sess.idx];
   $('sClock').textContent=Math.max(0,sess.remaining);
-  $('sProg').style.width=(Math.max(0,sess.remaining)/ph.sec*100)+'%';
+  $('sProg').style.width=(Math.max(0,sess.remaining)/st.sec*100)+'%';
 }
 function advance(){
   clearInterval(sess.timer);
-  if(sess.idx<sess.phases.length-1){sess.idx++;runPhase();}
+  if(sess.idx<sess.steps.length-1){sess.idx++;enterStep();}
   else finishSession();
 }
 function finishSession(){
@@ -343,7 +350,7 @@ function finishSession(){
 }
 function exitSession(){if(sess){clearInterval(sess.timer);sess=null;}showView('home');renderHome();}
 
-$('sPause').onclick=()=>{if(!sess)return;sess.paused=!sess.paused;$('sPause').textContent=sess.paused?'Resume':'Pause';$('sPhase').textContent=sess.paused?'Paused':sess.phases[sess.idx].label;};
+$('sPause').onclick=()=>{if(!sess)return;sess.paused=!sess.paused;$('sPause').textContent=sess.paused?'Resume':'Pause';$('sPhase').textContent=sess.paused?'Paused':sess.steps[sess.idx].label;};
 $('sExit').onclick=exitSession;
 $('dBack').onclick=()=>{showView('home');renderHome();};
 $('resetLink').onclick=()=>{if(confirm('Reset all STEADY progress on this device?')){LS.removeItem('xd_steady_done');LS.removeItem('xd_steady_streak');renderHome();}};
