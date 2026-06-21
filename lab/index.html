@@ -206,19 +206,40 @@ function svgFigure(pose){
    POSE LIBRARY + PROGRAM (data — original content)
    ============================================================ */
 const POSES = {
-  stand:{name:'Single-Leg Stand', cue:'Tall and steady. Weight even, gaze fixed on one point.',
-    lean:0,head:0, upperL:-12,foreL:-10, upperR:12,foreR:10, thighL:-4,shinL:-4, thighR:4,shinR:4},
-  tree:{name:'Tree', cue:'Foot to the inner standing leg. Hands rise overhead.',
-    lean:0,head:0, upperL:195,foreL:188, upperR:165,foreR:172, thighL:-50,shinL:35, thighR:3,shinR:3},
-  star:{name:'T-Balance', cue:'One leg lifts to the side. Arms reach wide and long.',
-    lean:0,head:0, upperL:-110,foreL:-100, upperR:110,foreR:100, thighL:-42,shinL:-42, thighR:4,shinR:4},
-  chair:{name:'Chair Hold', cue:'Sit back into an invisible chair. Arms reach forward and up.',
-    lean:6,head:0, upperL:192,foreL:196, upperR:168,foreR:164, thighL:-22,shinL:-2, thighR:22,shinR:2},
+  mountain:{name:'Mountain Hold', cue:'Feet together, tall and grounded. Settle the breath before you move.',
+    upperL:-12,foreL:-10, upperR:12,foreR:10, thighL:-4,shinL:-4, thighR:4,shinR:4},
+  grounded:{name:'Grounded Stance', cue:'Feet planted wide, weight even. Root down through both legs and hold.',
+    upperL:-24,foreL:-18, upperR:24,foreR:18, thighL:-20,shinL:-20, thighR:4,shinR:4},
+  tree:{name:'Tree', cue:'Foot to the inner standing leg. Lengthen up through the crown.',
+    upperL:195,foreL:188, upperR:165,foreR:172, thighL:-50,shinL:35, thighR:3,shinR:3},
+  tbalance:{name:'T-Balance', cue:'One leg floats out to the side, arms reach wide. Stay long and level.',
+    upperL:-110,foreL:-100, upperR:110,foreR:100, thighL:-42,shinL:-42, thighR:4,shinR:4},
+  sidelift:{name:'Side Leg Lift', cue:'Lift one leg out to the side and hold it still. Stand tall through the spine.',
+    upperL:-28,foreL:-22, upperR:28,foreR:22, thighL:-32,shinL:-32, thighR:4,shinR:4},
+  highknee:{name:'High-Knee Hold', cue:'Drive one knee to hip height and freeze. Don’t let the hip drop.',
+    upperL:-30,foreL:-20, upperR:30,foreR:20, thighL:-160,shinL:20, thighR:4,shinR:4},
+  figure4:{name:'Figure-4 Hold', cue:'Cross one ankle over the opposite thigh and sink. Hips square, chest lifted.',
+    lean:4, upperL:-26,foreL:-16, upperR:26,foreR:16, thighL:-40,shinL:80, thighR:12,shinR:-6},
+  eagle:{name:'Eagle Wrap', cue:'Hug into your center — one leg wrapped, hands drawn in. Squeeze and balance.',
+    upperL:20,foreL:185, upperR:-20,foreR:175, thighL:-26,shinL:60, thighR:8,shinR:2},
+  crescent:{name:'Crescent Lean', cue:'Reach overhead and bend gently to one side. Feel the long line from heel to hand.',
+    lean:16,head:8, upperL:200,foreL:205, upperR:170,foreR:175, thighL:-4,shinL:-4, thighR:4,shinR:4},
+  widesquat:{name:'Wide Squat Hold', cue:'Wide stance, knees tracking out, hips low. Hold the bottom and breathe.',
+    lean:2, upperL:186,foreL:186, upperR:174,foreR:174, thighL:-26,shinL:-6, thighR:26,shinR:6},
+  toestand:{name:'Toe-Stand Reach', cue:'Rise onto the balls of both feet and reach tall. Steady the wobble.',
+    upperL:196,foreL:201, upperR:164,foreR:159, thighL:-2,shinL:-2, thighR:2,shinR:2},
+  star:{name:'Star Reach', cue:'Wide legs, arms to the sky — make a star and hold every line firm.',
+    upperL:-160,foreL:-166, upperR:160,foreR:166, thighL:-22,shinL:-22, thighR:22,shinR:22},
+  warrior:{name:'Warrior Reach', cue:'Wide stance, one knee bent, arms lifting. Strong base, open chest.',
+    upperL:198,foreL:203, upperR:162,foreR:157, thighL:-30,shinL:-30, thighR:30,shinR:8},
 };
 const POSE_IDS=Object.keys(POSES);
+// curated rotation interleaves easy/hard; durations build week to week
+const ROTATION=['mountain','tree','grounded','sidelift','toestand','tbalance','crescent','highknee','widesquat','figure4','warrior','eagle','star'];
+const TIER=[20,30,40,45,55];
 const STEADY = {
   title:'STEADY', subtitle:'30 Days of Balance & Stillness',
-  schedule: Array.from({length:30},(_,i)=>({day:i+1, pose:POSE_IDS[i%POSE_IDS.length], sec:20+Math.floor(i/7)*10}))
+  schedule: Array.from({length:30},(_,i)=>({day:i+1, pose:ROTATION[i%ROTATION.length], sec:TIER[Math.min(4,Math.floor(i/6))]}))
 };
 
 /* ============================================================
@@ -239,7 +260,7 @@ tree: { <span class="k">name</span>:'Tree',
         <span class="k">upperL</span>:195, <span class="k">upperR</span>:165 }
 
 <span class="tag">// a program is just a list pointing at poses</span>
-schedule: [ { <span class="k">day</span>:1, <span class="k">pose</span>:'stand', <span class="k">sec</span>:20 }, ... ]`;
+schedule: [ { <span class="k">day</span>:1, <span class="k">pose</span>:'mountain', <span class="k">sec</span>:20 }, ... ]`;
 
 /* appearance picker */
 const appBar=document.getElementById('appearance');
