@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>COLUMBA — The Pigeon Wire · Avian Settlement Network</title>
+<meta name="description" content="COLUMBA operates the Pigeon Wire: long-distance cash settlement by homing pigeon, with falcon, tortoise, and St. Bernard failover. A satirical remittance network." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Unbounded:wght@200;400;700&display=swap" rel="stylesheet" />
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --ink:#0e0e0e; --paper:#f2ede6; --accent:#c94f1e; --muted:#8a8278; --rule:#d4cdc5;
+    --good:#3f7d4e; --warn:#b8861b; --bad:#a83217;
+    --mono:'DM Mono',ui-monospace,Menlo,Consolas,monospace;
+    --display:'Unbounded',system-ui,sans-serif;
+  }
+  html{font-size:16px;scroll-behavior:smooth}
+  body{background:var(--paper);color:var(--ink);font-family:var(--mono);line-height:1.6;overflow-x:hidden;cursor:crosshair}
+  body::before{content:'';position:fixed;inset:0;z-index:1000;pointer-events:none;opacity:.4;
+    background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E")}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 1.5rem}
+  a{color:inherit}
+
+  /* ─── TOP STRIP ─── */
+  .topstrip{background:var(--ink);color:var(--paper);font-size:.58rem;letter-spacing:.16em;text-transform:uppercase}
+  .topstrip .wrap{display:flex;justify-content:space-between;align-items:center;padding:.5rem 1.5rem;flex-wrap:wrap;gap:.5rem}
+  .topstrip .home{color:rgba(242,237,230,.6);text-decoration:none}
+  .topstrip .home:hover{color:var(--accent)}
+  .pulse{display:inline-flex;align-items:center;gap:.5rem;color:var(--paper)}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--good);box-shadow:0 0 0 0 rgba(63,125,78,.6);animation:beat 2.2s infinite}
+  @keyframes beat{0%{box-shadow:0 0 0 0 rgba(63,125,78,.6)}70%{box-shadow:0 0 0 7px rgba(63,125,78,0)}100%{box-shadow:0 0 0 0 rgba(63,125,78,0)}}
+
+  /* ─── HEADER ─── */
+  header{position:relative;border-bottom:1px solid var(--rule);overflow:hidden}
+  .header-grid{position:absolute;inset:0;z-index:0;opacity:.3;
+    background-image:linear-gradient(var(--rule) 1px,transparent 1px),linear-gradient(90deg,var(--rule) 1px,transparent 1px);
+    background-size:54px 54px}
+  header .wrap{position:relative;z-index:2;display:grid;grid-template-columns:1fr auto;align-items:end;padding:2.8rem 1.5rem 1.8rem;gap:2rem}
+  .brand{font-family:var(--display);font-weight:700;font-size:clamp(2.6rem,8vw,5.4rem);line-height:.88;letter-spacing:-.04em}
+  .brand span{color:var(--accent)}
+  .brand small{display:block;font-family:var(--mono);font-weight:400;font-size:.6rem;letter-spacing:.24em;text-transform:uppercase;color:var(--muted);margin-top:.9rem}
+  .header-meta{text-align:right;font-size:.6rem;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);line-height:1.9}
+  .header-meta b{color:var(--ink);font-weight:500}
+
+  /* ─── TICKER ─── */
+  .ticker-wrap{border-bottom:1px solid var(--rule);overflow:hidden;white-space:nowrap;background:var(--ink);color:var(--paper);padding:.55rem 0}
+  .ticker-track{display:inline-block;animation:ticker 36s linear infinite}
+  .ticker-track span{font-size:.64rem;letter-spacing:.16em;text-transform:uppercase;padding:0 2.2rem}
+  .ticker-track span::before{content:'◆';margin-right:2.2rem;color:var(--accent);font-size:.5rem}
+  .ticker-track .up{color:#8fce9c}.ticker-track .down{color:#e89b82}
+  @keyframes ticker{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+  /* ─── HERO ─── */
+  .hero{border-bottom:1px solid var(--rule)}
+  .hero .wrap{display:grid;grid-template-columns:1.4fr 1fr;gap:3rem;align-items:center;padding:4rem 1.5rem}
+  .hero h1{font-family:var(--display);font-weight:200;font-size:clamp(1.9rem,4vw,3.3rem);line-height:1.08;letter-spacing:-.025em;margin-bottom:1.4rem}
+  .hero h1 em{font-style:italic;color:var(--accent);font-weight:400}
+  .hero p.lede{font-size:.92rem;line-height:1.8;color:#3a3530;max-width:46ch;font-weight:300}
+  .hero .kers{margin-top:1.6rem;display:flex;gap:2.4rem;flex-wrap:wrap}
+  .ker .v{font-family:var(--display);font-weight:700;font-size:1.5rem;letter-spacing:-.03em}
+  .ker .l{font-size:.56rem;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin-top:.25rem}
+  .bird-stage{position:relative;display:flex;align-items:center;justify-content:center;min-height:240px}
+  .bird-stage svg{width:100%;max-width:340px;height:auto}
+  .glyph-wing{transform-origin:118px 96px;animation:flap 1.8s ease-in-out infinite}
+  @keyframes flap{0%,100%{transform:rotate(0deg)}50%{transform:rotate(-14deg)}}
+  .float{animation:bob 4s ease-in-out infinite}
+  @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+
+  /* ─── SECTION SCAFFOLD ─── */
+  section.band{border-bottom:1px solid var(--rule);padding:3.5rem 0}
+  section.band .wrap{padding:0 1.5rem}
+  .label{font-size:.58rem;letter-spacing:.2em;text-transform:uppercase;color:var(--accent);margin-bottom:1.3rem;display:flex;align-items:center;gap:.75rem}
+  .label::after{content:'';flex:1;height:1px;background:var(--rule)}
+  h2{font-family:var(--display);font-weight:200;font-size:clamp(1.5rem,3vw,2.2rem);line-height:1.15;letter-spacing:-.02em;margin-bottom:1.2rem}
+  h2 em{font-style:italic;color:var(--accent);font-weight:400}
+  h3{font-family:var(--display);font-weight:400;font-size:1rem;letter-spacing:-.01em;margin-bottom:.5rem}
+  p{font-size:.82rem;line-height:1.85;color:#3a3530;font-weight:300}
+  p+p{margin-top:.9rem}
+  .lead{max-width:62ch;margin-bottom:2rem}
+
+  /* ─── QUOTE ENGINE ─── */
+  .quote{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid var(--ink)}
+  .quote .form{padding:2rem;border-right:1px solid var(--ink)}
+  .quote .out{padding:2rem;background:var(--ink);color:var(--paper)}
+  .field{margin-bottom:1.3rem}
+  .field label{display:block;font-size:.56rem;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:.5rem}
+  .field input,.field select{width:100%;font-family:var(--mono);font-size:.86rem;color:var(--ink);background:var(--paper);
+    border:1px solid var(--rule);padding:.7rem .8rem;cursor:crosshair}
+  .field input:focus,.field select:focus{outline:none;border-color:var(--ink)}
+  .seg{display:flex;flex-wrap:wrap;gap:.4rem}
+  .seg button{font-family:var(--mono);font-size:.6rem;letter-spacing:.06em;text-transform:uppercase;background:var(--paper);color:var(--ink);border:1px solid var(--rule);padding:.5rem .7rem;cursor:pointer;transition:.12s}
+  .seg button:hover{border-color:var(--ink)}
+  .seg button.on{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+  .out .label{color:rgba(242,237,230,.55)}.out .label::after{background:rgba(242,237,230,.2)}
+  .out .big{font-family:var(--display);font-weight:700;font-size:2.4rem;letter-spacing:-.03em;line-height:1}
+  .out .big small{font-size:.9rem;color:var(--accent)}
+  .out .qrow{display:flex;justify-content:space-between;gap:1rem;padding:.7rem 0;border-bottom:1px solid rgba(242,237,230,.14);font-size:.74rem}
+  .out .qrow span:first-child{color:rgba(242,237,230,.6);letter-spacing:.06em;text-transform:uppercase;font-size:.6rem;align-self:center}
+  .out .qrow span:last-child{text-align:right}
+  .out .qrow b{color:var(--paper);font-weight:500}
+  .courier-pill{display:inline-block;background:var(--accent);color:var(--paper);font-size:.58rem;letter-spacing:.1em;text-transform:uppercase;padding:.3rem .6rem;margin-top:.2rem}
+  .disclaim{font-size:.58rem;color:rgba(242,237,230,.45);margin-top:1.2rem;line-height:1.6;letter-spacing:.04em}
+
+  /* ─── TRACK ─── */
+  .track{border:1px solid var(--ink);padding:2rem}
+  .track .row{display:flex;gap:.6rem;flex-wrap:wrap;margin-bottom:1.4rem}
+  .track input{flex:1;min-width:200px;font-family:var(--mono);font-size:.86rem;background:var(--paper);border:1px solid var(--rule);padding:.7rem .8rem;color:var(--ink)}
+  .track input:focus{outline:none;border-color:var(--ink)}
+  .track .go{font-family:var(--mono);font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;background:var(--accent);color:var(--paper);border:none;padding:.7rem 1.4rem;cursor:pointer;transition:.12s}
+  .track .go:hover{background:var(--ink)}
+  .timeline{list-style:none;margin-top:.5rem}
+  .timeline li{position:relative;padding:0 0 1.3rem 2rem;border-left:1px solid var(--rule);margin-left:.4rem}
+  .timeline li:last-child{border-left-color:transparent}
+  .timeline li::before{content:'';position:absolute;left:-5px;top:3px;width:9px;height:9px;border-radius:50%;background:var(--rule);border:2px solid var(--paper)}
+  .timeline li.done::before{background:var(--good)}
+  .timeline li.active::before{background:var(--accent);animation:beat 1.6s infinite}
+  .timeline li.fail::before{background:var(--bad)}
+  .timeline .t{font-size:.55rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  .timeline .s{font-size:.84rem;margin-top:.15rem}
+  .timeline .d{font-size:.72rem;color:var(--muted);margin-top:.1rem}
+  .track .hint{font-size:.62rem;color:var(--muted);letter-spacing:.04em}
+
+  /* ─── FLOCK BOARD ─── */
+  .board{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--rule);border:1px solid var(--rule)}
+  .board .cell{background:var(--paper);padding:1.5rem 1.2rem}
+  .board .cell .v{font-family:var(--display);font-weight:700;font-size:2rem;letter-spacing:-.03em;line-height:1}
+  .board .cell .v small{font-size:.8rem;color:var(--accent)}
+  .board .cell .l{font-size:.56rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-top:.5rem}
+
+  /* ─── GENERIC GRID ─── */
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:2.4rem}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:2.4rem}
+  .step .n{font-family:var(--display);font-weight:700;font-size:2.6rem;color:var(--rule);line-height:1;letter-spacing:-.04em;margin-bottom:.7rem}
+
+  /* ─── TABLES ─── */
+  .tbl{width:100%;border-collapse:collapse;font-size:.74rem}
+  .tbl th{text-align:left;font-size:.56rem;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);padding:.7rem .8rem;border-bottom:1px solid var(--ink)}
+  .tbl td{padding:.85rem .8rem;border-bottom:1px solid var(--rule);vertical-align:top;color:#3a3530}
+  .tbl td b{color:var(--ink);font-weight:500;font-family:var(--display)}
+  .tbl tr:hover td{background:rgba(201,79,30,.04)}
+  .tag{display:inline-block;font-size:.52rem;letter-spacing:.1em;text-transform:uppercase;padding:.18rem .45rem;border:1px solid var(--rule);color:var(--muted)}
+  .tag.p{border-color:var(--accent);color:var(--accent)}
+  .code{font-family:var(--mono);color:var(--accent)}
+  .scroll-x{overflow-x:auto}
+
+  /* ─── ERROR CARDS ─── */
+  .err{border:1px solid var(--rule);padding:1.2rem 1.3rem}
+  .err .c{font-family:var(--display);font-weight:700;font-size:.9rem;color:var(--bad);letter-spacing:-.01em}
+  .err .c.warn{color:var(--warn)}.err .c.info{color:var(--muted)}
+  .err h3{font-size:.86rem;margin:.4rem 0 .4rem}
+  .err p{font-size:.74rem;line-height:1.7}
+
+  /* ─── ACCENT BLOCK ─── */
+  .accent-block{background:var(--accent);color:var(--paper)}
+  .accent-block .label{color:rgba(242,237,230,.6)}.accent-block .label::after{background:rgba(242,237,230,.25)}
+  .accent-block h2{color:var(--paper)}.accent-block p{color:rgba(242,237,230,.9)}
+  .accent-block blockquote{font-family:var(--display);font-weight:200;font-size:clamp(1.3rem,2.6vw,2.1rem);line-height:1.3;letter-spacing:-.02em;max-width:62ch}
+  .accent-block blockquote em{font-style:italic;font-weight:400}
+
+  /* ─── FAQ ─── */
+  details{border-bottom:1px solid var(--rule)}
+  details summary{cursor:pointer;list-style:none;padding:1.2rem 0;font-family:var(--display);font-weight:400;font-size:.95rem;display:flex;justify-content:space-between;gap:1rem;align-items:center}
+  details summary::-webkit-details-marker{display:none}
+  details summary::after{content:'+';color:var(--accent);font-size:1.3rem;font-family:var(--mono);transition:transform .2s}
+  details[open] summary::after{transform:rotate(45deg)}
+  details .ans{padding:0 0 1.4rem;font-size:.8rem;line-height:1.8;color:#3a3530;max-width:74ch}
+
+  /* ─── FINE PRINT / FOOTER ─── */
+  .fineprint{background:var(--ink);color:rgba(242,237,230,.7)}
+  .fineprint .wrap{padding:3rem 1.5rem}
+  .fineprint .label{color:rgba(242,237,230,.5)}.fineprint .label::after{background:rgba(242,237,230,.18)}
+  .fineprint p{color:rgba(242,237,230,.62);font-size:.68rem;line-height:1.85}
+  .fineprint b{color:var(--paper)}
+  footer{background:var(--ink);color:var(--paper);border-top:1px solid rgba(242,237,230,.14)}
+  footer .wrap{display:flex;justify-content:space-between;align-items:center;gap:1.5rem;padding:1.6rem 1.5rem;flex-wrap:wrap}
+  footer p{font-size:.58rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(242,237,230,.55)}
+  footer a{font-size:.58rem;letter-spacing:.12em;text-transform:uppercase;text-decoration:none;color:var(--paper);border-bottom:1px solid var(--paper);padding-bottom:1px}
+  footer a:hover{color:var(--accent);border-color:var(--accent)}
+
+  /* reveal */
+  .reveal{opacity:0;transform:translateY(18px);transition:opacity .6s ease,transform .6s ease}
+  .reveal.visible{opacity:1;transform:translateY(0)}
+
+  @media(max-width:860px){
+    .hero .wrap{grid-template-columns:1fr;gap:2rem}
+    .bird-stage{order:-1;min-height:180px}
+    .quote{grid-template-columns:1fr}
+    .quote .form{border-right:none;border-bottom:1px solid var(--ink)}
+    .board{grid-template-columns:1fr 1fr}
+    .grid3,.grid2{grid-template-columns:1fr;gap:1.6rem}
+  }
+</style>
+</head>
+<body>
+
+<!-- TOP STRIP -->
+<div class="topstrip">
+  <div class="wrap">
+    <a class="home" href="/">← xebradelta</a>
+    <span class="pulse"><span class="dot"></span> Network status: <b id="netstat">OPERATIONAL</b> · <span id="wxnote">light tailwinds over the Channel</span></span>
+  </div>
+</div>
+
+<!-- HEADER -->
+<header>
+  <div class="header-grid"></div>
+  <div class="wrap">
+    <div class="brand">
+      COLUMBA<span>.</span>
+      <small>The Pigeon Wire · Avian Settlement Network</small>
+    </div>
+    <div class="header-meta">
+      Settling cash by feather<br>
+      since <b>1850</b> (operationally)<br>
+      <b>2026</b> (incorporated)<br>
+      ◆ Member, F.D.I.Coop
+    </div>
+  </div>
+</header>
+
+<!-- TICKER -->
+<div class="ticker-wrap">
+  <div class="ticker-track" id="ticker"></div>
+</div>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="wrap">
+    <div>
+      <h1>Send money the way the <em>Rothschilds</em> did.</h1>
+      <p class="lede">
+        COLUMBA moves your cash the old, honest way — strapped to a bird that
+        genuinely wants to come home. No correspondent banks. No three-day
+        float. No "pending" that means nothing. Just a verified homing pigeon,
+        a tamper-evident capsule, and the open sky.
+      </p>
+      <div class="kers">
+        <div class="ker"><div class="v">~80<small>km/h</small></div><div class="l">cruising settlement speed</div></div>
+        <div class="ker"><div class="v">50<small>g</small></div><div class="l">payload per bird</div></div>
+        <div class="ker"><div class="v">93.4<small>%</small></div><div class="l">homing success rate*</div></div>
+      </div>
+    </div>
+    <div class="bird-stage">
+      <!-- carrier pigeon, mid-flight, with a little money capsule -->
+      <svg class="float" viewBox="0 0 340 240" xmlns="http://www.w3.org/2000/svg" aria-label="Carrier pigeon in flight with a payment capsule">
+        <!-- motion lines -->
+        <g stroke="#d4cdc5" stroke-width="2" stroke-linecap="round">
+          <line x1="20" y1="70" x2="70" y2="70"/>
+          <line x1="8" y1="100" x2="58" y2="100"/>
+          <line x1="24" y1="130" x2="64" y2="130"/>
+        </g>
+        <!-- body -->
+        <path d="M150 110 q40 -28 96 -10 q26 8 38 30 q-22 6 -44 2 q-30 -6 -60 6 q-26 10 -44 -2 q6 -22 14 -26z" fill="#0e0e0e"/>
+        <!-- head -->
+        <circle cx="252" cy="104" r="20" fill="#0e0e0e"/>
+        <!-- beak -->
+        <path d="M270 102 l24 4 l-22 8z" fill="#c94f1e"/>
+        <!-- eye -->
+        <circle cx="258" cy="100" r="3.4" fill="#f2ede6"/>
+        <!-- tail -->
+        <path d="M150 110 l-46 6 l40 12 l-30 16 l44 -2z" fill="#0e0e0e"/>
+        <!-- wing (flapping) -->
+        <path class="glyph-wing" d="M150 96 q34 -64 92 -64 q-14 36 -42 58 q-26 20 -50 6z" fill="#1c1a18"/>
+        <!-- legs + capsule -->
+        <g stroke="#0e0e0e" stroke-width="3" stroke-linecap="round">
+          <line x1="206" y1="132" x2="206" y2="150"/>
+          <line x1="220" y1="134" x2="220" y2="150"/>
+        </g>
+        <rect x="198" y="150" width="30" height="16" rx="3" fill="#c94f1e"/>
+        <text x="213" y="162" font-family="DM Mono, monospace" font-size="8" fill="#f2ede6" text-anchor="middle">$$$</text>
+      </svg>
+    </div>
+  </div>
+</div>
+
+<!-- QUOTE ENGINE -->
+<section class="band reveal">
+  <div class="wrap">
+    <div class="label">Get a quote · the Wire calculator</div>
+    <h2>Tell us the amount and the distance. <em>We'll feather the route.</em></h2>
+    <p class="lead">
+      Our routing engine assigns a courier tier, counts the birds your cash
+      requires (a pigeon legally carries ~50&nbsp;g — about fifty notes), and
+      estimates settlement on great-circle distance plus prevailing winds and
+      one mandatory rest stop.
+    </p>
+
+    <div class="quote">
+      <div class="form">
+        <div class="field">
+          <label for="amt">Amount to send</label>
+          <input id="amt" type="number" min="1" value="2500" inputmode="numeric" />
+        </div>
+        <div class="field">
+          <label>Denomination on hand</label>
+          <div class="seg" id="denom">
+            <button data-w="1" class="on">Large notes (1g ea.)</button>
+            <button data-w="0.35">Gold leaf (light)</button>
+            <button data-w="5.7">Coin (heavy)</button>
+          </div>
+        </div>
+        <div class="field">
+          <label for="dist">Distance to recipient</label>
+          <select id="dist">
+            <option value="30">Same town — 30 km</option>
+            <option value="120">Next region — 120 km</option>
+            <option value="480" selected>Cross-country — 480 km</option>
+            <option value="1100">National corridor — 1,100 km</option>
+            <option value="5800">Transoceanic — 5,800 km</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Service level</label>
+          <div class="seg" id="svc">
+            <button data-k="std" class="on">Standard Coo</button>
+            <button data-k="exp">Falcon Express</button>
+            <button data-k="vault">Tortoise Vault</button>
+          </div>
+        </div>
+      </div>
+      <div class="out">
+        <div class="label">Your indicative quote</div>
+        <div class="big">$<span id="qfee">—</span> <small>fee</small></div>
+        <div class="courier-pill" id="qcourier">—</div>
+        <div style="margin-top:1.2rem">
+          <div class="qrow"><span>Birds dispatched</span><b id="qbirds">—</b></div>
+          <div class="qrow"><span>Est. settlement</span><b id="qeta">—</b></div>
+          <div class="qrow"><span>Routing</span><span id="qroute">—</span></div>
+          <div class="qrow"><span>Predation surcharge</span><b id="qpred">—</b></div>
+          <div class="qrow"><span>Capsule &amp; sealing wax</span><b id="qcaps">—</b></div>
+        </div>
+        <p class="disclaim">
+          Quote is indicative and assumes the bird wants to come home. Final fee
+          set at the loft. ETA excludes molt season, fog, and acts of hawk.
+          COLUMBA is a satirical concept and moves no real money.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FLOCK BOARD -->
+<section class="band reveal">
+  <div class="wrap">
+    <div class="label">Live from the loft · flock board</div>
+    <div class="board">
+      <div class="cell"><div class="v" id="bAir">—</div><div class="l">Birds in the air</div></div>
+      <div class="cell"><div class="v" id="bSet">—</div><div class="l">Settled today</div></div>
+      <div class="cell"><div class="v" id="bHawk">—</div><div class="l">Hawk advisories</div></div>
+      <div class="cell"><div class="v" id="bRoost">—<small>%</small></div><div class="l">Roost capacity</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- TRACK -->
+<section class="band reveal">
+  <div class="wrap">
+    <div class="label">Track a transfer · Bird-Trace™</div>
+    <h2>Where's my <em>bird</em>?</h2>
+    <p class="lead">
+      Every capsule ships with a leg-band reference. Enter it below for a
+      live-ish reading. No band? Hit <b>Trace</b> for a sample journey.
+    </p>
+    <div class="track">
+      <div class="row">
+        <input id="tn" type="text" placeholder="e.g. COO-4417-ZX" autocomplete="off" />
+        <button class="go" id="traceBtn">Trace</button>
+      </div>
+      <ul class="timeline" id="timeline">
+        <li class="done"><div class="t">— · — </div><div class="s">Enter a leg-band reference to begin.</div></li>
+      </ul>
+      <p class="hint">Bird-Trace™ readings are simulated for demonstration. Pigeons do not actually report their GPS; we ask them when they land.</p>
+    </div>
+  </div>
+</section>
+
+<!-- HERITAGE -->
+<section class="band reveal">
+  <div class="wrap">
+    <div class="label">Heritage · why this is a serious idea</div>
+    <h2>Moving money has <em>always</em> been the hard part.</h2>
+    <p class="lead">
+      For most of history, the problem was never agreeing on a price — it was
+      getting value across distance without it being robbed, sunk, debased, or
+      delayed past usefulness. Civilisations solved this with trust networks
+      and clever proxies long before they solved it with wires. COLUMBA simply
+      returns to the proven medium.
+    </p>
+    <div class="grid3">
+      <div>
+        <h3>The bill of exchange</h3>
+        <p>
+          Medieval bankers — the Templars on the pilgrim roads, later the Medici —
+          realised you should never carry the gold. You deposit here, present a
+          sealed note there, and the metal never travels. Settlement became a
+          message. We agree: the message just happens to have wings.
+        </p>
+      </div>
+      <div>
+        <h3>The Reuter pigeon line, 1850</h3>
+        <p>
+          Where the German and Belgian telegraphs didn't yet meet, Paul Reuter
+          flew <b>45 pigeons</b> between Aachen and Brussels carrying stock
+          prices — two hours a trip, beating the railway by six. A literal gap
+          in the wire, closed by birds. We are, you could say, restoring the
+          original protocol.
+        </p>
+      </div>
+      <div>
+        <h3>Siege of Paris, 1870–71</h3>
+        <p>
+          Surrounded and cut off, Paris shrank its dispatches to microfilm and
+          flew them out by pigeon — thousands of messages on one bird. Proof of
+          the founding COLUMBA insight: a pigeon's value-per-gram, correctly
+          packed, is absurdly high.
+        </p>
+      </div>
+      <div>
+        <h3>Hawala, still running</h3>
+        <p>
+          The hawala system moves value across continents on trust and a phone
+          call — no money physically crosses the border at all. COLUMBA is
+          hawala with a settlement layer you can see flying overhead, which we
+          consider a transparency upgrade.
+        </p>
+      </div>
+      <div>
+        <h3>RFC 1149 / 2549</h3>
+        <p>
+          In 1990 the IETF formally specified <b>IP over Avian Carriers</b> — and
+          in 2001 a Norwegian Linux group actually pinged a host by pigeon.
+          High latency, magnificent bandwidth. The standards body already blessed
+          the medium; we merely added a balance sheet.
+        </p>
+      </div>
+      <div>
+        <h3>Winston v. the ISP, 2009</h3>
+        <p>
+          A South African pigeon named Winston carried a 4&nbsp;GB stick 100&nbsp;km
+          in <b>2h 06m</b>; the country's largest ISP had transmitted 4% of the
+          same data by the time he landed. Sometimes the bird is simply the
+          faster wire. We took the hint.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="band reveal">
+  <div class="wrap">
+    <div class="label">How the Wire works</div>
+    <h2>Four steps from <em>your hand</em> to theirs.</h2>
+    <div class="grid3" style="margin-top:1rem">
+      <div class="step">
+        <div class="n">01</div>
+        <h3>Deposit at a loft</h3>
+        <p>Bring cash to any COLUMBA loft. A bonded loftmaster counts it, photographs the serials, and folds it into a tamper-evident capsule sealed with numbered wax.</p>
+      </div>
+      <div class="step">
+        <div class="n">02</div>
+        <h3>Banding &amp; briefing</h3>
+        <p>We band a rested, home-loyal bird, log its leg-band to your transfer, and brief it on the destination loft. (Briefing is mostly for our benefit; it already knows the way.)</p>
+      </div>
+      <div class="step">
+        <div class="n">03</div>
+        <h3>Launch &amp; relay</h3>
+        <p>The bird flies a direct great-circle route. Over long corridors it hands off at relay lofts — fresh wings, same capsule, unbroken seal — exactly as the medieval relays did.</p>
+      </div>
+      <div class="step">
+        <div class="n">04</div>
+        <h3>Arrival &amp; settlement</h3>
+        <p>At the destination loft the wax is checked against the number, the capsule is opened before two witnesses, and your recipient is paid in local cash. Seal intact = settled.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- THE NETWORK / COURIER TIERS -->
+<section class="band reveal">
+  <div class="wrap">
+    <div class="label">The network · courier tiers &amp; failover routing</div>
+    <h2>One protocol. <em>Many wings</em> (and a few paws and fins).</h2>
+    <p class="lead">
+      The pigeon is our backbone, but no single species covers every corridor,
+      payload, or threat model. COLUMBA routes across a graded menagerie and
+      fails over automatically when a tier is grounded. Primary couriers first;
+      alternates below.
+    </p>
+    <div class="scroll-x">
+      <table class="tbl">
+        <thead>
+          <tr><th>Courier</th><th>Role</th><th>Range / payload</th><th>Best for</th><th>Caveat</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><b>Homing Pigeon</b><br><span class="tag p">Primary</span></td>
+            <td>Standard Coo — the default wire.</td>
+            <td>~1,000 km · ~50 g</td>
+            <td>Everyday remittance, fixed lofts.</td>
+            <td>Grounded by fog, molt, and hawk advisories.</td>
+          </tr>
+          <tr>
+            <td><b>Peregrine Falcon</b><br><span class="tag p">Premium</span></td>
+            <td>Falcon Express — fastest tier.</td>
+            <td>~400 km · ~40 g · 300+ km/h stoop</td>
+            <td>Urgent, high-value, time-critical settlement.</td>
+            <td>Must not be routed near the pigeon flock. Ever.</td>
+          </tr>
+          <tr>
+            <td><b>Galápagos Tortoise</b><br><span class="tag">Failover</span></td>
+            <td>Tortoise Vault — cold storage in motion.</td>
+            <td>~6 km/day · 4 kg armoured</td>
+            <td>Large sums, maximum security, no rush.</td>
+            <td>Settlement measured in seasons. Cannot be hurried.</td>
+          </tr>
+          <tr>
+            <td><b>St. Bernard</b><br><span class="tag">Failover</span></td>
+            <td>Alpine Bulk — overland heavy cash.</td>
+            <td>~40 km/day · 8 kg + cask</td>
+            <td>Mountain corridors, bulk notes, bad weather.</td>
+            <td>A measured volume of brandy is consumed in transit.</td>
+          </tr>
+          <tr>
+            <td><b>Bactrian Camel</b><br><span class="tag">Failover</span></td>
+            <td>Desert Caravan — arid long-haul.</td>
+            <td>~50 km/day · 150 kg</td>
+            <td>Cross-desert bulk value, gold settlement.</td>
+            <td>Departs only when the caravan is full.</td>
+          </tr>
+          <tr>
+            <td><b>Bottlenose Dolphin</b><br><span class="tag">Failover</span></td>
+            <td>Coastal Relay — sea legs of a route.</td>
+            <td>~150 km/day · 5 kg waterproofed</td>
+            <td>Island hops, port-to-port, transoceanic legs.</td>
+            <td>Accepts payment partially in fish. Non-negotiable.</td>
+          </tr>
+          <tr>
+            <td><b>Garden Snail</b><br><span class="tag">Micro</span></td>
+            <td>Snail Mail — true micropayments.</td>
+            <td>~1 m/min · &lt; 0.5 g</td>
+            <td>Sub-cent transfers, neighbourly settlement.</td>
+            <td>Leaves an audit trail. Literally.</td>
+          </tr>
+          <tr>
+            <td><b>Monarch Butterfly</b><br><span class="tag">Seasonal</span></td>
+            <td>Migration Window — cross-border south.</td>
+            <td>~100 km/day · negligible</td>
+            <td>Featherweight value to Mexico, autumn only.</td>
+            <td>One direction, one season. Book early.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="margin-top:1.4rem;font-size:.72rem;color:var(--muted)">
+      <b style="color:var(--ink)">Failover logic:</b> if the primary pigeon tier
+      is grounded, the engine re-routes to the next viable courier that satisfies
+      your payload and corridor. A transfer may be split across tiers (a dolphin
+      sea-leg into a pigeon land-leg) and re-sealed at each relay. You are
+      notified at every hand-off.
+    </p>
+  </div>
+</section>
+
+<!-- ERRORS, DELAYS & INCIDENTS -->
+<section class="band reveal">
+  <div class="wrap">
+    <div class="label">Errors, delays &amp; incidents · the honest part</div>
+    <h2>Things that go wrong, <em>and what we do about them.</em></h2>
+    <p class="lead">
+      A serious settlement network plans for failure. Here is our incident
+      taxonomy — the codes that may appear on your Bird-Trace, what they mean,
+      and the remedy. Most are recoverable. None are your fault.
+    </p>
+    <div class="grid3">
+      <div class="err"><div class="c">ERR&nbsp;HAWK-409</div><h3>Interception event</h3><p>A bird of prey engaged the courier mid-route ("the wire was tapped"). Capsule recovery dispatched; payment re-issued from the predation reserve. Premium tiers fly hawk-screened corridors.</p></div>
+      <div class="err"><div class="c warn">ERR&nbsp;FOG-503</div><h3>Network congestion (weather)</h3><p>Low visibility grounds the flock — pigeons navigate by landmark and sun. Held at the last loft until skies clear. Settlement clock pauses; no funds at risk.</p></div>
+      <div class="err"><div class="c warn">ERR&nbsp;WIND-429</div><h3>Headwind throttling</h3><p>Sustained headwinds cut ground speed and force an extra rest stop. ETA extends; the bird is fine and possibly building character.</p></div>
+      <div class="err"><div class="c warn">ERR&nbsp;MOLT-307</div><h3>Seasonal redirect</h3><p>Bird entered molt and cannot fly distance. Capsule transferred to a fresh courier at the loft. Common late summer; build it into your timeline.</p></div>
+      <div class="err"><div class="c">ERR&nbsp;PAYLOAD-413</div><h3>Capsule too heavy</h3><p>Requested sum exceeds single-bird payload. Auto-split into a multi-bird flight (or escalated to St. Bernard / camel). All sub-capsules must land to settle.</p></div>
+      <div class="err"><div class="c info">ERR&nbsp;CRUMB-302</div><h3>Distraction / off-route</h3><p>Courier diverted to a food source ("a better offer"). Usually self-correcting within the hour. Repeat offenders are reassigned to the snail tier.</p></div>
+      <div class="err"><div class="c">ERR&nbsp;LOFT-404</div><h3>Destination loft not found</h3><p>Recipient loft unregistered or relocated. Bird returns home with capsule and seal intact — funds bounce back to sender, never lost in flight.</p></div>
+      <div class="err"><div class="c">ERR&nbsp;SEAL-401</div><h3>Wax tamper detected</h3><p>Capsule arrived with a broken or mismatched seal. Settlement frozen, transfer quarantined, investigation opened. No payout until the seal number reconciles.</p></div>
+      <div class="err"><div class="c info">ERR&nbsp;COO-204</div><h3>Settled — no action needed</h3><p>The happy path. Seal verified, witnesses signed, recipient paid. Your bird is home, fed, and resting for the next wire.</p></div>
+    </div>
+
+    <div style="margin-top:2rem" class="scroll-x">
+      <table class="tbl">
+        <thead><tr><th>Service level</th><th>Target settlement</th><th>If we miss it</th><th>Loss guarantee</th></tr></thead>
+        <tbody>
+          <tr><td><b>Standard Coo</b></td><td>Distance ÷ 70 km/h, + 1 rest stop</td><td>Fee rebated after +48h delay</td><td>Capsule insured to single-bird payload value</td></tr>
+          <tr><td><b>Falcon Express</b></td><td>Distance ÷ 120 km/h, no stops</td><td>Fee + 50% credit after any delay</td><td>Full value, hawk-screened corridor</td></tr>
+          <tr><td><b>Tortoise Vault</b></td><td>Quoted in weeks; SLA in seasons</td><td>N/A — you knew what you signed up for</td><td>Full value, armoured, geologically secure</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- COVERAGE -->
+<section class="band reveal">
+  <div class="wrap">
+    <div class="label">Coverage · active corridors</div>
+    <h2>Where the <em>wire flies</em> today.</h2>
+    <div class="grid2">
+      <div>
+        <p class="lead" style="margin-bottom:1.2rem">
+          Coverage follows loft density and prevailing winds. A corridor is
+          "live" when both endpoint lofts are staffed and a relay chain exists
+          between them. New corridors open as lofts are recruited.
+        </p>
+        <table class="tbl">
+          <thead><tr><th>Corridor</th><th>Primary courier</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td>Intra-city &amp; metro</td><td>Pigeon</td><td><span class="tag p">Live</span></td></tr>
+            <tr><td>Regional (&lt; 500 km)</td><td>Pigeon → Pigeon relay</td><td><span class="tag p">Live</span></td></tr>
+            <tr><td>National (&lt; 1,100 km)</td><td>Pigeon relay / Falcon</td><td><span class="tag p">Live</span></td></tr>
+            <tr><td>Alpine &amp; mountain</td><td>St. Bernard + Pigeon</td><td><span class="tag">Seasonal</span></td></tr>
+            <tr><td>Desert caravan</td><td>Camel</td><td><span class="tag">On demand</span></td></tr>
+            <tr><td>Transoceanic</td><td>Dolphin relay + Pigeon</td><td><span class="tag">Pilot</span></td></tr>
+            <tr><td>Cross-border (south, autumn)</td><td>Monarch</td><td><span class="tag">Seasonal</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div>
+        <!-- abstract flyway map -->
+        <svg viewBox="0 0 420 340" width="100%" xmlns="http://www.w3.org/2000/svg" aria-label="Stylised flyway map">
+          <rect x="0" y="0" width="420" height="340" fill="none" stroke="#d4cdc5"/>
+          <g stroke="#d4cdc5" stroke-width="1" opacity="0.5">
+            <line x1="0" y1="85" x2="420" y2="85"/><line x1="0" y1="170" x2="420" y2="170"/><line x1="0" y1="255" x2="420" y2="255"/>
+            <line x1="105" y1="0" x2="105" y2="340"/><line x1="210" y1="0" x2="210" y2="340"/><line x1="315" y1="0" x2="315" y2="340"/>
+          </g>
+          <!-- routes -->
+          <path d="M60 250 Q160 120 200 150" fill="none" stroke="#c94f1e" stroke-width="2" stroke-dasharray="6 5"/>
+          <path d="M200 150 Q300 60 360 90" fill="none" stroke="#c94f1e" stroke-width="2" stroke-dasharray="6 5"/>
+          <path d="M60 250 Q130 280 230 270" fill="none" stroke="#0e0e0e" stroke-width="1.5" stroke-dasharray="2 6"/>
+          <!-- lofts -->
+          <g fill="#0e0e0e">
+            <circle cx="60" cy="250" r="6"/><circle cx="200" cy="150" r="6"/><circle cx="360" cy="90" r="6"/><circle cx="230" cy="270" r="5"/>
+          </g>
+          <g fill="#c94f1e"><circle cx="60" cy="250" r="2.5"/><circle cx="360" cy="90" r="2.5"/></g>
+          <!-- labels -->
+          <g font-family="DM Mono, monospace" font-size="9" fill="#8a8278">
+            <text x="48" y="272">LOFT-S</text>
+            <text x="186" y="140">RELAY</text>
+            <text x="338" y="80">LOFT-D</text>
+            <text x="212" y="290">CARAVAN</text>
+          </g>
+          <!-- tiny bird -->
+          <path d="M250 118 q8 -6 18 -3 q-4 5 -10 5 q-5 5 -10 1 q1 -3 2 -3z" fill="#0e0e0e"/>
+        </svg>
+        <p style="font-size:.66rem;color:var(--muted);margin-top:.6rem">Dashed orange: pigeon/falcon air corridors. Dotted black: overland alternates. Lofts marked at each node.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section class="band reveal">
+  <div class="wrap">
+    <div class="label">Pricing · plain feathers</div>
+    <h2>You pay for the <em>wings</em>, not the waiting.</h2>
+    <div class="grid3" style="margin-top:1rem">
+      <div class="err">
+        <div class="tag p">Standard Coo</div>
+        <h3 style="margin-top:.6rem">1.5% + $3 / bird</h3>
+        <p>The everyday pigeon wire. Best value over land within ~1,000 km. Includes capsule, wax, banding, and one rest stop.</p>
+      </div>
+      <div class="err">
+        <div class="tag p">Falcon Express</div>
+        <h3 style="margin-top:.6rem">4% + $12 / bird</h3>
+        <p>When it has to land today. Hawk-screened corridor, no rest stops, priority relay. The cargo is, ironically, very safe.</p>
+      </div>
+      <div class="err">
+        <div class="tag">Tortoise Vault</div>
+        <h3 style="margin-top:.6rem">0.4% + storage</h3>
+        <p>Lowest rate we offer, because time is the fee. Maximum security, full value, settlement on a geological timeline.</p>
+      </div>
+    </div>
+    <p style="margin-top:1.4rem;font-size:.72rem;color:var(--muted)">Predation surcharge applies on raptor-active routes. Brandy levy applies to St.&nbsp;Bernard. Fish settlement applies to dolphin legs. No hidden fees — the fees are all proudly visible.</p>
+  </div>
+</section>
+
+<!-- COMPLIANCE -->
+<section class="band accent-block reveal">
+  <div class="wrap">
+    <div class="label">Trust, security &amp; compliance</div>
+    <blockquote>
+      Every gram is sealed, numbered, photographed, and flown by a bird with a
+      <em>documented record of coming home</em>. We call our onboarding
+      <em>Know Your Coop</em> — and yes, the seal number is the whole point.
+    </blockquote>
+    <div class="grid3" style="margin-top:2rem">
+      <div><h3 style="color:var(--paper)">Know Your Coop (KYC)</h3><p>Senders and recipient lofts are registered and bonded. We verify the loft, not just the bird — a bird can't abscond if it has nowhere unfamiliar to land.</p></div>
+      <div><h3 style="color:var(--paper)">Tamper-evident settlement</h3><p>Numbered wax seal + serial photography + two-witness opening. A broken seal freezes the transfer automatically. Funds bounce home before they're ever lost.</p></div>
+      <div><h3 style="color:var(--paper)">Predation reserve</h3><p>A pooled fund makes whole any capsule lost to hawks, weather, or off-route events on covered tiers. The bird's bad day is not your loss.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="band reveal">
+  <div class="wrap">
+    <div class="label">Questions, reasonably asked</div>
+    <h2>The things <em>everyone</em> wonders.</h2>
+    <div style="margin-top:1rem">
+      <details><summary>Is this real? Can I actually send money?</summary><div class="ans">No. COLUMBA is a satirical concept piece — an affectionate thought experiment about how value moved before wires, dressed up as a fintech. It does not accept deposits, dispatch birds, or move one real cent. Please do not strap cash to a pigeon and expect this site to honour it.</div></details>
+      <details><summary>How much can one pigeon carry?</summary><div class="ans">A homing pigeon comfortably carries roughly 10% of its body weight — about 50 g — over distance. In large notes that's ~50 bills; in gold leaf, considerably more value; in coin, almost nothing. The calculator auto-splits anything heavier across multiple birds or escalates to a pack-animal tier.</div></details>
+      <details><summary>What happens if a hawk gets my bird?</summary><div class="ans">On covered tiers, the predation reserve re-issues your payment and we dispatch capsule recovery. Premium tiers fly hawk-screened corridors to reduce the risk. It's the avian equivalent of someone tapping the wire — planned for, insured, recoverable.</div></details>
+      <details><summary>Why is the falcon faster but more expensive?</summary><div class="ans">A peregrine in a stoop is the fastest animal alive (300+ km/h), so it settles urgent transfers same-day. It's pricier because of hawk-screened routing, no rest stops, and the operational discipline of never, under any circumstance, routing it near our pigeon flock.</div></details>
+      <details><summary>Is the Tortoise Vault a joke?</summary><div class="ans">It's the most serious tier, actually. Slow, armoured, and nearly impossible to rob in a hurry — cold storage that happens to be ambling toward its destination. If you don't need the money this decade, it's the cheapest and safest option we have.</div></details>
+      <details><summary>Has money-by-bird ever genuinely worked?</summary><div class="ans">Information-by-bird absolutely has — Reuter's 1850 stock-price pigeons, the microfilm post out of besieged Paris, the IETF's IP-over-Avian-Carriers standard, and Winston the pigeon out-running an ISP in 2009. Value is just information with a seal on it. That's the premise we're playing with.</div></details>
+    </div>
+  </div>
+</section>
+
+<!-- FINE PRINT -->
+<div class="fineprint">
+  <div class="wrap">
+    <div class="label">The fine print · please read the small feathers</div>
+    <p>
+      <b>COLUMBA — The Pigeon Wire</b> is a satirical, fictional payment concept
+      published by Xebra Delta for entertainment and design purposes. It is
+      <b>not a real money-transfer service</b>, is not licensed or regulated as a
+      money transmitter, holds no deposits, dispatches no live animals, and will
+      not move any real funds. "F.D.I.Coop", "Bird-Trace™", quoted speeds, fees,
+      success rates, and the entire menagerie of couriers are invented for the bit.
+    </p>
+    <p style="margin-top:.8rem">
+      Do not attach currency, valuables, or anything else to a pigeon, falcon,
+      tortoise, St. Bernard, camel, dolphin, snail, or butterfly in reliance on
+      this page. Real animals are not couriers, and real money should travel by
+      means that are licensed, insured, and considerably less likely to be eaten.
+      The genuine historical references are real and worth reading about; the
+      financial product is entirely make-believe.
+    </p>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="wrap">
+    <p>COLUMBA · A Xebra Delta satire · Settles in feathers, not fact</p>
+    <a href="/">← Back to xebradelta</a>
+  </div>
+</footer>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ── TICKER ── */
+  var ticks = [
+    ['1 PIGEON = 0.71 FALCON','up'],
+    ['COO/USD 1.0042','up'],
+    ['Hawk index: ELEVATED','down'],
+    ['Channel tailwind +14 km/h','up'],
+    ['Molt season: 42 days out',''],
+    ['Tortoise Vault yield: ~0% p.a.','down'],
+    ['Roost capacity 78%','up'],
+    ['Dolphin leg: fish premium +3%','down'],
+    ['F.D.I.Coop insured to 1 payload',''],
+    ['Brandy levy stable','up']
+  ];
+  var tk = document.getElementById('ticker');
+  function buildTicker(){
+    var html='';
+    for(var pass=0; pass<2; pass++){
+      for(var i=0;i<ticks.length;i++){
+        var c = ticks[i][1] ? ' class="'+ticks[i][1]+'"' : '';
+        html += '<span'+c+'>'+ticks[i][0]+'</span>';
+      }
+    }
+    tk.innerHTML = html;
+  }
+  buildTicker();
+
+  /* ── QUOTE ENGINE ── */
+  var amtEl=document.getElementById('amt'), distEl=document.getElementById('dist');
+  var weightPerNote=1; // grams
+  var svc='std';
+  var CAP=50; // grams per bird
+
+  var couriers={
+    std:{name:'Standard Coo · Pigeon',pct:0.015,flat:3,kmh:70,rest:true,pred:0.004},
+    exp:{name:'Falcon Express · Peregrine',pct:0.04,flat:12,kmh:120,rest:false,pred:0.0},
+    vault:{name:'Tortoise Vault · Galápagos',pct:0.004,flat:0,kmh:0.25,rest:false,pred:0.0}
+  };
+
+  function fmtMoney(n){ return n.toLocaleString('en-US',{maximumFractionDigits:2,minimumFractionDigits:2}); }
+  function fmtETA(hours){
+    if(hours < 1) return Math.max(1,Math.round(hours*60))+' min';
+    if(hours < 36) return hours.toFixed(1).replace(/\.0$/,'')+' hrs';
+    var d=hours/24;
+    if(d < 90) return d.toFixed(1).replace(/\.0$/,'')+' days';
+    return (d/30).toFixed(1)+' months';
+  }
+
+  function quote(){
+    var amt=Math.max(0, parseFloat(amtEl.value)||0);
+    var dist=parseFloat(distEl.value)||0;
+    var c=couriers[svc];
+
+    // birds needed by payload weight (notes). Vault & non-pigeon still report a count.
+    var grams=amt*weightPerNote;
+    var birds=Math.max(1, Math.ceil(grams/CAP));
+    if(svc==='vault') birds=1;             // one armoured shell
+    if(svc==='exp') birds=Math.max(1,Math.ceil(grams/40)); // falcon lighter payload
+
+    // fee
+    var fee=amt*c.pct + c.flat*birds;
+    var pred=amt*c.pred;
+    var caps=2.5*birds; // capsule + wax per bird
+    fee += pred + caps;
+
+    // ETA
+    var eta;
+    if(c.kmh>0){
+      eta=dist/c.kmh;                       // hours
+      if(c.rest) eta += Math.floor(dist/350)*8; // 8h rest per ~350km leg
+      eta += 1.5;                            // loft handling
+    } else {
+      eta = (dist/ (6/24)) ; // tortoise ~6km/day -> hours
+    }
+
+    // routing string + failover hints
+    var route;
+    if(svc==='vault') route='Armoured overland, relay-guarded';
+    else if(dist>=5000) route=(svc==='exp'?'Falcon → Dolphin sea-leg → Pigeon':'Pigeon → Dolphin sea-leg → Pigeon');
+    else if(dist>=1000) route=(svc==='exp'?'Falcon, direct, no rest':'Pigeon relay, '+Math.max(1,Math.floor(dist/350))+' hand-offs');
+    else route=(svc==='exp'?'Falcon, direct':'Pigeon, '+(c.rest&&dist>350?'1 rest stop':'direct'));
+
+    document.getElementById('qfee').textContent=fmtMoney(fee);
+    document.getElementById('qcourier').textContent=c.name;
+    document.getElementById('qbirds').textContent=birds+(svc==='vault'?' shell':(birds===1?' bird':' birds'));
+    document.getElementById('qeta').textContent=fmtETA(eta);
+    document.getElementById('qroute').textContent=route;
+    document.getElementById('qpred').textContent=pred>0?('$'+fmtMoney(pred)):'waived';
+    document.getElementById('qcaps').textContent='$'+fmtMoney(caps);
+  }
+
+  amtEl.addEventListener('input',quote);
+  distEl.addEventListener('change',quote);
+
+  // denomination segmented control
+  var denom=document.getElementById('denom');
+  denom.addEventListener('click',function(e){
+    var b=e.target.closest('button'); if(!b) return;
+    denom.querySelectorAll('button').forEach(function(x){x.classList.remove('on');});
+    b.classList.add('on'); weightPerNote=parseFloat(b.dataset.w); quote();
+  });
+  // service segmented control
+  var svcEl=document.getElementById('svc');
+  svcEl.addEventListener('click',function(e){
+    var b=e.target.closest('button'); if(!b) return;
+    svcEl.querySelectorAll('button').forEach(function(x){x.classList.remove('on');});
+    b.classList.add('on'); svc=b.dataset.k; quote();
+  });
+  quote();
+
+  /* ── FLOCK BOARD (live-ish, drifting numbers) ── */
+  var board={air:847,set:2391,hawk:3,roost:78};
+  function paintBoard(){
+    document.getElementById('bAir').textContent=board.air.toLocaleString('en-US');
+    document.getElementById('bSet').textContent=board.set.toLocaleString('en-US');
+    document.getElementById('bHawk').textContent=board.hawk;
+    document.getElementById('bRoost').innerHTML=board.roost+'<small>%</small>';
+  }
+  paintBoard();
+  setInterval(function(){
+    board.air += Math.round((Math.random()-0.45)*9);
+    board.air = Math.max(600, Math.min(1200, board.air));
+    if(Math.random()<0.5) board.set += Math.floor(Math.random()*3);
+    if(Math.random()<0.15) board.hawk = Math.max(0, Math.min(7, board.hawk + (Math.random()<0.5?-1:1)));
+    board.roost = Math.max(60, Math.min(96, board.roost + Math.round((Math.random()-0.5)*3)));
+    // tie network status to hawk index
+    var ns=document.getElementById('netstat'), wx=document.getElementById('wxnote');
+    if(board.hawk>=5){ ns.textContent='HAWK ADVISORY'; ns.style.color='#e89b82'; wx.textContent='raptor activity on northern corridors'; }
+    else if(board.roost>92){ ns.textContent='HIGH LOAD'; ns.style.color='#f0c674'; wx.textContent='roosts near capacity, minor delays'; }
+    else { ns.textContent='OPERATIONAL'; ns.style.color=''; wx.textContent='light tailwinds over the Channel'; }
+    paintBoard();
+  }, 2600);
+
+  /* ── BIRD-TRACE (deterministic per reference) ── */
+  function hashStr(s){ var h=0; for(var i=0;i<s.length;i++){ h=(h*31 + s.charCodeAt(i))>>>0; } return h; }
+  function pad(n){ return (n<10?'0':'')+n; }
+
+  var STAGES=[
+    {t:'DEPOSIT',  s:'Cash received & counted at origin loft', d:'Serials photographed. Folded into capsule.'},
+    {t:'SEALED',   s:'Capsule sealed with numbered wax',       d:'Seal logged against your reference.'},
+    {t:'BANDED',   s:'Courier banded & briefed',               d:'Rested, home-loyal bird assigned.'},
+    {t:'LAUNCHED', s:'Released — in the air',                  d:'Flying direct, great-circle route.'},
+    {t:'RELAY',    s:'Hand-off at relay loft',                 d:'Fresh wings, seal intact.'},
+    {t:'APPROACH', s:'Inbound to destination loft',            d:'Recipient notified to attend.'},
+    {t:'SETTLED',  s:'Seal verified · recipient paid',         d:'Two witnesses signed. Bird home & fed.'}
+  ];
+  var INCIDENTS=[
+    {code:'FOG-503',  s:'Held — fog over corridor',     d:'Grounded at last loft. Clock paused.'},
+    {code:'WIND-429', s:'Headwind throttling',          d:'Extra rest stop added. ETA extended.'},
+    {code:'CRUMB-302',s:'Brief diversion (food source)',d:'Self-correcting. Bird took a better offer.'},
+    {code:'HAWK-409', s:'Raptor advisory on route',     d:'Re-routed to screened corridor.'}
+  ];
+
+  function renderTrace(ref){
+    ref=(ref||'').trim().toUpperCase();
+    if(!ref){ ref='COO-'+(1000+Math.floor(Math.random()*9000))+'-ZX'; document.getElementById('tn').value=ref; }
+    var h=hashStr(ref);
+    // how far along: 3..7 stages reached
+    var reached=3 + (h % 5);                 // 3..7
+    var hasIncident=(h>>3)%3===0 && reached<7; // ~1/3 of in-flight get an incident
+    var incident=INCIDENTS[(h>>5)%INCIDENTS.length];
+
+    var baseH=8+(h%9), baseM=(h>>2)%60;       // pseudo start time
+    var ul=document.getElementById('timeline');
+    var html='';
+    var clock=baseH*60+baseM;
+
+    for(var i=0;i<STAGES.length;i++){
+      var st=STAGES[i];
+      var cls, timeTxt;
+      if(i < reached-1){ cls='done'; }
+      else if(i === reached-1){ cls = (reached===7?'done':'active'); }
+      else { cls=''; }
+      if(i<reached){ timeTxt=pad(Math.floor(clock/60)%24)+':'+pad(clock%60); clock += 35+(h>>(i+1))%90; }
+      else { timeTxt='— : —'; }
+      html += '<li class="'+cls+'"><div class="t">'+st.t+' · '+timeTxt+'</div><div class="s">'+st.s+'</div><div class="d">'+st.d+'</div></li>';
+      // splice incident right after launch if applicable
+      if(hasIncident && st.t==='LAUNCHED'){
+        var itime=pad(Math.floor(clock/60)%24)+':'+pad(clock%60); clock += 50;
+        html += '<li class="active"><div class="t" style="color:var(--accent)">INCIDENT '+incident.code+' · '+itime+'</div><div class="s">'+incident.s+'</div><div class="d">'+incident.d+'</div></li>';
+      }
+    }
+    ul.innerHTML=html;
+  }
+  document.getElementById('traceBtn').addEventListener('click',function(){ renderTrace(document.getElementById('tn').value); });
+  document.getElementById('tn').addEventListener('keydown',function(e){ if(e.key==='Enter') renderTrace(this.value); });
+
+  /* ── REVEAL ON SCROLL ── */
+  var io=new IntersectionObserver(function(entries){
+    entries.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add('visible'); io.unobserve(e.target); } });
+  },{threshold:0.08});
+  document.querySelectorAll('.reveal').forEach(function(el){ io.observe(el); });
+})();
+</script>
+</body>
+</html>
