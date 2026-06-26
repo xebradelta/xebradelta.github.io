@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Baofeng K5 Plus — Manual Programming Guide</title>
+  <meta name="description" content="Offline guide to programming the Baofeng K5 Plus handheld radio by hand from the keypad: frequencies, memory channels, repeaters, CTCSS/DCS, scanning, the full menu reference and an FAQ." />
+  <meta name="theme-color" content="#c94f1e" />
+  <meta name="color-scheme" content="light dark" />
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="K5 Plus Guide" />
+  <meta name="mobile-web-app-capable" content="yes" />
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --ink: #0e0e0e;
+      --paper: #f2ede6;
+      --card: #faf7f2;
+      --accent: #c94f1e;
+      --accent-soft: #e8d6cb;
+      --muted: #8a8278;
+      --rule: #d4cdc5;
+      --ok: #2f7d4f;
+      --warn: #b4541b;
+      --lcd-bg: #11201a;
+      --lcd-fg: #7ee0a0;
+      --lcd-amber: #f2c14e;
+      --mono: ui-monospace, 'SF Mono', 'DM Mono', 'Cascadia Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+      --display: 'Unbounded', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+      --maxw: 880px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --ink: #ece7df;
+        --paper: #141311;
+        --card: #1d1b18;
+        --accent: #e9743f;
+        --accent-soft: #3a2a20;
+        --muted: #9a9288;
+        --rule: #34302b;
+        --ok: #6cc78c;
+      }
+    }
+    :root[data-theme="dark"] {
+      --ink: #ece7df;
+      --paper: #141311;
+      --card: #1d1b18;
+      --accent: #e9743f;
+      --accent-soft: #3a2a20;
+      --muted: #9a9288;
+      --rule: #34302b;
+      --ok: #6cc78c;
+    }
+
+    html { font-size: 16px; scroll-behavior: smooth; scroll-padding-top: 78px; }
+    body {
+      background: var(--paper);
+      color: var(--ink);
+      font-family: var(--mono);
+      line-height: 1.65;
+      -webkit-text-size-adjust: 100%;
+      overflow-x: hidden;
+    }
+
+    /* ─── TOP BAR ─── */
+    .topbar {
+      position: sticky; top: 0; z-index: 50;
+      display: flex; align-items: center; gap: .75rem;
+      padding: .7rem 1rem;
+      padding-top: max(.7rem, env(safe-area-inset-top));
+      background: color-mix(in srgb, var(--paper) 88%, transparent);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--rule);
+    }
+    .topbar .brand {
+      font-family: var(--display); font-weight: 700; letter-spacing: -.02em;
+      font-size: 1rem; display: flex; align-items: center; gap: .5rem;
+    }
+    .topbar .brand b { color: var(--accent); }
+    @media (max-width: 480px) { .topbar .brand-suffix { display: none; } }
+    .topbar .spacer { flex: 1; }
+    .iconbtn {
+      appearance: none; border: 1px solid var(--rule); background: var(--card);
+      color: var(--ink); font: inherit; font-size: .72rem; letter-spacing: .04em;
+      padding: .45rem .7rem; border-radius: 7px; cursor: pointer; white-space: nowrap;
+    }
+    .iconbtn:hover { border-color: var(--accent); color: var(--accent); }
+    #installBtn[hidden] { display: none; }
+
+    /* ─── LAYOUT ─── */
+    .wrap { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 0; align-items: start; }
+    nav.toc {
+      position: sticky; top: 62px; align-self: start;
+      height: calc(100dvh - 62px); overflow-y: auto;
+      border-right: 1px solid var(--rule); padding: 1.4rem 1rem 4rem;
+      font-size: .78rem;
+    }
+    nav.toc .grp { text-transform: uppercase; letter-spacing: .16em; font-size: .58rem; color: var(--accent); margin: 1.3rem 0 .5rem; }
+    nav.toc .grp:first-child { margin-top: 0; }
+    nav.toc a {
+      display: block; color: var(--muted); text-decoration: none;
+      padding: .3rem .55rem; border-radius: 6px; border-left: 2px solid transparent;
+    }
+    nav.toc a:hover { color: var(--ink); background: var(--accent-soft); }
+    nav.toc a.active { color: var(--accent); border-left-color: var(--accent); background: var(--accent-soft); }
+
+    main { padding: 2rem clamp(1rem, 4vw, 3rem) 6rem; max-width: var(--maxw); min-width: 0; }
+    main h1, main h2, main h3, main p, main li, main td, main summary { overflow-wrap: anywhere; word-break: break-word; }
+
+    /* ─── TYPOGRAPHY ─── */
+    h1 { font-family: var(--display); font-weight: 700; letter-spacing: -.03em;
+         font-size: clamp(1.6rem, 7vw, 3rem); line-height: 1.04; margin-bottom: .6rem; }
+    h1 b { color: var(--accent); }
+    h2 { font-family: var(--display); font-weight: 400; letter-spacing: -.02em;
+         font-size: clamp(1.35rem, 3.5vw, 1.9rem); margin: 0 0 1rem; padding-top: .5rem; }
+    h3 { font-family: var(--display); font-weight: 400; font-size: 1.12rem; margin: 1.6rem 0 .6rem; }
+    h2 em, h1 em { font-style: italic; color: var(--accent); }
+    p { margin: 0 0 1rem; }
+    a { color: var(--accent); }
+    .lead { font-size: 1.02rem; color: var(--ink); }
+    .kicker { text-transform: uppercase; letter-spacing: .2em; font-size: .6rem; color: var(--accent);
+              display: flex; align-items: center; gap: .6rem; margin-bottom: .9rem; }
+    .kicker::after { content: ''; flex: 1; height: 1px; background: var(--rule); }
+    ul, ol { margin: 0 0 1rem 1.2rem; }
+    li { margin: .35rem 0; }
+    section.block { padding: 2.2rem 0; border-bottom: 1px solid var(--rule); scroll-margin-top: 70px; }
+    section.block:last-of-type { border-bottom: none; }
+    code, kbd { font-family: var(--mono); }
+    strong { color: var(--ink); }
+
+    /* ─── KEY CHIPS ─── */
+    .keys { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; margin: .2rem 0 1rem; }
+    .key {
+      display: inline-flex; align-items: center; justify-content: center;
+      min-width: 2.1rem; padding: .35rem .6rem; border-radius: 8px;
+      background: var(--ink); color: var(--paper); font-weight: 600;
+      font-size: .8rem; letter-spacing: .02em; box-shadow: 0 2px 0 rgba(0,0,0,.25);
+      border: 1px solid color-mix(in srgb, var(--ink) 70%, #000);
+    }
+    .key.accent { background: var(--accent); border-color: color-mix(in srgb, var(--accent) 70%, #000); }
+    .key.ghost { background: var(--card); color: var(--ink); border: 1px dashed var(--rule); box-shadow: none; }
+    .keys .arrow { color: var(--muted); font-size: 1rem; }
+    .keys .lbl { color: var(--muted); font-size: .72rem; margin-left: .2rem; }
+
+    /* ─── LCD MOCKUP ─── */
+    .lcd {
+      background: var(--lcd-bg); color: var(--lcd-fg);
+      border-radius: 12px; padding: .85rem 1rem; margin: 0 0 1rem;
+      font-variant-numeric: tabular-nums; max-width: 320px;
+      border: 3px solid #06120d; box-shadow: inset 0 0 24px rgba(0,0,0,.6);
+      position: relative;
+    }
+    .lcd .row { display: flex; align-items: baseline; justify-content: space-between; gap: .5rem; }
+    .lcd .sub { opacity: .55; font-size: .92rem; }
+    .lcd .freq { font-size: 1.7rem; font-weight: 600; letter-spacing: .02em; line-height: 1.2; }
+    .lcd .freq.b { font-size: 1.15rem; opacity: .65; font-weight: 400; }
+    .lcd .tag { font-size: .62rem; letter-spacing: .12em; opacity: .8; }
+    .lcd .badge { color: var(--lcd-amber); font-size: .62rem; letter-spacing: .1em; }
+    .lcd .menuline { font-size: .8rem; opacity: .85; }
+    .lcd .big { font-size: 1.35rem; font-weight: 600; }
+    .lcd .icons { display: flex; gap: .4rem; font-size: .58rem; opacity: .7; margin-top: .3rem; letter-spacing: .08em; flex-wrap: wrap; }
+    .lcd-caption { font-size: .68rem; color: var(--muted); margin: -.5rem 0 1.2rem; }
+
+    /* ─── STEPS ─── */
+    ol.steps { counter-reset: step; list-style: none; margin-left: 0; }
+    ol.steps > li {
+      position: relative; padding: .15rem 0 1rem 2.6rem; margin: 0;
+      border-left: 1px solid var(--rule); margin-left: .9rem;
+    }
+    ol.steps > li:last-child { border-left-color: transparent; }
+    ol.steps > li::before {
+      counter-increment: step; content: counter(step);
+      position: absolute; left: -.9rem; top: 0;
+      width: 1.8rem; height: 1.8rem; border-radius: 50%;
+      background: var(--accent); color: #fff; font-weight: 700; font-size: .8rem;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    /* ─── CALLOUTS ─── */
+    .note, .warn, .tip {
+      border-left: 3px solid var(--accent); background: var(--card);
+      padding: .85rem 1rem; border-radius: 0 8px 8px 0; margin: 0 0 1.2rem; font-size: .9rem;
+    }
+    .note { border-left-color: var(--muted); }
+    .warn { border-left-color: var(--warn); }
+    .tip  { border-left-color: var(--ok); }
+    .note b, .warn b, .tip b { display: block; text-transform: uppercase; letter-spacing: .1em; font-size: .62rem; margin-bottom: .25rem; }
+    .warn b { color: var(--warn); } .tip b { color: var(--ok); } .note b { color: var(--muted); }
+
+    /* ─── CARDS / GRID ─── */
+    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin: 1.2rem 0; }
+    .pcard { border: 1px solid var(--rule); border-radius: 10px; padding: 1rem 1.1rem; background: var(--card); }
+    .pcard h4 { font-family: var(--display); font-weight: 400; font-size: 1rem; margin-bottom: .3rem; }
+    .pcard p { font-size: .82rem; color: var(--muted); margin: 0; }
+    .specs { width: 100%; border-collapse: collapse; font-size: .85rem; }
+    .specs td { padding: .5rem .4rem; border-bottom: 1px solid var(--rule); vertical-align: top; }
+    .specs td:first-child { color: var(--muted); width: 42%; }
+
+    /* ─── MENU TABLE ─── */
+    .tablewrap { overflow-x: auto; border: 1px solid var(--rule); border-radius: 10px; }
+    table.menu { width: 100%; border-collapse: collapse; font-size: .82rem; min-width: 560px; }
+    table.menu th, table.menu td { text-align: left; padding: .55rem .7rem; border-bottom: 1px solid var(--rule); vertical-align: top; }
+    table.menu thead th { position: sticky; top: 0; background: var(--card); font-size: .62rem; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); }
+    table.menu td.n { color: var(--accent); font-weight: 700; white-space: nowrap; }
+    table.menu td.code { font-weight: 600; white-space: nowrap; }
+    table.menu tr:last-child td { border-bottom: none; }
+    .filterbar { display: flex; gap: .5rem; margin: 0 0 .9rem; }
+    .filterbar input {
+      flex: 1; font: inherit; font-size: .85rem; padding: .55rem .8rem;
+      border: 1px solid var(--rule); border-radius: 8px; background: var(--card); color: var(--ink);
+    }
+    .filterbar input:focus { outline: 2px solid var(--accent); outline-offset: 0; }
+
+    /* ─── FAQ ─── */
+    details.faq { border: 1px solid var(--rule); border-radius: 9px; margin-bottom: .6rem; background: var(--card); overflow: hidden; }
+    details.faq summary { cursor: pointer; padding: .85rem 1rem; font-weight: 600; list-style: none; display: flex; justify-content: space-between; gap: 1rem; }
+    details.faq summary::-webkit-details-marker { display: none; }
+    details.faq summary::after { content: '+'; color: var(--accent); font-size: 1.2rem; line-height: 1; }
+    details.faq[open] summary::after { content: '–'; }
+    details.faq .body { padding: 0 1rem 1rem; font-size: .9rem; }
+    details.faq .body p:last-child { margin-bottom: 0; }
+
+    /* ─── RADIO DIAGRAM ─── */
+    .diagram { background: var(--card); border: 1px solid var(--rule); border-radius: 12px; padding: 1rem; margin: 0 0 1rem; }
+    .diagram svg { width: 100%; height: auto; display: block; max-width: 360px; margin: 0 auto; }
+    .legend { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: .2rem .9rem; font-size: .78rem; margin-top: .8rem; }
+    .legend span { color: var(--ink); }
+    .legend b { color: var(--accent); display: inline-block; width: 1.4rem; }
+
+    /* ─── REFERENCES ─── */
+    ol.refs { font-size: .82rem; color: var(--muted); margin-left: 1.1rem; }
+    ol.refs li { margin: .5rem 0; }
+    ol.refs a { word-break: break-word; }
+
+    footer { padding: 2.5rem clamp(1rem,4vw,3rem) 4rem; border-top: 1px solid var(--rule); color: var(--muted); font-size: .76rem; max-width: var(--maxw); }
+    footer a { color: var(--muted); }
+
+    .offline-pill { display: inline-flex; align-items: center; gap: .4rem; font-size: .68rem; color: var(--ok); border: 1px solid var(--rule); border-radius: 20px; padding: .25rem .65rem; }
+    .offline-pill .dot { width: .5rem; height: .5rem; border-radius: 50%; background: var(--ok); }
+
+    /* ─── MOBILE ─── */
+    .menutoggle { display: none; }
+    @media (max-width: 820px) {
+      .wrap { grid-template-columns: 1fr; }
+      nav.toc {
+        position: fixed; top: 0; left: 0; z-index: 60;
+        width: 80%; max-width: 320px; height: 100dvh; background: var(--paper);
+        transform: translateX(-105%); transition: transform .25s ease;
+        padding-top: max(1.4rem, env(safe-area-inset-top)); box-shadow: 2px 0 24px rgba(0,0,0,.25);
+      }
+      body.nav-open nav.toc { transform: translateX(0); }
+      .menutoggle { display: inline-flex; }
+      .scrim { position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 55; opacity: 0; pointer-events: none; transition: opacity .25s; }
+      body.nav-open .scrim { opacity: 1; pointer-events: auto; }
+    }
+    @media (min-width: 821px) { .scrim { display: none; } }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <button class="iconbtn menutoggle" id="menuToggle" aria-label="Open contents">☰ Menu</button>
+    <span class="brand">K5&nbsp;<b>Plus</b><span class="brand-suffix">&nbsp;· Field Guide</span></span>
+    <span class="spacer"></span>
+    <button class="iconbtn" id="installBtn" hidden>⤓ Install</button>
+    <button class="iconbtn" id="themeBtn" aria-label="Toggle dark mode">◐ Theme</button>
+  </header>
+
+  <div class="scrim" id="scrim"></div>
+
+  <div class="wrap">
+    <nav class="toc" id="toc">
+      <div class="grp">Start</div>
+      <a href="#overview">Overview &amp; safety</a>
+      <a href="#tour">Radio tour</a>
+      <a href="#basics">The basics</a>
+      <div class="grp">How-to guides</div>
+      <a href="#g-freq">Enter a frequency</a>
+      <a href="#g-simplex">Store a simplex channel</a>
+      <a href="#g-repeater">Store a repeater channel</a>
+      <a href="#g-repeater-vfo">Program a repeater (VFO)</a>
+      <a href="#g-tones">CTCSS / DCS tones</a>
+      <a href="#g-settings">Power · band · step · squelch</a>
+      <a href="#g-scan">Scanning</a>
+      <a href="#g-dualwatch">Dual watch</a>
+      <a href="#g-copy">Copy a frequency over the air</a>
+      <a href="#g-weather">NOAA weather</a>
+      <a href="#g-delete">Delete a channel</a>
+      <a href="#g-reset">Factory reset</a>
+      <div class="grp">Reference</div>
+      <a href="#menu">Full menu (0–46)</a>
+      <a href="#faq">FAQ</a>
+      <a href="#refs">Sources &amp; citations</a>
+    </nav>
+
+    <main>
+      <p class="kicker">Xebra Delta · Offline field reference</p>
+      <h1>Baofeng <b>K5&nbsp;Plus</b><br>manual programming guide</h1>
+      <p class="lead">Everything you need to program the K5 Plus <em>by hand</em>, from the keypad &mdash; no computer, no cable, no CHIRP. Built as an installable offline app: add it to your phone&rsquo;s home screen and the whole guide works with no signal.</p>
+      <p><span class="offline-pill"><span class="dot"></span> <span id="offlineState">Works offline once loaded</span></span></p>
+
+      <div class="warn" style="margin-top:1.3rem">
+        <b>Licensing &amp; legal</b>
+        Transmitting on amateur, GMRS, or business frequencies generally requires a licence in your country (in the US: an FCC amateur or GMRS licence). The K5 Plus can tune and transmit outside bands you may legally use. <strong>You are responsible for transmitting only on frequencies and at power levels you are authorised for.</strong> When in doubt, use the lowest power needed and consult your local regulator or radio club. This guide is educational and unofficial.
+      </div>
+
+      <!-- ───────────── OVERVIEW ───────────── -->
+      <section class="block" id="overview">
+        <p class="kicker">Overview</p>
+        <h2>What the <em>K5 Plus</em> is</h2>
+        <p>The Baofeng K5 Plus (sold as part of the <strong>5RM / 5RH “PLUS” series</strong>, and closely related to the UV-5RM Plus) is a dual-band/dual-watch handheld transceiver with a colour LCD, USB-C charging, NOAA weather reception, and a wideband scanning receiver. It stores <strong>999 memory channels</strong>, each holding receive/transmit frequencies, power level, bandwidth, tone (CTCSS/DCS) and signalling settings, and a name. <a href="#ref1">[1]</a><a href="#ref3">[3]</a></p>
+
+        <h3>Key specifications</h3>
+        <table class="specs">
+          <tr><td>Memory channels</td><td>999</td></tr>
+          <tr><td>Receive (scanning) range</td><td>FM 76–108&nbsp;MHz · AM 108–136&nbsp;MHz · VHF 136–174 &amp; 220–260&nbsp;MHz · UHF 350–390 &amp; 400–520&nbsp;MHz <span style="color:var(--muted)">(varies by version/region)</span></td></tr>
+          <tr><td>Transmit range</td><td>144–148 &amp; 420–450&nbsp;MHz (US) / 430–450&nbsp;MHz (Canada)</td></tr>
+          <tr><td>Channel spacing</td><td>25&nbsp;kHz (wide) / 12.5&nbsp;kHz (narrow)</td></tr>
+          <tr><td>Operating voltage</td><td>DC 7.4&nbsp;V ±10% (Li-ion)</td></tr>
+          <tr><td>Accessory jack</td><td>2-pin Kenwood-style</td></tr>
+          <tr><td>Charging</td><td>USB-C</td></tr>
+        </table>
+        <p class="lcd-caption">Specifications from the official 5RM/5RH (UV-5RM Plus / K5 Plus) user manual, Appendix “Technical Specifications.” <a href="#ref1">[1]</a></p>
+
+        <div class="note"><b>M vs L versions</b> The “M” version supports AM 108–136&nbsp;MHz (air band) scanning and a voice-scramble function; the “L” version does not, and has no scramble item in its menu. <a href="#ref1">[1]</a></div>
+      </section>
+
+      <!-- ───────────── RADIO TOUR ───────────── -->
+      <section class="block" id="tour">
+        <p class="kicker">Radio tour</p>
+        <h2>Buttons, controls &amp; the display</h2>
+        <p>Get comfortable with these names &mdash; every guide below refers to them.</p>
+
+        <div class="diagram">
+          <svg viewBox="0 0 200 360" role="img" aria-label="Diagram of the Baofeng K5 Plus front and side controls">
+            <!-- antenna -->
+            <rect x="46" y="6" width="9" height="46" rx="4" fill="#0e0e0e"/>
+            <circle cx="50.5" cy="10" r="5" fill="#c94f1e"/>
+            <!-- body -->
+            <rect x="22" y="46" width="120" height="300" rx="18" fill="#1d1b18" stroke="#c94f1e" stroke-width="2"/>
+            <!-- side keys (left) -->
+            <rect x="14" y="80" width="10" height="26" rx="4" fill="#0e0e0e"/>
+            <rect x="14" y="120" width="10" height="20" rx="4" fill="#0e0e0e"/>
+            <rect x="14" y="150" width="10" height="40" rx="4" fill="#c94f1e"/>
+            <!-- screen -->
+            <rect x="34" y="60" width="96" height="78" rx="6" fill="#11201a" stroke="#06120d" stroke-width="2"/>
+            <text x="40" y="84" fill="#7ee0a0" font-size="9" font-family="monospace">A 146.520</text>
+            <text x="40" y="100" fill="#7ee0a0" font-size="8" font-family="monospace" opacity="0.6">B 446.000</text>
+            <text x="40" y="124" fill="#f2c14e" font-size="7" font-family="monospace">VFO  N  H  +</text>
+            <!-- LED -->
+            <circle cx="120" cy="150" r="4" fill="#2f7d4f"/>
+            <!-- keypad -->
+            <g fill="#0e0e0e">
+              <rect x="36" y="170" width="26" height="20" rx="5"/><rect x="69" y="170" width="26" height="20" rx="5"/><rect x="102" y="170" width="26" height="20" rx="5"/>
+              <rect x="36" y="196" width="26" height="20" rx="5"/><rect x="69" y="196" width="26" height="20" rx="5"/><rect x="102" y="196" width="26" height="20" rx="5"/>
+              <rect x="36" y="222" width="26" height="20" rx="5"/><rect x="69" y="222" width="26" height="20" rx="5"/><rect x="102" y="222" width="26" height="20" rx="5"/>
+              <rect x="36" y="248" width="26" height="20" rx="5"/><rect x="69" y="248" width="26" height="20" rx="5"/><rect x="102" y="248" width="26" height="20" rx="5"/>
+            </g>
+            <g fill="#f2ede6" font-size="9" font-family="monospace" text-anchor="middle">
+              <text x="49" y="184">1</text><text x="82" y="184">2</text><text x="115" y="184">3</text>
+              <text x="49" y="210">4</text><text x="82" y="210">5</text><text x="115" y="210">6</text>
+              <text x="49" y="236">7</text><text x="82" y="236">8</text><text x="115" y="236">9</text>
+              <text x="49" y="262">*</text><text x="82" y="262">0</text><text x="115" y="262">#</text>
+            </g>
+            <!-- function row -->
+            <g fill="#c94f1e"><rect x="36" y="278" width="40" height="18" rx="5"/><rect x="88" y="278" width="40" height="18" rx="5"/></g>
+            <text x="56" y="291" fill="#fff" font-size="7.5" font-family="monospace" text-anchor="middle">MENU</text>
+            <text x="108" y="291" fill="#fff" font-size="7.5" font-family="monospace" text-anchor="middle">EXIT</text>
+            <g fill="#0e0e0e"><rect x="36" y="302" width="40" height="18" rx="5"/><rect x="88" y="302" width="40" height="18" rx="5"/></g>
+            <text x="56" y="315" fill="#f2ede6" font-size="9" font-family="monospace" text-anchor="middle">▲</text>
+            <text x="108" y="315" fill="#f2ede6" font-size="9" font-family="monospace" text-anchor="middle">▼</text>
+            <!-- callout numbers -->
+            <g font-family="monospace" font-size="9" font-weight="bold" fill="#c94f1e">
+              <text x="60" y="14">①</text>
+              <text x="2" y="96">②</text>
+              <text x="2" y="135">③</text>
+              <text x="2" y="174">④</text>
+              <text x="150" y="100">⑤</text>
+              <text x="150" y="154">⑥</text>
+              <text x="150" y="186">⑦</text>
+              <text x="150" y="292">⑧</text>
+              <text x="150" y="316">⑨</text>
+            </g>
+          </svg>
+          <div class="legend">
+            <span><b>①</b> Antenna (SMA, removable)</span>
+            <span><b>②</b> SK1 — FM broadcast / alarm</span>
+            <span><b>③</b> PTT — push-to-talk</span>
+            <span><b>④</b> SK2 — flashlight / monitor</span>
+            <span><b>⑤</b> Colour LCD</span>
+            <span><b>⑥</b> Status LED (red=TX, green=RX)</span>
+            <span><b>⑦</b> Numeric keypad</span>
+            <span><b>⑧</b> MENU (confirm) / EXIT (back)</span>
+            <span><b>⑨</b> ▲ / ▼ navigation keys</span>
+          </div>
+        </div>
+        <p class="lcd-caption">Original illustration recreated from the control layout described in the official manual. <a href="#ref1">[1]</a></p>
+
+        <h3>What each key does</h3>
+        <div class="cards">
+          <div class="pcard"><h4>Power / Volume knob</h4><p>Rotate clockwise from a “click” to turn on; keep turning for volume. A double-beep confirms power-on.</p></div>
+          <div class="pcard"><h4>PTT</h4><p>Press and hold to transmit on the active (selected) display.</p></div>
+          <div class="pcard"><h4>MENU key</h4><p>Opens the menu, selects an item, and confirms a setting. (Shown as <span class="key" style="min-width:auto;padding:.15rem .4rem">MENU</span> throughout.)</p></div>
+          <div class="pcard"><h4>EXIT key</h4><p>Backs out of the menu without saving the current change / returns to standby.</p></div>
+          <div class="pcard"><h4>▲ / ▼ keys</h4><p>Step frequency or channel up/down, change a menu value, or change scan direction. Hold ~2&nbsp;s to move rapidly.</p></div>
+          <div class="pcard"><h4>VFO/MR key</h4><p>Switches between Frequency (VFO) mode and Channel (MR) mode.</p></div>
+          <div class="pcard"><h4>A/B key</h4><p>Selects the upper (A) or lower (B) display as the active one. <strong>Save channels from the A display.</strong></p></div>
+          <div class="pcard"><h4>SK1 (top side key)</h4><p>Short press toggles broadcast FM radio; also used for the alarm function.</p></div>
+          <div class="pcard"><h4>SK2 (lower side key)</h4><p>Flashlight; hold to enter <em>Monitor</em> (open squelch to hear weak signals).</p></div>
+          <div class="pcard"><h4>✱ (Star) key</h4><p>Short press = reverse (swap TX/RX). Hold ~2&nbsp;s = lock / unlock the keypad.</p></div>
+          <div class="pcard"><h4># (Pound) key</h4><p>Activates DTMF dial; hold to start scan; auto-searches stations in FM mode.</p></div>
+          <div class="pcard"><h4>0 / SQL key</h4><p>Hold the <span class="key" style="min-width:auto;padding:.15rem .4rem">0</span> key to turn on NOAA weather reception.</p></div>
+        </div>
+        <p class="lcd-caption">Key functions per the manual’s “Radio Overview” and “Main keypad controls.” <a href="#ref1">[1]</a></p>
+
+        <h3>Reading the display</h3>
+        <div class="lcd">
+          <div class="row"><span class="freq">146.52000</span><span class="badge">A ◀</span></div>
+          <div class="row"><span class="freq b">446.00000</span><span class="tag">B</span></div>
+          <div class="icons"><span>VFO</span><span>N (narrow)</span><span>H (high pwr)</span><span>+ (offset)</span><span>CT (tone)</span></div>
+        </div>
+        <p class="lcd-caption">Typical dual-watch screen. The arrow / highlight marks the active display. Common icons: <strong>VFO/MR</strong> mode, <strong>N/W</strong> (narrow/wide), <strong>H/L</strong> (power), <strong>+ / − / R</strong> (offset direction / reverse), <strong>CT / DCS</strong> (tone). <a href="#ref1">[1]</a></p>
+      </section>
+
+      <!-- ───────────── BASICS ───────────── -->
+      <section class="block" id="basics">
+        <p class="kicker">The basics</p>
+        <h2>VFO vs. Channel, and how the menu works</h2>
+        <p>Almost all manual programming happens in <strong>Frequency (VFO) mode</strong>; you then <em>save</em> the result into a numbered <strong>memory channel</strong> for everyday use in <strong>Channel (MR) mode</strong>.</p>
+        <div class="cards">
+          <div class="pcard"><h4>Frequency mode — VFO</h4><p>For tuning any frequency directly: testing, field setup, and building a channel before you store it.</p></div>
+          <div class="pcard"><h4>Channel mode — MR</h4><p>For selecting the pre-programmed channels you saved. Day-to-day operating mode.</p></div>
+        </div>
+        <p>Switch between them with the <span class="key" style="min-width:auto">VFO/MR</span> key.</p>
+
+        <h3>Working the menu (and the shortcut trick)</h3>
+        <p>Every menu item has a number (0–46). You can jump straight to one instead of scrolling:</p>
+        <div class="keys">
+          <span class="key accent">MENU</span><span class="arrow">→</span>
+          <span class="key">2</span><span class="key">9</span><span class="lbl">type the item number</span><span class="arrow">→</span>
+          <span class="key accent">MENU</span><span class="lbl">to edit</span><span class="arrow">→</span>
+          <span class="key">▲</span><span class="key">▼</span><span class="lbl">change value</span><span class="arrow">→</span>
+          <span class="key accent">MENU</span><span class="lbl">save</span><span class="arrow">→</span>
+          <span class="key">EXIT</span>
+        </div>
+        <div class="tip"><b>The pattern to memorise</b> Open menu → key the item number → <strong>MENU</strong> to edit → <strong>▲/▼</strong> to choose → <strong>MENU</strong> to save → <strong>EXIT</strong> to leave. The ten most common items sit at the top of the list. <a href="#ref1">[1]</a></div>
+      </section>
+
+      <!-- ───────────── GUIDE: FREQUENCY ───────────── -->
+      <section class="block" id="g-freq">
+        <p class="kicker">Guide 01</p>
+        <h2>Enter a frequency directly (VFO)</h2>
+        <p>Example: tune the 2&nbsp;m calling frequency <strong>146.520&nbsp;MHz</strong> on display A.</p>
+        <ol class="steps">
+          <li>Press <span class="key">VFO/MR</span> until the <strong>VFO</strong> icon shows — you’re in Frequency mode.</li>
+          <li>Press <span class="key">A/B</span> if needed so the <strong>A (upper)</strong> display is active.
+            <div class="lcd" style="margin-top:.6rem"><div class="row"><span class="freq">___._____</span><span class="badge">A ◀ VFO</span></div></div>
+          </li>
+          <li>Key the digits on the numeric keypad — no decimal point needed:
+            <div class="keys"><span class="key">1</span><span class="key">4</span><span class="key">6</span><span class="key">5</span><span class="key">2</span><span class="key">0</span></div>
+            <div class="lcd"><div class="row"><span class="freq">146.52000</span><span class="badge">A ◀ VFO</span></div></div>
+          </li>
+          <li>That’s it — the radio is tuned. Use <span class="key">▲</span>/<span class="key">▼</span> to nudge up/down by your current <strong>step</strong> (Menu 1).</li>
+        </ol>
+        <div class="note"><b>Tip</b> If digits land in the wrong place, your <strong>step</strong> setting (Menu 1) determines how many decimals are accepted. For most ham use set step to 5.0&nbsp;k or 12.5&nbsp;k. To enter 446.00625 you’d need a 6.25&nbsp;k step. <a href="#ref1">[1]</a></div>
+      </section>
+
+      <!-- ───────────── GUIDE: SIMPLEX ───────────── -->
+      <section class="block" id="g-simplex">
+        <p class="kicker">Guide 02</p>
+        <h2>Store a simplex channel (with a tone)</h2>
+        <p>Worked example straight from the manual: save <strong>432.6625&nbsp;MHz</strong> with a transmit <strong>CTCSS tone of 123.0&nbsp;Hz</strong> into <strong>channel 10</strong>. <a href="#ref1">[1]</a></p>
+        <ol class="steps">
+          <li>Press <span class="key">VFO/MR</span> to enter <strong>VFO</strong> mode; make sure the <strong>A</strong> display is active (<span class="key">A/B</span>).</li>
+          <li>Clear any old data in channel 10 first — open <strong>Menu 31 (DELCH)</strong> and delete it:
+            <div class="keys"><span class="key accent">MENU</span><span class="key">3</span><span class="key">1</span><span class="arrow">→</span><span class="key accent">MENU</span><span class="arrow">→</span><span class="key">1</span><span class="key">0</span><span class="arrow">→</span><span class="key accent">MENU</span></div>
+          </li>
+          <li>Set the transmit tone — <strong>Menu 12 (T-CTCS)</strong> → choose <strong>123.0</strong>:
+            <div class="keys"><span class="key accent">MENU</span><span class="key">1</span><span class="key">2</span><span class="arrow">→</span><span class="key accent">MENU</span><span class="arrow">→</span><span class="key">▲</span><span class="key">▼</span><span class="lbl">to 123.0</span><span class="arrow">→</span><span class="key accent">MENU</span></div>
+          </li>
+          <li>Back in VFO, key the frequency:
+            <div class="keys"><span class="key">4</span><span class="key">3</span><span class="key">2</span><span class="key">6</span><span class="key">6</span><span class="key">2</span><span class="key">5</span></div>
+            <div class="lcd"><div class="row"><span class="freq">432.66250</span><span class="badge">A ◀ VFO CT</span></div></div>
+          </li>
+          <li>Store it into channel 10 — <strong>Menu 30 (MEMCH)</strong>:
+            <div class="keys"><span class="key accent">MENU</span><span class="key">3</span><span class="key">0</span><span class="arrow">→</span><span class="key accent">MENU</span><span class="arrow">→</span><span class="key">1</span><span class="key">0</span><span class="arrow">→</span><span class="key accent">MENU</span><span class="lbl">saved</span></li>
+          <li>Press <span class="key">VFO/MR</span> to return to <strong>MR</strong> mode — channel 10 now appears.
+            <div class="lcd" style="margin-top:.6rem"><div class="row"><span class="freq">432.66250</span><span class="badge">CH 010</span></div><div class="icons"><span>MR</span><span>CT 123.0</span></div></div>
+          </li>
+        </ol>
+        <div class="note"><b>About names</b> Channel <em>names</em> can only be entered with PC software (CHIRP or the Baofeng programmer) — the keypad stores the frequency and settings, not text. Set Menu 24/25 (MDF-A/B) to <strong>FREQ</strong> or <strong>CH</strong> to choose what the display shows. <a href="#ref1">[1]</a></div>
+      </section>
+
+      <!-- ───────────── GUIDE: REPEATER CHANNEL ───────────── -->
+      <section class="block" id="g-repeater">
+        <p class="kicker">Guide 03</p>
+        <h2>Store a repeater channel (split TX/RX)</h2>
+        <p>This is the “store the RX and TX legs into the same channel” method from the manual. Example: <strong>RX 432.550, TX 437.550</strong> (a +5&nbsp;MHz split) with <strong>TX CTCSS 123.0</strong> into <strong>channel 10</strong>. <a href="#ref1">[1]</a></p>
+        <ol class="steps">
+          <li>Enter <strong>VFO</strong> mode (<span class="key">VFO/MR</span>); make the <strong>A</strong> display active.</li>
+          <li>Delete old data in channel 10 — <strong>Menu 31</strong>:
+            <div class="keys"><span class="key accent">MENU</span><span class="key">3</span><span class="key">1</span><span class="arrow">→</span><span class="key accent">MENU</span><span class="arrow">→</span><span class="key">1</span><span class="key">0</span><span class="arrow">→</span><span class="key accent">MENU</span></div>
+          </li>
+          <li>Set the TX tone — <strong>Menu 12 (T-CTCS)</strong> → 123.0 → save.</li>
+          <li>Key the <strong>receive</strong> frequency (the repeater’s output / what you listen to):
+            <div class="keys"><span class="key">4</span><span class="key">3</span><span class="key">2</span><span class="key">5</span><span class="key">5</span><span class="key">0</span><span class="key">0</span></div></li>
+          <li>Save it as the RX leg of channel 10 — <strong>Menu 30 (MEMCH)</strong> → 10 → MENU.
+            <div class="lcd-caption" style="margin-top:.4rem">“RX has been added.”</div></li>
+          <li>Now key the <strong>transmit</strong> frequency (the repeater’s input):
+            <div class="keys"><span class="key">4</span><span class="key">3</span><span class="key">7</span><span class="key">5</span><span class="key">5</span><span class="key">0</span><span class="key">0</span></div></li>
+          <li>Save it to the <strong>same channel 10</strong> again — <strong>Menu 30</strong> → 10 → MENU.
+            <div class="lcd-caption" style="margin-top:.4rem">“TX has been added.” The radio now knows: receive 432.550, transmit 437.550.</div></li>
+          <li>Press <span class="key">VFO/MR</span> to go back to <strong>MR</strong> — channel 10 is your repeater.
+            <div class="lcd" style="margin-top:.6rem"><div class="row"><span class="freq">432.55000</span><span class="badge">CH 010</span></div><div class="icons"><span>MR</span><span>+ split</span><span>CT 123.0</span></div></div>
+          </li>
+        </ol>
+        <div class="tip"><b>Why two saves?</b> Storing the RX frequency, then the TX frequency, into the <em>same channel number</em> teaches the channel its split directly — handy for odd splits that aren’t a standard ± offset. For standard offsets, the VFO method below is faster.</div>
+      </section>
+
+      <!-- ───────────── GUIDE: REPEATER VFO ───────────── -->
+      <section class="block" id="g-repeater-vfo">
+        <p class="kicker">Guide 04</p>
+        <h2>Program a repeater the quick way (offset + shift)</h2>
+        <p>If your repeater uses a standard offset (e.g. +5&nbsp;MHz on 70&nbsp;cm, −0.6&nbsp;MHz on 2&nbsp;m), set the <strong>shift direction</strong> and <strong>offset amount</strong>, then save. <a href="#ref1">[1]</a></p>
+        <ol class="steps">
+          <li>Enter <strong>VFO</strong> mode and key the repeater’s <strong>output (receive)</strong> frequency on the keypad.</li>
+          <li>Set the offset <em>amount</em> — <strong>Menu 29 (OFFSET)</strong>:
+            <div class="keys"><span class="key accent">MENU</span><span class="key">2</span><span class="key">9</span><span class="arrow">→</span><span class="key accent">MENU</span><span class="arrow">→</span><span class="lbl">key the offset, e.g.</span><span class="key">0</span><span class="key">5</span><span class="key">.</span><span class="key">0</span><span class="key">0</span><span class="key">0</span><span class="arrow">→</span><span class="key accent">MENU</span></div>
+            <div class="lcd-caption">Offset range 00.000–69.990 MHz in 10&nbsp;kHz steps.</div>
+          </li>
+          <li>Set the shift <em>direction</em> — <strong>Menu 28 (SFT-D)</strong> → <strong>+</strong> (TX higher) or <strong>−</strong> (TX lower):
+            <div class="keys"><span class="key accent">MENU</span><span class="key">2</span><span class="key">8</span><span class="arrow">→</span><span class="key accent">MENU</span><span class="arrow">→</span><span class="key">▲</span><span class="key">▼</span><span class="lbl">+ / − / OFF</span><span class="arrow">→</span><span class="key accent">MENU</span></div>
+          </li>
+          <li>Set the TX tone the repeater needs — <strong>Menu 12 (T-CTCS)</strong> → your tone → save.</li>
+          <li>Press <span class="key">EXIT</span>. Test by keying up: status LED goes red on TX. The display shows <strong>+</strong> or <strong>−</strong> for the offset.</li>
+          <li>Happy with it? Save the whole thing into a channel — <strong>Menu 30 (MEMCH)</strong> → channel number → MENU.</li>
+        </ol>
+        <div class="note"><b>Listen on the input</b> Press the <span class="key" style="min-width:auto">✱</span> (reverse) key to temporarily swap TX/RX and hear the repeater’s input frequency — an <strong>R</strong> appears in the display. Press again to undo. <a href="#ref1">[1]</a></div>
+        <div class="note"><b>Tone-burst repeaters</b> Some repeaters (common in Europe) need a 1750&nbsp;Hz tone burst. Set <strong>Menu 37 (TONE)</strong> to 1750, then press <span class="key" style="min-width:auto">PTT</span>&nbsp;+&nbsp;<span class="key" style="min-width:auto">SK2</span> to send it. <a href="#ref1">[1]</a></div>
+      </section>
+
+      <!-- ───────────── GUIDE: TONES ───────────── -->
+      <section class="block" id="g-tones">
+        <p class="kicker">Guide 05</p>
+        <h2>CTCSS &amp; DCS tones (sub-audible squelch)</h2>
+        <p>Tones let a repeater (or another radio) decide whether to act on your signal, and let your radio stay quiet until it hears a matching tone.</p>
+        <div class="cards">
+          <div class="pcard"><h4>Menu 12 · T-CTCS</h4><p>Transmit CTCSS — the analogue tone you send to open a repeater. <strong>The one you usually need.</strong></p></div>
+          <div class="pcard"><h4>Menu 13 · T-DCS</h4><p>Transmit DCS — the digital coded version. Use only if your repeater specifies DCS.</p></div>
+          <div class="pcard"><h4>Menu 10 · R-CTCS</h4><p>Receive CTCSS — your radio only un-mutes when it hears this tone. Leave OFF unless you know you need it.</p></div>
+          <div class="pcard"><h4>Menu 11 · R-DCS</h4><p>Receive DCS — digital receive squalch. Leave OFF unless required.</p></div>
+        </div>
+        <h3>Set a transmit tone</h3>
+        <div class="keys"><span class="key accent">MENU</span><span class="key">1</span><span class="key">2</span><span class="arrow">→</span><span class="key accent">MENU</span><span class="arrow">→</span><span class="key">▲</span><span class="key">▼</span><span class="lbl">pick tone (e.g. 88.5)</span><span class="arrow">→</span><span class="key accent">MENU</span><span class="arrow">→</span><span class="key">EXIT</span></div>
+        <div class="warn"><b>Common mistake</b> Setting a <em>receive</em> tone (Menu 10/11) when you only meant to set a transmit tone (Menu 12/13) is the usual reason a beginner “can’t hear anything.” If your radio went silent, check Menu 10 and 11 are <strong>OFF</strong>. <a href="#ref1">[1]</a></div>
+        <div class="tip"><b>Scan for an unknown tone</b> In VFO mode you can scan to find a tone a station is using: Menu 14 (Scan CTCSS) or Menu 15 (Scan DCS), then press MENU. This only works in VFO mode, not channel mode. <a href="#ref1">[1]</a></div>
+      </section>
+
+      <!-- ───────────── GUIDE: SETTINGS ───────────── -->
+      <section class="block" id="g-settings">
+        <p class="kicker">Guide 06</p>
+        <h2>Power, bandwidth, step &amp; squelch</h2>
+        <p>The four settings you’ll touch most often. Same pattern every time: <span class="key" style="min-width:auto">MENU</span> → number → <span class="key" style="min-width:auto">MENU</span> → <span class="key" style="min-width:auto">▲▼</span> → <span class="key" style="min-width:auto">MENU</span>.</p>
+        <table class="specs">
+          <tr><td>Transmit power — <strong>Menu 2 (TXP)</strong></td><td>HIGH or LOW. Use the lowest power that does the job.</td></tr>
+          <tr><td>Bandwidth — <strong>Menu 5 (W/N)</strong></td><td>WIDE = 25&nbsp;kHz, NARR = 12.5&nbsp;kHz. Match the channel’s plan; most modern channels are narrow.</td></tr>
+          <tr><td>Step — <strong>Menu 1 (STEP)</strong></td><td>2.5 / 5.0 / 6.25 / 10 / 12.5 / 20 / 25 / 50&nbsp;kHz. Controls keypad entry resolution and ▲▼ jumps.</td></tr>
+          <tr><td>Squelch — <strong>Menu 0 (SQL)</strong></td><td>0–9. 0 = fully open (hear everything incl. noise); higher = quieter, but may miss weak signals. 3–5 is typical.</td></tr>
+        </table>
+        <div class="tip"><b>Fast power toggle</b> There’s a quick high/low power shortcut on the keypad as well — check Menu 2 to confirm what’s active. For an instant “hear the weak stuff” override, hold <span class="key" style="min-width:auto">SK2</span> for Monitor (temporarily opens squelch). <a href="#ref1">[1]</a></div>
+      </section>
+
+      <!-- ───────────── GUIDE: SCANNING ───────────── -->
+      <section class="block" id="g-scan">
+        <p class="kicker">Guide 07</p>
+        <h2>Scanning</h2>
+        <h3>Scan frequencies (VFO mode)</h3>
+        <ol class="steps">
+          <li>In <strong>VFO</strong> mode, hold the <span class="key">#</span> key (or hold a navigation key) for ~2&nbsp;seconds — scanning starts by your current step.</li>
+          <li>Change direction with <span class="key">▲</span>/<span class="key">▼</span>.</li>
+          <li>Press any key (or <span class="key">EXIT</span>) to stop.</li>
+        </ol>
+        <h3>Scan channels (MR mode)</h3>
+        <ol class="steps">
+          <li>In <strong>MR</strong> mode, hold <span class="key">#</span> for ~2&nbsp;seconds to scan your stored channels.</li>
+          <li>Use <span class="key">▲</span>/<span class="key">▼</span> for direction; press a key to stop.</li>
+        </ol>
+        <div class="note"><b>How scan resumes — Menu 21 (SC-REV)</b><br><strong>TO</strong> (time): resumes after a fixed pause. <strong>CO</strong> (carrier): resumes when the signal drops. <strong>SE</strong> (search): stops and stays. <a href="#ref1">[1]</a></div>
+      </section>
+
+      <!-- ───────────── GUIDE: DUAL WATCH ───────────── -->
+      <section class="block" id="g-dualwatch">
+        <p class="kicker">Guide 08</p>
+        <h2>Dual watch (monitor A and B)</h2>
+        <p>Dual watch lets the radio listen to both the A and B displays and jump to whichever becomes active.</p>
+        <ol class="steps">
+          <li>Open the menu and go to <strong>Menu 7 (TDR)</strong>:
+            <div class="keys"><span class="key accent">MENU</span><span class="key">7</span><span class="arrow">→</span><span class="key accent">MENU</span></div></li>
+          <li>Use <span class="key">▲</span>/<span class="key">▼</span> to choose <strong>ON</strong> (or OFF).</li>
+          <li>Press <span class="key accent">MENU</span> to confirm, then <span class="key">EXIT</span>.</li>
+        </ol>
+        <div class="note"><b>Note</b> When two channels show, press <span class="key" style="min-width:auto">A/B</span> to choose which one is the active TX/RX display. Save channels only from the <strong>A</strong> display. <a href="#ref1">[1]</a></div>
+      </section>
+
+      <!-- ───────────── GUIDE: COPY ───────────── -->
+      <section class="block" id="g-copy">
+        <p class="kicker">Guide 09</p>
+        <h2>Copy a frequency over the air</h2>
+        <p>The K5 Plus can grab a nearby radio’s frequency and tone automatically — handy when someone reads you in but you don’t know their settings. <a href="#ref2">[2]</a></p>
+        <ol class="steps">
+          <li><strong>Long-press the BAND button</strong> on the K5 Plus. The display shows <strong>“SEARCH.”</strong></li>
+          <li>Have the other radio <strong>transmit</strong> the frequency you want to copy.</li>
+          <li>The K5 Plus searches and displays the detected frequency and any privacy (CTCSS/DCS) code.</li>
+          <li>Press <span class="key accent">MENU</span> to save the captured frequency.</li>
+        </ol>
+        <div class="note"><b>Heads-up</b> This “one-click copy” behaviour is documented by the retailer / user community rather than the core manual; exact button labels can vary slightly by firmware. If BAND isn’t labelled, try the side keys. <a href="#ref2">[2]</a></div>
+      </section>
+
+      <!-- ───────────── GUIDE: WEATHER ───────────── -->
+      <section class="block" id="g-weather">
+        <p class="kicker">Guide 10</p>
+        <h2>NOAA weather reception</h2>
+        <ol class="steps">
+          <li>From standby, <strong>press and hold the <span class="key">0</span> (SQL) key</strong> to turn on NOAA weather reception.</li>
+          <li>The radio tunes the weather band; it will receive the seven NOAA channels (162.400–162.550&nbsp;MHz).</li>
+        </ol>
+        <table class="specs">
+          <tr><td>WX-01</td><td>162.550 MHz</td></tr>
+          <tr><td>WX-02</td><td>162.400 MHz</td></tr>
+          <tr><td>WX-03</td><td>162.475 MHz</td></tr>
+          <tr><td>WX-04</td><td>162.425 MHz</td></tr>
+          <tr><td>WX-05</td><td>162.450 MHz</td></tr>
+          <tr><td>WX-06</td><td>162.500 MHz</td></tr>
+          <tr><td>WX-07</td><td>162.525 MHz</td></tr>
+        </table>
+        <p class="lcd-caption">Weather channels are receive-only. Channel mapping per the manual’s weather table. <a href="#ref1">[1]</a></p>
+      </section>
+
+      <!-- ───────────── GUIDE: DELETE ───────────── -->
+      <section class="block" id="g-delete">
+        <p class="kicker">Guide 11</p>
+        <h2>Delete a memory channel</h2>
+        <ol class="steps">
+          <li>Open <strong>Menu 31 (DELCH)</strong>:
+            <div class="keys"><span class="key accent">MENU</span><span class="key">3</span><span class="key">1</span><span class="arrow">→</span><span class="key accent">MENU</span></div></li>
+          <li>Key the channel number to erase (001–999), e.g. <span class="key">0</span><span class="key">1</span><span class="key">0</span>.</li>
+          <li>Press <span class="key accent">MENU</span> to confirm the deletion, then <span class="key">EXIT</span>.</li>
+        </ol>
+        <div class="tip"><b>Good habit</b> Always DELCH a channel before re-programming it, so leftover tone/offset settings don’t carry over. <a href="#ref1">[1]</a></div>
+      </section>
+
+      <!-- ───────────── GUIDE: RESET ───────────── -->
+      <section class="block" id="g-reset">
+        <p class="kicker">Guide 12</p>
+        <h2>Factory reset</h2>
+        <p>When the radio is misbehaving and you want a clean slate, use <strong>Menu 42 (RESET)</strong>.</p>
+        <ol class="steps">
+          <li>Open <strong>Menu 42</strong>:
+            <div class="keys"><span class="key accent">MENU</span><span class="key">4</span><span class="key">2</span><span class="arrow">→</span><span class="key accent">MENU</span></div></li>
+          <li>Choose the scope with <span class="key">▲</span>/<span class="key">▼</span>:
+            <div class="lcd"><div class="row"><span class="big">VFO</span><span class="tag">settings only</span></div></div>
+            <div class="lcd"><div class="row"><span class="big">ALL</span><span class="tag">everything + channels</span></div></div>
+          </li>
+          <li>Press <span class="key accent">MENU</span> to confirm. The radio shows a “Sure to reset” style prompt, then powers off and reboots. <a href="#ref1">[1]</a></li>
+        </ol>
+        <div class="warn"><b>Warning</b> <strong>ALL</strong> erases your stored memory channels too. Back up with PC software first if your channels matter. <strong>VFO</strong> resets only the working settings and leaves channels intact.</div>
+      </section>
+
+      <!-- ───────────── MENU REFERENCE ───────────── -->
+      <section class="block" id="menu">
+        <p class="kicker">Reference</p>
+        <h2>Full menu reference (0–46)</h2>
+        <p>Every shortcut-menu item, its name, options, and what it does. Reach any of them with <span class="key" style="min-width:auto">MENU</span> → the number. Type below to filter. <a href="#ref1">[1]</a></p>
+        <div class="filterbar"><input type="search" id="menuFilter" placeholder="Filter menu — try “tone”, “power”, “offset”, “29”…" aria-label="Filter menu items" /></div>
+        <div class="tablewrap">
+          <table class="menu" id="menuTable">
+            <thead><tr><th>#</th><th>Name</th><th>Options</th><th>What it does</th></tr></thead>
+            <tbody>
+              <tr><td class="n">0</td><td class="code">SQL</td><td>0–9</td><td>Squelch level. 0 opens squelch entirely; higher mutes weak signals/noise.</td></tr>
+              <tr><td class="n">1</td><td class="code">STEP</td><td>2.5 / 5.0 / 6.25 / 10 / 12.5 / 20 / 25 / 50 kHz</td><td>Frequency change per ▲▼ press and the resolution of keypad entry/scanning in VFO.</td></tr>
+              <tr><td class="n">2</td><td class="code">TXP</td><td>HIGH / LOW</td><td>Transmit power. Use the minimum needed for the contact.</td></tr>
+              <tr><td class="n">3</td><td class="code">SAVE</td><td>OFF / 1 / 2 / 3 / 4</td><td>Battery-save sleep ratio. Higher = longer battery, but may clip the first syllable of a call.</td></tr>
+              <tr><td class="n">4</td><td class="code">VOX</td><td>OFF / 1–10</td><td>Voice-operated transmit — transmit without pressing PTT. Higher = more sensitive.</td></tr>
+              <tr><td class="n">5</td><td class="code">W/N</td><td>WIDE (25 k) / NARR (12.5 k)</td><td>Channel bandwidth. Match the channel plan.</td></tr>
+              <tr><td class="n">6</td><td class="code">ABR</td><td>ON / 1–10 s</td><td>LCD backlight time-out.</td></tr>
+              <tr><td class="n">7</td><td class="code">TDR</td><td>OFF / ON</td><td>Dual watch — monitor A and B simultaneously.</td></tr>
+              <tr><td class="n">8</td><td class="code">BEEP</td><td>OFF / ON</td><td>Audible key-press confirmation beep.</td></tr>
+              <tr><td class="n">9</td><td class="code">TOT</td><td>OFF / 15–180 s</td><td>Transmit time-out timer — safety limit on continuous TX.</td></tr>
+              <tr><td class="n">10</td><td class="code">R-CTCS</td><td>OFF / CTCSS tone</td><td>Receive CTCSS — mutes unless a matching tone is heard.</td></tr>
+              <tr><td class="n">11</td><td class="code">R-DCS</td><td>OFF / DCS code</td><td>Receive DCS — digital receive squelch.</td></tr>
+              <tr><td class="n">12</td><td class="code">T-CTCS</td><td>OFF / CTCSS tone</td><td>Transmit CTCSS — the tone sent to open a repeater. Most commonly used.</td></tr>
+              <tr><td class="n">13</td><td class="code">T-DCS</td><td>OFF / DCS code</td><td>Transmit DCS — digital transmit code.</td></tr>
+              <tr><td class="n">14</td><td class="code">Scan CTCSS</td><td>—</td><td>Scan for a CTCSS tone (VFO mode only).</td></tr>
+              <tr><td class="n">15</td><td class="code">Scan DCS</td><td>—</td><td>Scan for a DCS code (VFO mode only).</td></tr>
+              <tr><td class="n">16</td><td class="code">CDCSS SAVE</td><td>ALL / RX / TX</td><td>Where scanned tones are saved: both, receive-only, or transmit-only.</td></tr>
+              <tr><td class="n">17</td><td class="code">VOICE</td><td>OFF / ON</td><td>Spoken voice prompts for key presses.</td></tr>
+              <tr><td class="n">18</td><td class="code">LANGUAGE</td><td>ENGLISH / Chinese</td><td>Menu &amp; voice-prompt language.</td></tr>
+              <tr><td class="n">19</td><td class="code">DTMFST</td><td>OFF / DT-ST / ANI-ST / DT+ANI</td><td>When DTMF side-tones are heard from the speaker.</td></tr>
+              <tr><td class="n">20</td><td class="code">S-CODE</td><td>1–15</td><td>Selects 1 of 15 DTMF signal codes (programmed via software).</td></tr>
+              <tr><td class="n">21</td><td class="code">SC-REV</td><td>TO / CO / SE</td><td>Scan resume: time / carrier / search (stop).</td></tr>
+              <tr><td class="n">22</td><td class="code">PTT-ID</td><td>OFF / BOT / EOT / BOTH</td><td>When the PTT-ID signal code is sent.</td></tr>
+              <tr><td class="n">23</td><td class="code">PTT-LT</td><td>0–1000 ms</td><td>Delay before the signal code is sent.</td></tr>
+              <tr><td class="n">24</td><td class="code">MDF-A</td><td>CH / NAME / FREQ</td><td>What the A display shows in channel mode. (Names need software.)</td></tr>
+              <tr><td class="n">25</td><td class="code">MDF-B</td><td>CH / NAME / FREQ</td><td>What the B display shows in channel mode.</td></tr>
+              <tr><td class="n">26</td><td class="code">BCL</td><td>OFF / ON</td><td>Busy-channel lock-out — blocks TX on a channel already in use.</td></tr>
+              <tr><td class="n">27</td><td class="code">AUTOLK</td><td>OFF / 5 / 10 / 15</td><td>Auto keypad lock after the set idle delay. Hold a key 2 s to unlock.</td></tr>
+              <tr><td class="n">28</td><td class="code">SFT-D</td><td>OFF / + / −</td><td>Repeater shift direction (simplex / TX higher / TX lower).</td></tr>
+              <tr><td class="n">29</td><td class="code">OFFSET</td><td>00.000–69.990 MHz</td><td>Repeater offset amount (10 kHz steps).</td></tr>
+              <tr><td class="n">30</td><td class="code">MEMCH</td><td>001–999</td><td>Store the current VFO settings into a memory channel.</td></tr>
+              <tr><td class="n">31</td><td class="code">DELCH</td><td>001–999</td><td>Delete a memory channel.</td></tr>
+              <tr><td class="n">32</td><td class="code">AL-MOD</td><td>SITE / TONE / CODE</td><td>Alarm mode (local siren / over-air tone / over-air code).</td></tr>
+              <tr><td class="n">33</td><td class="code">STE</td><td>OFF / ON</td><td>Squelch-tail elimination (simplex, radio-to-radio).</td></tr>
+              <tr><td class="n">34</td><td class="code">RP-STE</td><td>OFF / 1–10</td><td>Squelch-tail elimination through a repeater.</td></tr>
+              <tr><td class="n">35</td><td class="code">RPT-RL</td><td>OFF / 1–10</td><td>Repeater tail-tone delay (×100 ms).</td></tr>
+              <tr><td class="n">36</td><td class="code">ROGER</td><td>OFF / ON</td><td>Roger beep — end-of-transmission tone.</td></tr>
+              <tr><td class="n">37</td><td class="code">TONE</td><td>1000 / 1450 / 1750 / 2100 Hz</td><td>Tone-burst frequency (sent with PTT + SK2).</td></tr>
+              <tr><td class="n">38</td><td class="code">MENU EXIT</td><td>5–60 s</td><td>Auto-exit menu after this idle time.</td></tr>
+              <tr><td class="n">39</td><td class="code">VOX DELAY</td><td>0.5–2.0 s</td><td>Delay before VOX drops back to receive.</td></tr>
+              <tr><td class="n">40</td><td class="code">POWER ON MSG</td><td>LOGO / VOLTAGE</td><td>What shows at startup (logo or battery voltage).</td></tr>
+              <tr><td class="n">41</td><td class="code">VOICE PRI</td><td>OFF / ON</td><td>Frequency-hopping function to reduce outside interference.</td></tr>
+              <tr><td class="n">42</td><td class="code">RESET</td><td>VFO / ALL</td><td>Restore factory defaults. ALL also erases memory channels.</td></tr>
+              <tr><td class="n">43</td><td class="code">POWER ON PWD</td><td>OFF / ON</td><td>Power-on password.</td></tr>
+              <tr><td class="n">44</td><td class="code">STOPWATCH</td><td>ON</td><td>Stopwatch function.</td></tr>
+              <tr><td class="n">45</td><td class="code">SCRAMBLE</td><td>OFF / ON</td><td>Voice scramble (M version only).</td></tr>
+              <tr><td class="n">46</td><td class="code">VERSION</td><td>—</td><td>Hardware / firmware version info.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="lcd-caption" id="filterCount"></p>
+      </section>
+
+      <!-- ───────────── FAQ ───────────── -->
+      <section class="block" id="faq">
+        <p class="kicker">Reference</p>
+        <h2>FAQ</h2>
+
+        <details class="faq"><summary>My radio went silent — I can’t hear anything. What happened?</summary>
+          <div class="body"><p>Almost always a <strong>receive tone</strong> left switched on. Check <strong>Menu 10 (R-CTCS)</strong> and <strong>Menu 11 (R-DCS)</strong> and set both to <strong>OFF</strong>. A receive tone mutes the speaker until it hears that exact tone, so an ordinary signal seems to vanish. Also check squelch isn’t set too high (Menu 0) and that the volume knob is up. Hold <span class="key" style="min-width:auto">SK2</span> for Monitor to confirm the radio is actually hearing RF. <a href="#ref1">[1]</a></p></div></details>
+
+        <details class="faq"><summary>Can I name my channels from the keypad?</summary>
+          <div class="body"><p>No — alphanumeric channel <em>names</em> can only be entered with PC software (CHIRP or Baofeng’s programmer over the USB-C/programming cable). From the keypad you store the frequency, tone, power, bandwidth and offset. Set <strong>Menu 24/25 (MDF-A/B)</strong> to <strong>FREQ</strong> or <strong>CH</strong> so the display shows something useful. <a href="#ref1">[1]</a></p></div></details>
+
+        <details class="faq"><summary>I keyed a frequency but the last digits won’t go in.</summary>
+          <div class="body"><p>Your <strong>step</strong> (Menu 1) sets the entry resolution. To enter something like 446.00625 you need a 6.25&nbsp;kHz step; for 145.7625 you need 12.5&nbsp;kHz. Set the matching step first, then re-enter the frequency. <a href="#ref1">[1]</a></p></div></details>
+
+        <details class="faq"><summary>I can hear the repeater but can’t key it up.</summary>
+          <div class="body"><p>Three things to check: (1) the <strong>offset direction</strong> (Menu 28) and <strong>amount</strong> (Menu 29) match the repeater; (2) the <strong>transmit tone</strong> (Menu 12 CTCSS or 13 DCS) is exactly what the repeater requires; (3) you’re actually transmitting on the input — press <span class="key" style="min-width:auto">✱</span> reverse to confirm the input frequency is right. Some repeaters need a 1750&nbsp;Hz tone burst (Menu 37 + PTT&nbsp;+&nbsp;SK2). <a href="#ref1">[1]</a></p></div></details>
+
+        <details class="faq"><summary>What’s the difference between VFO and MR (Channel) mode?</summary>
+          <div class="body"><p><strong>VFO</strong> (Frequency mode) is for tuning any frequency directly and building a channel. <strong>MR</strong> (Channel mode) is for selecting channels you’ve already saved. Toggle with <span class="key" style="min-width:auto">VFO/MR</span>. You program in VFO, then save with Menu 30 and operate in MR. <a href="#ref1">[1]</a></p></div></details>
+
+        <details class="faq"><summary>How do I reset everything to factory defaults?</summary>
+          <div class="body"><p>Menu 42 (RESET). <strong>VFO</strong> resets working settings only; <strong>ALL</strong> resets everything <em>and erases your stored channels</em>. Back up first if your channels matter. <a href="#ref1">[1]</a></p></div></details>
+
+        <details class="faq"><summary>The keypad locked itself / a key won’t respond.</summary>
+          <div class="body"><p>Auto keypad lock (Menu 27) may be on. <strong>Hold the <span class="key" style="min-width:auto">✱</span> key for about 2 seconds</strong> to lock/unlock. Set Menu 27 to OFF if you don’t want auto-lock. <a href="#ref1">[1]</a></p></div></details>
+
+        <details class="faq"><summary>Is it legal to transmit with this radio?</summary>
+          <div class="body"><p>Depends entirely on the frequency, your location, and your licence. The K5 Plus can transmit on frequencies you may not be authorised to use. In the US, amateur 2&nbsp;m/70&nbsp;cm needs an FCC amateur licence; GMRS needs a GMRS licence; FRS/MURS have their own rules and this radio generally isn’t certified for them. Transmit only where you’re licensed and authorised. <a href="#ref1">[1]</a></p></div></details>
+
+        <details class="faq"><summary>Does this app need internet? Where’s my data going?</summary>
+          <div class="body"><p>No. Once the page has loaded once, it’s cached on your device by a service worker and runs fully offline — install it to your home screen and open it in airplane mode. It makes no network calls and collects nothing; everything is static HTML.</p></div></details>
+
+        <details class="faq"><summary>How do I install this as an app?</summary>
+          <div class="body"><p><strong>Android/Chrome:</strong> tap the <strong>⤓ Install</strong> button in the top bar, or the browser’s “Add to Home screen.” <strong>iPhone/Safari:</strong> Share → “Add to Home Screen.” <strong>Desktop Chrome/Edge:</strong> the install icon in the address bar, or the ⤓ Install button. After that it opens like a normal app and works offline.</p></div></details>
+
+        <details class="faq"><summary>What about CHIRP / computer programming?</summary>
+          <div class="body"><p>This guide focuses on <em>manual</em> keypad programming. For bulk channel loading, names, and backups, the open-source <a href="https://chirpmyradio.com/" target="_blank" rel="noopener">CHIRP</a> software with a USB-C programming cable is the usual route — and the manual recommends reading the radio’s factory data first, then editing and writing it back. <a href="#ref1">[1]</a></p></div></details>
+      </section>
+
+      <!-- ───────────── REFERENCES ───────────── -->
+      <section class="block" id="refs">
+        <p class="kicker">Sources &amp; citations</p>
+        <h2>References</h2>
+        <p>This guide was compiled from the official Baofeng documentation and reputable secondary sources. Menu numbers, procedures, and specifications are drawn from the official user manual for the 5RM/5RH “PLUS” series (which covers the K5 Plus / UV-5RM Plus).</p>
+        <ol class="refs">
+          <li id="ref1"><strong>Baofeng — <em>Amateur Radio UV-5RM PLUS / K5 PLUS User’s Manual</em></strong> (official PDF, rev. 2025-04-27). Primary source for the menu list (Appendix “Shortcut Menu Operations”), manual channel programming, repeater programming, scanning, weather channels, key/display layout, and specifications. <a href="https://baofeng.s3.amazonaws.com/Baofeng_UV-5RM_PLUS_K5PLUS_User_Manual_20250427.pdf" target="_blank" rel="noopener">baofeng.s3.amazonaws.com/Baofeng_UV-5RM_PLUS_K5PLUS_User_Manual_20250427.pdf</a></li>
+          <li id="ref2"><strong>Baofeng — K5 Plus product page &amp; community “one-click frequency copy” notes.</strong> Source for the over-the-air frequency-copy (long-press BAND → SEARCH) procedure. <a href="https://www.baofengradio.com/products/k5-plus" target="_blank" rel="noopener">baofengradio.com/products/k5-plus</a></li>
+          <li id="ref3"><strong>Baofeng — <em>K5 Plus Dual Band Radio User Manual</em></strong> (Manuals+ mirror). Secondary reference for specifications, button layout, and feature descriptions. <a href="https://manuals.plus/baofeng/k5-plus-dual-band-radio-manual" target="_blank" rel="noopener">manuals.plus/baofeng/k5-plus-dual-band-radio-manual</a></li>
+          <li id="ref4"><strong>“Dan’s” Baofeng 5RM / K5 Plus display &amp; menu help sheet</strong> (k7jep.org mirror). Community quick-reference cross-checking display icons and the menu shortcut list. <a href="https://k7jep.org/wp-content/uploads/simple-file-list/Dans-Baofeng_5RM-K5Plus_Dispay-Menu-Help_2pgs_2025-07-07.pdf" target="_blank" rel="noopener">k7jep.org — Dan’s 5RM/K5 Plus display &amp; menu help (PDF)</a></li>
+          <li id="ref5"><strong>CHIRP</strong> — open-source radio programming software (referenced for computer-based programming). <a href="https://chirpmyradio.com/" target="_blank" rel="noopener">chirpmyradio.com</a></li>
+        </ol>
+        <div class="note"><b>Accuracy note</b> The K5 Plus ships in several regional/firmware variants (M/L, US/EU/Canada). Button labels, available bands, and a few menu entries can differ slightly from the manual cited here. Always confirm against the printed manual in your box, and verify your local transmit privileges. This is an independent, educational reference and is not affiliated with or endorsed by Baofeng.</div>
+      </section>
+    </main>
+  </div>
+
+  <footer>
+    <p><strong>Baofeng K5 Plus — Manual Programming Guide.</strong> An offline, installable field reference. Part of <a href="/">Xebra Delta</a> — tools made as needed.</p>
+    <p>Independent &amp; unofficial. Not affiliated with Baofeng. Compiled from the sources cited above · last reviewed June 2026. Transmit responsibly and within your licence.</p>
+  </footer>
+
+  <script>
+    // ── Service worker (offline) ──
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').catch(() => {});
+      });
+    }
+
+    // ── Install prompt ──
+    let deferredPrompt = null;
+    const installBtn = document.getElementById('installBtn');
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      installBtn.hidden = false;
+    });
+    installBtn.addEventListener('click', async () => {
+      if (!deferredPrompt) return;
+      deferredPrompt.prompt();
+      await deferredPrompt.userChoice;
+      deferredPrompt = null;
+      installBtn.hidden = true;
+    });
+    window.addEventListener('appinstalled', () => { installBtn.hidden = true; });
+
+    // ── Offline indicator ──
+    const offlineState = document.getElementById('offlineState');
+    function updateNet() {
+      offlineState.textContent = navigator.onLine ? 'Works offline once loaded' : 'Offline — running from cache';
+    }
+    window.addEventListener('online', updateNet);
+    window.addEventListener('offline', updateNet);
+    updateNet();
+
+    // ── Theme toggle ──
+    const themeBtn = document.getElementById('themeBtn');
+    const root = document.documentElement;
+    const saved = localStorage.getItem('k5-theme');
+    if (saved) root.setAttribute('data-theme', saved);
+    themeBtn.addEventListener('click', () => {
+      const isDark = (root.getAttribute('data-theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')) === 'dark';
+      const next = isDark ? 'light' : 'dark';
+      root.setAttribute('data-theme', next);
+      localStorage.setItem('k5-theme', next);
+      document.querySelector('meta[name=theme-color]').setAttribute('content', next === 'dark' ? '#141311' : '#c94f1e');
+    });
+
+    // ── Mobile nav ──
+    const body = document.body;
+    const toc = document.getElementById('toc');
+    document.getElementById('menuToggle').addEventListener('click', () => body.classList.toggle('nav-open'));
+    document.getElementById('scrim').addEventListener('click', () => body.classList.remove('nav-open'));
+    toc.addEventListener('click', (e) => { if (e.target.tagName === 'A') body.classList.remove('nav-open'); });
+
+    // ── Active section highlight ──
+    const links = [...document.querySelectorAll('nav.toc a')];
+    const map = new Map(links.map((a) => [a.getAttribute('href').slice(1), a]));
+    const obs = new IntersectionObserver((entries) => {
+      entries.forEach((en) => {
+        if (en.isIntersecting) {
+          links.forEach((l) => l.classList.remove('active'));
+          const a = map.get(en.target.id);
+          if (a) a.classList.add('active');
+        }
+      });
+    }, { rootMargin: '-30% 0px -65% 0px' });
+    document.querySelectorAll('section.block').forEach((s) => obs.observe(s));
+
+    // ── Menu table filter ──
+    const filter = document.getElementById('menuFilter');
+    const rows = [...document.querySelectorAll('#menuTable tbody tr')];
+    const count = document.getElementById('filterCount');
+    filter.addEventListener('input', () => {
+      const q = filter.value.trim().toLowerCase();
+      let shown = 0;
+      rows.forEach((r) => {
+        const hit = !q || r.textContent.toLowerCase().includes(q);
+        r.style.display = hit ? '' : 'none';
+        if (hit) shown++;
+      });
+      count.textContent = q ? `${shown} of ${rows.length} items shown` : '';
+    });
+  </script>
+</body>
+</html>

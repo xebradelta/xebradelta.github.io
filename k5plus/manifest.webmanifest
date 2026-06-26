@@ -1,0 +1,19 @@
+{
+  "name": "Baofeng K5 Plus — Manual Programming Guide",
+  "short_name": "K5 Plus Guide",
+  "description": "Offline guide and reference for manually programming the Baofeng K5 Plus handheld radio from the keypad: frequencies, memory channels, repeaters, CTCSS/DCS, scanning, the full menu, and an FAQ.",
+  "start_url": "./",
+  "scope": "./",
+  "id": "/k5plus/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#f2ede6",
+  "theme_color": "#c94f1e",
+  "lang": "en",
+  "categories": ["utilities", "education", "reference"],
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
