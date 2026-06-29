@@ -34,18 +34,20 @@
     --shadow:0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.35);
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-  html,body{margin:0;padding:0}
+  html,body{margin:0;padding:0;height:100%}
   body{
     background:var(--bg); color:var(--text);
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
     font-size:16px; line-height:1.5; -webkit-font-smoothing:antialiased;
-    overscroll-behavior-y:none;
+    overflow:hidden; overscroll-behavior:none;
   }
-  .app{max-width:520px;margin:0 auto;min-height:100vh;min-height:100dvh;position:relative;
-    padding-bottom:calc(86px + env(safe-area-inset-bottom));}
+  .app{max-width:520px;margin:0 auto;height:100vh;height:100dvh;position:relative;
+    display:flex;flex-direction:column;}
+  .scrollarea{flex:1 1 auto;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;
+    padding-bottom:14px;}
   .pad{padding:0 20px}
 
-  .topbar{position:sticky;top:0;z-index:30;background:var(--bg);
+  .topbar{flex:0 0 auto;z-index:30;background:var(--bg);
     padding:max(env(safe-area-inset-top),14px) 20px 10px;
     display:flex;align-items:center;justify-content:space-between;gap:12px;}
   .brand{display:flex;align-items:center;gap:10px;min-width:0}
@@ -180,10 +182,9 @@
   ul.clean li::before{content:"";position:absolute;left:2px;top:13px;width:6px;height:6px;border-radius:50%;background:var(--accent)}
   ul.clean li .pmeta{display:block;color:var(--muted);font-size:12.5px;margin-top:1px}
 
-  .nav{position:fixed;left:0;right:0;bottom:0;z-index:40;
+  .nav{flex:0 0 auto;z-index:40;
     padding:8px 16px calc(8px + env(safe-area-inset-bottom));
-    background:color-mix(in srgb,var(--bg) 86%, transparent);
-    backdrop-filter:saturate(180%) blur(14px);-webkit-backdrop-filter:saturate(180%) blur(14px);
+    background:var(--bg);
     border-top:1px solid var(--line)}
   .navInner{max-width:520px;margin:0 auto;display:flex}
   .navbtn{flex:1;appearance:none;border:none;background:transparent;color:var(--muted);
@@ -289,6 +290,7 @@
     </button>
   </div>
 
+  <div class="scrollarea" id="scrollarea">
   <!-- TODAY -->
   <section class="view active" id="view-today">
     <div class="hero">
@@ -372,6 +374,7 @@
     </div>
     <div class="footer" id="planFoot"></div>
   </section>
+  </div><!-- /scrollarea -->
 
   <!-- NAV -->
   <nav class="nav"><div class="navInner">
@@ -901,7 +904,7 @@
     if(v==="today")render();
     if(v==="journey")renderJourney();
     if(v==="plan")renderPlan();
-    window.scrollTo(0,0);
+    var sa=$("scrollarea"); if(sa) sa.scrollTop=0; else window.scrollTo(0,0);
   }
   document.querySelectorAll(".navbtn").forEach(function(b){
     b.addEventListener("click",function(){switchView(b.getAttribute("data-view"));});
