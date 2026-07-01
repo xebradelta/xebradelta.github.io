@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data:; connect-src https://1.1.1.1 https://www.gstatic.com https://github.githubassets.com https://api.ipify.org https://ipapi.co https://cloudflare-dns.com">
+<meta name="description" content="NetWatch — a browser-based network security monitor. Live latency probes, HTTPS and encrypted-DNS checks, WebRTC leak detection, and a connection event log. Runs entirely in your browser.">
+<title>NetWatch — Network Security Monitor</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232a78d6'/%3E%3Cpath d='M6 20 L12 14 L17 18 L26 9' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<style>
+  :root {
+    --page:          #f9f9f7;
+    --surface-1:     #fcfcfb;
+    --text-primary:  #0b0b0b;
+    --text-secondary:#52514e;
+    --text-muted:    #898781;
+    --grid:          #e1e0d9;
+    --baseline:      #c3c2b7;
+    --border:        rgba(11,11,11,0.10);
+    --series-1:      #2a78d6;   /* Cloudflare */
+    --series-2:      #1baf7a;   /* Google */
+    --series-3:      #eda100;   /* GitHub */
+    --status-good:     #0ca30c;
+    --status-warning:  #fab219;
+    --status-serious:  #ec835a;
+    --status-critical: #d03b3b;
+    --good-text:     #006300;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --page:          #0d0d0d;
+      --surface-1:     #1a1a19;
+      --text-primary:  #ffffff;
+      --text-secondary:#c3c2b7;
+      --text-muted:    #898781;
+      --grid:          #2c2c2a;
+      --baseline:      #383835;
+      --border:        rgba(255,255,255,0.10);
+      --series-1:      #3987e5;
+      --series-2:      #199e70;
+      --series-3:      #c98500;
+      --good-text:     #0ca30c;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--page);
+    color: var(--text-primary);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1040px; margin: 0 auto; padding: 24px 20px 56px; }
+
+  /* ---------- header ---------- */
+  header { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; }
+  .logo {
+    width: 34px; height: 34px; border-radius: 8px; flex: none;
+    background: var(--series-1);
+    display: grid; place-items: center;
+  }
+  .logo svg { display: block; }
+  header h1 { font-size: 20px; font-weight: 650; margin: 0; letter-spacing: -0.01em; }
+  header .sub { font-size: 13px; color: var(--text-muted); margin: 0; }
+  .head-spacer { flex: 1; }
+  .pill {
+    display: inline-flex; align-items: center; gap: 7px;
+    font-size: 13px; font-weight: 550; color: var(--text-secondary);
+    border: 1px solid var(--border); border-radius: 999px;
+    padding: 4px 12px; background: var(--surface-1);
+    white-space: nowrap;
+  }
+  .pill .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--status-good); }
+  .pill.paused .dot { background: var(--text-muted); }
+  .pill.offline .dot { background: var(--status-critical); }
+
+  .intro { color: var(--text-secondary); font-size: 14px; margin: 10px 0 20px; max-width: 72ch; }
+
+  /* ---------- controls row ---------- */
+  .controls {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    margin: 0 0 16px;
+  }
+  .controls label { font-size: 13px; color: var(--text-secondary); }
+  .controls select, .controls button {
+    font: inherit; font-size: 13px; color: var(--text-primary);
+    background: var(--surface-1); border: 1px solid var(--border);
+    border-radius: 8px; padding: 6px 10px; cursor: pointer;
+  }
+  .controls button:hover, .controls select:hover { border-color: var(--baseline); }
+  .controls .hint { font-size: 12px; color: var(--text-muted); }
+
+  /* ---------- cards & grid ---------- */
+  .card {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 18px;
+  }
+  .card h2 {
+    font-size: 13px; font-weight: 600; letter-spacing: 0.04em;
+    text-transform: uppercase; color: var(--text-muted);
+    margin: 0 0 12px;
+  }
+  .card-head { display: flex; align-items: baseline; gap: 10px; }
+  .card-head .spacer { flex: 1; }
+
+  .tiles {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+    margin-bottom: 12px;
+  }
+  @media (max-width: 860px) { .tiles { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 460px) { .tiles { grid-template-columns: 1fr; } }
+
+  .tile .label { font-size: 13px; color: var(--text-secondary); margin-bottom: 4px; }
+  .tile .value {
+    font-size: 26px; font-weight: 600; letter-spacing: -0.01em;
+    overflow-wrap: anywhere;
+  }
+  .tile .value.small { font-size: 19px; }
+  .tile .delta { font-size: 12.5px; color: var(--text-muted); margin-top: 2px; overflow-wrap: anywhere; }
+  .tile .delta.good { color: var(--good-text); }
+  .tile .delta.bad  { color: var(--status-critical); }
+  .tile .trend { margin-top: 8px; }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+  @media (max-width: 860px) { .grid-2 { grid-template-columns: 1fr; } }
+
+  /* ---------- chart ---------- */
+  .legend { display: flex; gap: 18px; flex-wrap: wrap; margin: 2px 0 10px; }
+  .legend .item { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; color: var(--text-secondary); }
+  .legend .key { width: 16px; height: 3px; border-radius: 2px; flex: none; }
+  .legend .val { color: var(--text-primary); font-weight: 600; }
+
+  .chart-wrap { position: relative; outline: none; }
+  .chart-wrap:focus-visible { box-shadow: 0 0 0 2px var(--series-1); border-radius: 6px; }
+  #chart-svg { display: block; width: 100%; }
+  .tooltip {
+    position: absolute; pointer-events: none; z-index: 3;
+    background: var(--surface-1); border: 1px solid var(--border);
+    border-radius: 8px; padding: 8px 10px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.14);
+    font-size: 12.5px; min-width: 140px; display: none;
+  }
+  .tooltip .tt-time { color: var(--text-muted); margin-bottom: 5px; font-variant-numeric: tabular-nums; }
+  .tooltip .tt-row { display: flex; align-items: center; gap: 7px; margin-top: 3px; }
+  .tooltip .tt-key { width: 12px; height: 3px; border-radius: 2px; flex: none; }
+  .tooltip .tt-val { font-weight: 650; color: var(--text-primary); min-width: 52px; font-variant-numeric: tabular-nums; }
+  .tooltip .tt-name { color: var(--text-secondary); }
+
+  .btn-toggle {
+    font: inherit; font-size: 12.5px; color: var(--text-secondary);
+    background: none; border: 1px solid var(--border); border-radius: 7px;
+    padding: 3px 10px; cursor: pointer;
+  }
+  .btn-toggle[aria-pressed="true"] { color: var(--text-primary); border-color: var(--baseline); font-weight: 600; }
+
+  table.data { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table.data th, table.data td {
+    text-align: right; padding: 5px 8px;
+    border-bottom: 1px solid var(--grid);
+    font-variant-numeric: tabular-nums;
+  }
+  table.data th { color: var(--text-muted); font-weight: 550; }
+  table.data th:first-child, table.data td:first-child { text-align: left; }
+  table.data td { color: var(--text-secondary); }
+
+  /* ---------- checks ---------- */
+  .check { display: flex; gap: 11px; padding: 10px 0; border-bottom: 1px solid var(--grid); }
+  .check:last-child { border-bottom: none; padding-bottom: 2px; }
+  .check .icon {
+    width: 22px; height: 22px; border-radius: 50%; flex: none; margin-top: 2px;
+    display: grid; place-items: center;
+    font-size: 13px; font-weight: 700; color: #fff;
+    background: var(--text-muted);
+  }
+  .check.good .icon     { background: var(--status-good); }
+  .check.warning .icon  { background: var(--status-warning); color: #0b0b0b; }
+  .check.serious .icon  { background: var(--status-serious); color: #0b0b0b; }
+  .check.critical .icon { background: var(--status-critical); }
+  .check .name { font-weight: 600; font-size: 14px; }
+  .check .name .state { font-weight: 550; font-size: 12.5px; color: var(--text-muted); margin-left: 7px; }
+  .check .detail { font-size: 13px; color: var(--text-secondary); margin-top: 1px; overflow-wrap: anywhere; }
+
+  /* ---------- log ---------- */
+  .log { list-style: none; margin: 0; padding: 0; max-height: 330px; overflow-y: auto; }
+  .log li { display: flex; gap: 10px; padding: 5px 0; font-size: 13px; border-bottom: 1px solid var(--grid); }
+  .log li:last-child { border-bottom: none; }
+  .log .t { color: var(--text-muted); font-variant-numeric: tabular-nums; flex: none; }
+  .log .m { color: var(--text-secondary); overflow-wrap: anywhere; }
+  .log li.warn .m { color: var(--status-critical); }
+
+  .scope-note {
+    margin-top: 20px; font-size: 13px; color: var(--text-muted); max-width: 78ch;
+  }
+  .scope-note a { color: var(--text-secondary); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="logo" aria-hidden="true">
+      <svg width="20" height="20" viewBox="0 0 32 32"><path d="M6 22 L12 15 L17 19 L26 8" stroke="#fff" stroke-width="3.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <div>
+      <h1>NetWatch</h1>
+      <p class="sub">Network security monitor · runs entirely in your browser</p>
+    </div>
+    <div class="head-spacer"></div>
+    <span class="pill" id="status-pill"><span class="dot"></span><span id="status-text">Monitoring</span></span>
+  </header>
+
+  <p class="intro">
+    Continuous latency probes against three independent networks, plus one-shot security checks:
+    connection encryption, encrypted-DNS reachability, WebRTC address leaks, VPN exit consistency,
+    and the privacy signals your browser sends. No data leaves your device except the probes themselves.
+  </p>
+
+  <!-- controls: one row, scopes everything below -->
+  <div class="controls">
+    <label for="interval">Probe interval</label>
+    <select id="interval">
+      <option value="5000">5 seconds</option>
+      <option value="10000" selected>10 seconds</option>
+      <option value="30000">30 seconds</option>
+    </select>
+    <button id="pause-btn" type="button">Pause</button>
+    <button id="recheck-btn" type="button">Re-run security checks</button>
+    <span class="hint" id="probe-hint"></span>
+  </div>
+
+  <!-- stat tiles -->
+  <div class="tiles">
+    <div class="card tile">
+      <div class="label">Connection</div>
+      <div class="value" id="tile-conn">…</div>
+      <div class="delta" id="tile-conn-sub"></div>
+    </div>
+    <div class="card tile">
+      <div class="label">Public IP</div>
+      <div class="value small" id="tile-ip">…</div>
+      <div class="delta" id="tile-ip-sub"></div>
+    </div>
+    <div class="card tile">
+      <div class="label">WebRTC local address</div>
+      <div class="value" id="tile-rtc">…</div>
+      <div class="delta" id="tile-rtc-sub"></div>
+    </div>
+    <div class="card tile">
+      <div class="label">Median latency</div>
+      <div class="value" id="tile-lat">…</div>
+      <div class="delta" id="tile-lat-sub"></div>
+      <div class="trend"><svg id="spark" width="110" height="28" aria-hidden="true"></svg></div>
+    </div>
+  </div>
+
+  <!-- latency chart -->
+  <div class="card">
+    <div class="card-head">
+      <h2>Latency to independent endpoints</h2>
+      <div class="spacer"></div>
+      <button class="btn-toggle" id="table-btn" type="button" aria-pressed="false">Table view</button>
+    </div>
+    <div class="legend" id="legend"></div>
+    <div class="chart-wrap" id="chart-wrap" tabindex="0" role="img"
+         aria-label="Line chart of round-trip latency in milliseconds to Cloudflare, Google, and GitHub over time. Use arrow keys to inspect samples; the same values are available in the table view.">
+      <svg id="chart-svg" height="264"></svg>
+      <div class="tooltip" id="tooltip"></div>
+    </div>
+    <div id="table-view" hidden></div>
+  </div>
+
+  <div class="grid-2">
+    <!-- security checks -->
+    <div class="card">
+      <h2>Security checks</h2>
+      <div id="checks"></div>
+    </div>
+
+    <!-- event log -->
+    <div class="card">
+      <h2>Event log</h2>
+      <ul class="log" id="log"></ul>
+    </div>
+  </div>
+
+  <p class="scope-note">
+    <strong>Scope:</strong> a web page can only observe what the browser exposes — it monitors
+    <em>this device's</em> connection security, not your whole LAN. It cannot capture packets, scan
+    other machines, or see router traffic. For network-wide monitoring pair this with a dedicated
+    tool on the router itself (e.g. ntopng, Pi-hole, or Suricata). Probes go to Cloudflare
+    (1.1.1.1), Google (gstatic.com), and GitHub's CDN (githubassets.com); IP lookup uses
+    ipify.org and ipapi.co. Nothing is stored or sent anywhere else.
+  </p>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ---------- config ---------- */
+  var SERIES = [
+    { name: 'Cloudflare', url: 'https://1.1.1.1/cdn-cgi/trace',                    color: 'var(--series-1)' },
+    { name: 'Google',     url: 'https://www.gstatic.com/generate_204',             color: 'var(--series-2)' },
+    { name: 'GitHub',     url: 'https://github.githubassets.com/favicons/favicon.svg', color: 'var(--series-3)' }
+  ];
+  var MAX_SAMPLES = 60;
+  var PROBE_TIMEOUT = 5000;
+
+  var samples = [];          // { t: Date, values: [ms|null, ms|null, ms|null] }
+  var paused = false;
+  var timer = null;
+  var hoverIndex = -1;
+  var tableMode = false;
+  var httpPublicIP = null;
+
+  var $ = function (id) { return document.getElementById(id); };
+
+  /* ---------- event log ---------- */
+  function fmtTime(d) {
+    return d.toTimeString().slice(0, 8);
+  }
+  function logEvent(msg, warn) {
+    var li = document.createElement('li');
+    if (warn) li.className = 'warn';
+    var t = document.createElement('span');
+    t.className = 't';
+    t.textContent = fmtTime(new Date());
+    var m = document.createElement('span');
+    m.className = 'm';
+    m.textContent = msg;
+    li.appendChild(t);
+    li.appendChild(m);
+    var log = $('log');
+    log.insertBefore(li, log.firstChild);
+    while (log.children.length > 60) log.removeChild(log.lastChild);
+  }
+
+  /* ---------- status pill ---------- */
+  function setPill() {
+    var pill = $('status-pill'), text = $('status-text');
+    pill.className = 'pill';
+    if (!navigator.onLine) { pill.classList.add('offline'); text.textContent = 'Offline'; }
+    else if (paused) { pill.classList.add('paused'); text.textContent = 'Paused'; }
+    else { text.textContent = 'Monitoring'; }
+  }
+
+  /* ---------- latency probes ---------- */
+  function probe(url) {
+    var ctrl = new AbortController();
+    var kill = setTimeout(function () { ctrl.abort(); }, PROBE_TIMEOUT);
+    var t0 = performance.now();
+    return fetch(url, { mode: 'no-cors', cache: 'no-store', signal: ctrl.signal })
+      .then(function () { clearTimeout(kill); return Math.round(performance.now() - t0); })
+      .catch(function () { clearTimeout(kill); return null; });
+  }
+
+  function tick() {
+    if (paused || document.hidden) return;
+    Promise.all(SERIES.map(function (s) { return probe(s.url); })).then(function (values) {
+      samples.push({ t: new Date(), values: values });
+      if (samples.length > MAX_SAMPLES) samples.shift();
+      values.forEach(function (v, i) {
+        if (v === null) logEvent(SERIES[i].name + ' probe failed or timed out (>' + PROBE_TIMEOUT + ' ms)', true);
+      });
+      render();
+    });
+  }
+
+  function schedule() {
+    if (timer) clearInterval(timer);
+    var ms = parseInt($('interval').value, 10);
+    timer = setInterval(tick, ms);
+    $('probe-hint').textContent = 'Keeping the last ' + MAX_SAMPLES + ' samples per endpoint.';
+  }
+
+  /* ---------- stat tiles ---------- */
+  function median(arr) {
+    var a = arr.filter(function (v) { return v !== null; }).sort(function (x, y) { return x - y; });
+    if (!a.length) return null;
+    var mid = a.length >> 1;
+    return a.length % 2 ? a[mid] : Math.round((a[mid - 1] + a[mid]) / 2);
+  }
+
+  function renderTiles() {
+    var last = samples[samples.length - 1];
+    var m = last ? median(last.values) : null;
+    $('tile-lat').textContent = m === null ? '—' : m + ' ms';
+    var meds = samples.slice(-12).map(function (s) { return median(s.values); });
+    var ok = last ? last.values.filter(function (v) { return v !== null; }).length : 0;
+    $('tile-lat-sub').textContent = last ? ok + ' of ' + SERIES.length + ' endpoints reachable' : 'waiting for first probe';
+    $('tile-lat-sub').className = 'delta' + (last && ok < SERIES.length ? ' bad' : '');
+    drawSpark(meds);
+  }
+
+  function drawSpark(meds) {
+    var svg = $('spark');
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+    var pts = meds.map(function (v, i) { return { i: i, v: v }; }).filter(function (p) { return p.v !== null; });
+    if (pts.length < 2) return;
+    var W = 110, H = 28, max = Math.max.apply(null, pts.map(function (p) { return p.v; })) || 1;
+    var x = function (i) { return 2 + i * ((W - 8) / Math.max(meds.length - 1, 1)); };
+    var y = function (v) { return H - 4 - (v / max) * (H - 8); };
+    var d = pts.map(function (p, k) { return (k ? 'L' : 'M') + x(p.i).toFixed(1) + ' ' + y(p.v).toFixed(1); }).join(' ');
+    var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', d);
+    path.setAttribute('fill', 'none');
+    path.setAttribute('stroke', 'var(--text-muted)');
+    path.setAttribute('stroke-width', '1.5');
+    path.setAttribute('stroke-linecap', 'round');
+    svg.appendChild(path);
+    var lastP = pts[pts.length - 1];
+    var dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    dot.setAttribute('cx', x(lastP.i));
+    dot.setAttribute('cy', y(lastP.v));
+    dot.setAttribute('r', '3');
+    dot.setAttribute('fill', 'var(--series-1)');
+    svg.appendChild(dot);
+  }
+
+  /* ---------- main chart ---------- */
+  // scale maxima paired with a division count that yields clean tick values
+  var SCALE_STEPS = [[50, 2], [100, 4], [150, 3], [200, 4], [300, 3], [400, 4], [500, 5], [750, 3], [1000, 4], [1500, 3], [2000, 4], [3000, 3], [5000, 5]];
+  function niceScale(v) {
+    for (var i = 0; i < SCALE_STEPS.length; i++) if (SCALE_STEPS[i][0] >= v * 1.05) return SCALE_STEPS[i];
+    return [Math.ceil(v / 1000) * 1000, 4];
+  }
+
+  function svgEl(tag, attrs) {
+    var el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+    for (var k in attrs) el.setAttribute(k, attrs[k]);
+    return el;
+  }
+
+  var geom = null; // {x(i), padL, padT, plotH, W}
+
+  function drawChart() {
+    var svg = $('chart-svg');
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+    var W = $('chart-wrap').clientWidth || 600;
+    svg.setAttribute('width', W);
+    var padL = 58, padR = 16, padT = 10, plotH = 220, axisBand = 26;
+    svg.setAttribute('height', padT + plotH + axisBand);
+
+    var all = [];
+    samples.forEach(function (s) { s.values.forEach(function (v) { if (v !== null) all.push(v); }); });
+    var scale = niceScale(all.length ? Math.max.apply(null, all) : 100);
+    var maxV = scale[0], tickCount = scale[1];
+    var n = samples.length;
+    var innerW = W - padL - padR;
+    var x = function (i) { return padL + (n > 1 ? i * (innerW / (n - 1)) : innerW / 2); };
+    var y = function (v) { return padT + plotH - (v / maxV) * plotH; };
+    geom = { x: x, padL: padL, padT: padT, plotH: plotH, W: W };
+
+    // gridlines + y ticks (solid hairlines, recessive); unit rides the top tick
+    for (var t = 0; t <= tickCount; t++) {
+      var val = (maxV / tickCount) * t;
+      var yy = y(val);
+      svg.appendChild(svgEl('line', { x1: padL, x2: W - padR, y1: yy, y2: yy, stroke: t === 0 ? 'var(--baseline)' : 'var(--grid)', 'stroke-width': 1 }));
+      var lbl = svgEl('text', { x: padL - 8, y: yy + 4, 'text-anchor': 'end', fill: 'var(--text-muted)', 'font-size': 11, 'font-variant-numeric': 'tabular-nums' });
+      lbl.textContent = val.toLocaleString() + (t === tickCount ? ' ms' : '');
+      svg.appendChild(lbl);
+    }
+
+    // x-axis time labels (~4), anchored so edge labels never clip
+    if (n > 1) {
+      var maxLabels = Math.max(2, Math.floor(innerW / 140));
+      var step = Math.max(1, Math.ceil(n / maxLabels));
+      var idxs = [];
+      for (var i = 0; i < n; i += step) idxs.push(i);
+      if (idxs[idxs.length - 1] !== n - 1 && x(n - 1) - x(idxs[idxs.length - 1]) > 70) idxs.push(n - 1);
+      idxs.forEach(function (i) {
+        var xx = x(i);
+        var anchor = xx > W - 42 ? 'end' : (xx < padL + 24 ? 'start' : 'middle');
+        var tl = svgEl('text', { x: xx, y: padT + plotH + 18, 'text-anchor': anchor, fill: 'var(--text-muted)', 'font-size': 11, 'font-variant-numeric': 'tabular-nums' });
+        tl.textContent = fmtTime(samples[i].t);
+        svg.appendChild(tl);
+      });
+    }
+
+    // crosshair (under lines, above grid)
+    if (hoverIndex >= 0 && hoverIndex < n) {
+      svg.appendChild(svgEl('line', { x1: x(hoverIndex), x2: x(hoverIndex), y1: padT, y2: padT + plotH, stroke: 'var(--baseline)', 'stroke-width': 1 }));
+    }
+
+    // series lines (2px, round joins; break at nulls) + end markers with surface ring
+    SERIES.forEach(function (s, si) {
+      var d = '', pen = false;
+      for (var i = 0; i < n; i++) {
+        var v = samples[i].values[si];
+        if (v === null) { pen = false; continue; }
+        d += (pen ? 'L' : 'M') + x(i).toFixed(1) + ' ' + y(v).toFixed(1);
+        pen = true;
+      }
+      if (d) svg.appendChild(svgEl('path', { d: d, fill: 'none', stroke: s.color, 'stroke-width': 2, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }));
+      for (var j = n - 1; j >= 0; j--) {
+        if (samples[j].values[si] !== null) {
+          svg.appendChild(svgEl('circle', { cx: x(j), cy: y(samples[j].values[si]), r: 4, fill: s.color, stroke: 'var(--surface-1)', 'stroke-width': 2 }));
+          break;
+        }
+      }
+      // hover-highlight dot at the crosshair
+      if (hoverIndex >= 0 && hoverIndex < n && samples[hoverIndex].values[si] !== null) {
+        svg.appendChild(svgEl('circle', { cx: x(hoverIndex), cy: y(samples[hoverIndex].values[si]), r: 4, fill: s.color, stroke: 'var(--surface-1)', 'stroke-width': 2 }));
+      }
+    });
+  }
+
+  function renderLegend() {
+    var legend = $('legend');
+    while (legend.firstChild) legend.removeChild(legend.firstChild);
+    var last = samples[samples.length - 1];
+    SERIES.forEach(function (s, i) {
+      var item = document.createElement('span');
+      item.className = 'item';
+      var key = document.createElement('span');
+      key.className = 'key';
+      key.style.background = s.color;
+      var name = document.createElement('span');
+      name.textContent = s.name;
+      var val = document.createElement('span');
+      val.className = 'val';
+      var v = last ? last.values[i] : null;
+      val.textContent = v === null ? (last ? 'down' : '—') : v + ' ms';
+      item.appendChild(key);
+      item.appendChild(name);
+      item.appendChild(val);
+      legend.appendChild(item);
+    });
+  }
+
+  function renderTable() {
+    var host = $('table-view');
+    while (host.firstChild) host.removeChild(host.firstChild);
+    var table = document.createElement('table');
+    table.className = 'data';
+    var thead = document.createElement('thead');
+    var hr = document.createElement('tr');
+    ['Time'].concat(SERIES.map(function (s) { return s.name + ' (ms)'; })).forEach(function (h) {
+      var th = document.createElement('th');
+      th.textContent = h;
+      hr.appendChild(th);
+    });
+    thead.appendChild(hr);
+    table.appendChild(thead);
+    var tbody = document.createElement('tbody');
+    samples.slice(-20).reverse().forEach(function (s) {
+      var tr = document.createElement('tr');
+      var td0 = document.createElement('td');
+      td0.textContent = fmtTime(s.t);
+      tr.appendChild(td0);
+      s.values.forEach(function (v) {
+        var td = document.createElement('td');
+        td.textContent = v === null ? 'timeout' : v.toLocaleString();
+        tr.appendChild(td);
+      });
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    host.appendChild(table);
+  }
+
+  function render() {
+    renderTiles();
+    renderLegend();
+    if (tableMode) renderTable(); else drawChart();
+  }
+
+  /* ---------- tooltip / crosshair ---------- */
+  function showTooltip() {
+    var tt = $('tooltip');
+    if (hoverIndex < 0 || hoverIndex >= samples.length || tableMode) { tt.style.display = 'none'; return; }
+    var s = samples[hoverIndex];
+    while (tt.firstChild) tt.removeChild(tt.firstChild);
+    var time = document.createElement('div');
+    time.className = 'tt-time';
+    time.textContent = fmtTime(s.t);
+    tt.appendChild(time);
+    SERIES.forEach(function (ser, i) {
+      var row = document.createElement('div');
+      row.className = 'tt-row';
+      var key = document.createElement('span');
+      key.className = 'tt-key';
+      key.style.background = ser.color;
+      var val = document.createElement('span');
+      val.className = 'tt-val';
+      val.textContent = s.values[i] === null ? 'timeout' : s.values[i] + ' ms';
+      var name = document.createElement('span');
+      name.className = 'tt-name';
+      name.textContent = ser.name;
+      row.appendChild(key);
+      row.appendChild(val);
+      row.appendChild(name);
+      tt.appendChild(row);
+    });
+    tt.style.display = 'block';
+    var xPos = geom.x(hoverIndex);
+    var left = xPos + 14;
+    if (left + tt.offsetWidth > geom.W - 4) left = xPos - tt.offsetWidth - 14;
+    tt.style.left = Math.max(0, left) + 'px';
+    tt.style.top = (geom.padT + 8) + 'px';
+  }
+
+  function setHover(i) {
+    if (i === hoverIndex) return;
+    hoverIndex = i;
+    if (!tableMode) drawChart();
+    showTooltip();
+  }
+
+  var wrap = $('chart-wrap');
+  wrap.addEventListener('pointermove', function (e) {
+    if (!geom || !samples.length || tableMode) return;
+    var rect = wrap.getBoundingClientRect();
+    var px = e.clientX - rect.left;
+    var n = samples.length;
+    var best = 0, bestD = Infinity;
+    for (var i = 0; i < n; i++) {
+      var d = Math.abs(geom.x(i) - px);
+      if (d < bestD) { bestD = d; best = i; }
+    }
+    setHover(best);
+  });
+  wrap.addEventListener('pointerleave', function () { setHover(-1); });
+  wrap.addEventListener('keydown', function (e) {
+    if (!samples.length || tableMode) return;
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+      e.preventDefault();
+      var i = hoverIndex < 0 ? samples.length - 1 : hoverIndex + (e.key === 'ArrowRight' ? 1 : -1);
+      setHover(Math.max(0, Math.min(samples.length - 1, i)));
+    } else if (e.key === 'Escape') {
+      setHover(-1);
+    }
+  });
+  wrap.addEventListener('blur', function () { setHover(-1); });
+
+  /* ---------- security checks ---------- */
+  var checkResults = {}; // id -> {name, state, label, detail}
+  var CHECK_ORDER = ['https', 'doh', 'rtc-local', 'rtc-exit', 'privacy', 'conn-meta'];
+
+  function setCheck(id, name, state, label, detail) {
+    checkResults[id] = { name: name, state: state, label: label, detail: detail };
+    renderChecks();
+  }
+
+  function renderChecks() {
+    var host = $('checks');
+    while (host.firstChild) host.removeChild(host.firstChild);
+    CHECK_ORDER.forEach(function (id) {
+      var c = checkResults[id];
+      if (!c) return;
+      var row = document.createElement('div');
+      row.className = 'check ' + c.state;
+      var icon = document.createElement('span');
+      icon.className = 'icon';
+      icon.textContent = { good: '✓', warning: '!', serious: '!', critical: '✕', info: 'i' }[c.state] || 'i';
+      var body = document.createElement('div');
+      var name = document.createElement('div');
+      name.className = 'name';
+      name.textContent = c.name;
+      var st = document.createElement('span');
+      st.className = 'state';
+      st.textContent = c.label;
+      name.appendChild(st);
+      var det = document.createElement('div');
+      det.className = 'detail';
+      det.textContent = c.detail;
+      body.appendChild(name);
+      body.appendChild(det);
+      row.appendChild(icon);
+      row.appendChild(body);
+      host.appendChild(row);
+    });
+  }
+
+  function checkHTTPS() {
+    var secure = window.isSecureContext && location.protocol === 'https:';
+    if (secure) {
+      setCheck('https', 'Connection encryption', 'good', 'Secure',
+        'This page loaded over HTTPS in a secure context — traffic between you and the server is encrypted.');
+      $('tile-conn').textContent = 'HTTPS';
+      $('tile-conn-sub').textContent = 'Secure context';
+      $('tile-conn-sub').className = 'delta good';
+    } else {
+      setCheck('https', 'Connection encryption', 'critical', 'Not secure',
+        'This page is not served over HTTPS. Anything on this connection can be read or altered in transit.');
+      $('tile-conn').textContent = location.protocol.replace(':', '').toUpperCase();
+      $('tile-conn-sub').textContent = 'Not a secure context';
+      $('tile-conn-sub').className = 'delta bad';
+    }
+  }
+
+  function checkDoH() {
+    setCheck('doh', 'Encrypted DNS reachability', 'info', 'Testing…',
+      'Querying Cloudflare’s DNS-over-HTTPS resolver…');
+    var t0 = performance.now();
+    fetch('https://cloudflare-dns.com/dns-query?name=example.com&type=A', {
+      headers: { accept: 'application/dns-json' }, cache: 'no-store'
+    }).then(function (r) { return r.json(); }).then(function (j) {
+      var ms = Math.round(performance.now() - t0);
+      if (j && j.Status === 0) {
+        setCheck('doh', 'Encrypted DNS reachability', 'good', 'Reachable',
+          'Cloudflare’s DNS-over-HTTPS resolver answered in ' + ms + ' ms. Encrypted DNS is not blocked on this network. (This tests reachability — whether your browser actually uses DoH is set in its privacy settings.)');
+      } else {
+        setCheck('doh', 'Encrypted DNS reachability', 'warning', 'Degraded',
+          'The DoH resolver responded but could not resolve a test name (status ' + (j && j.Status) + ').');
+      }
+      logEvent('DoH check: resolver answered in ' + ms + ' ms');
+    }).catch(function () {
+      setCheck('doh', 'Encrypted DNS reachability', 'warning', 'Blocked',
+        'Could not reach Cloudflare’s DNS-over-HTTPS resolver. This network (or an extension) may be blocking encrypted DNS, forcing lookups through the local resolver where they can be observed.');
+      logEvent('DoH check failed — encrypted DNS may be blocked', true);
+    });
+  }
+
+  function checkWebRTC() {
+    if (typeof RTCPeerConnection !== 'function') {
+      setCheck('rtc-local', 'WebRTC address masking', 'info', 'Unavailable',
+        'WebRTC is disabled or not supported in this browser, so it cannot leak addresses.');
+      setCheck('rtc-exit', 'WebRTC exit consistency', 'info', 'Unavailable', 'WebRTC is disabled — no exit path to compare.');
+      $('tile-rtc').textContent = 'Off';
+      $('tile-rtc-sub').textContent = 'WebRTC unavailable';
+      return;
+    }
+    var pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+    pc.createDataChannel('probe');
+    var mdns = 0, privateIPs = [], publicIPs = [];
+    var privRe = /^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|169\.254\.|fe80:|fc|fd)/i;
+
+    function finish() {
+      try { pc.close(); } catch (e) {}
+      if (privateIPs.length) {
+        setCheck('rtc-local', 'WebRTC address masking', 'warning', 'Local IP exposed',
+          'WebRTC reveals your device’s local address (' + privateIPs.join(', ') + ') to any site that asks. Modern browsers mask this with mDNS — consider updating your browser or restricting WebRTC.');
+        $('tile-rtc').textContent = 'Exposed';
+        $('tile-rtc-sub').textContent = privateIPs[0];
+        $('tile-rtc-sub').className = 'delta bad';
+      } else if (mdns) {
+        setCheck('rtc-local', 'WebRTC address masking', 'good', 'Masked',
+          'Your browser hides your local IP behind a per-session mDNS name (….local), so sites can’t read your LAN address via WebRTC.');
+        $('tile-rtc').textContent = 'Masked';
+        $('tile-rtc-sub').textContent = 'mDNS obfuscation active';
+        $('tile-rtc-sub').className = 'delta good';
+      } else {
+        setCheck('rtc-local', 'WebRTC address masking', 'info', 'No candidates',
+          'WebRTC produced no local candidates — it may be restricted by the browser or an extension.');
+        $('tile-rtc').textContent = 'Quiet';
+        $('tile-rtc-sub').textContent = 'No local candidates';
+      }
+      if (publicIPs.length && httpPublicIP) {
+        if (publicIPs.indexOf(httpPublicIP) !== -1) {
+          setCheck('rtc-exit', 'WebRTC exit consistency', 'good', 'Consistent',
+            'WebRTC and normal HTTP traffic exit through the same public IP (' + httpPublicIP + ') — no split-tunnel leak detected.');
+        } else {
+          setCheck('rtc-exit', 'WebRTC exit consistency', 'warning', 'Mismatch',
+            'WebRTC exits via ' + publicIPs.join(', ') + ' but HTTP traffic exits via ' + httpPublicIP + '. If you use a VPN or proxy, WebRTC may be bypassing it and exposing your real IP.');
+          logEvent('WebRTC exit IP differs from HTTP exit IP — possible VPN bypass', true);
+        }
+      } else {
+        setCheck('rtc-exit', 'WebRTC exit consistency', 'info', 'No data',
+          publicIPs.length ? 'Got a WebRTC exit IP but no HTTP IP to compare against.' : 'No server-reflexive candidate was gathered (STUN may be blocked).');
+      }
+    }
+
+    var done = setTimeout(finish, 4000);
+    pc.onicecandidate = function (e) {
+      if (!e.candidate) { clearTimeout(done); finish(); return; }
+      var parts = e.candidate.candidate.split(' ');
+      var addr = parts[4] || '';
+      var typ = parts[7] || '';
+      if (/\.local$/i.test(addr)) mdns++;
+      else if (privRe.test(addr)) { if (privateIPs.indexOf(addr) === -1) privateIPs.push(addr); }
+      else if (typ === 'srflx' || typ === 'prflx') { if (publicIPs.indexOf(addr) === -1) publicIPs.push(addr); }
+      else if (typ === 'host' && addr && !/\.local$/i.test(addr)) { if (privateIPs.indexOf(addr) === -1) privateIPs.push(addr); }
+    };
+    pc.createOffer().then(function (o) { return pc.setLocalDescription(o); }).catch(function () { clearTimeout(done); finish(); });
+  }
+
+  function checkPrivacySignals() {
+    var gpc = navigator.globalPrivacyControl === true;
+    var dnt = navigator.doNotTrack === '1' || window.doNotTrack === '1';
+    if (gpc || dnt) {
+      var sigs = [gpc ? 'Global Privacy Control' : null, dnt ? 'Do Not Track' : null].filter(Boolean).join(' and ');
+      setCheck('privacy', 'Privacy signals', 'good', 'Active',
+        'Your browser sends ' + sigs + ' with every request, asking sites not to sell or share your data.');
+    } else {
+      setCheck('privacy', 'Privacy signals', 'info', 'None sent',
+        'No Global Privacy Control or Do Not Track signal is being sent. You can enable GPC in your browser’s privacy settings or via an extension.');
+    }
+  }
+
+  function checkConnMeta() {
+    var c = navigator.connection;
+    if (c && (c.effectiveType || c.downlink || c.rtt)) {
+      var bits = [];
+      if (c.effectiveType) bits.push('type ' + c.effectiveType);
+      if (typeof c.downlink === 'number') bits.push('~' + c.downlink + ' Mb/s downlink');
+      if (typeof c.rtt === 'number') bits.push('~' + c.rtt + ' ms RTT');
+      setCheck('conn-meta', 'Connection metadata', 'info', 'Visible to sites',
+        'Your browser exposes link details to any page: ' + bits.join(', ') + '. This is fingerprinting surface — some privacy browsers disable it.');
+      if (c.onchange !== undefined) {
+        c.addEventListener('change', function () {
+          logEvent('Connection changed: ' + (c.effectiveType || 'unknown') + (typeof c.downlink === 'number' ? ', ~' + c.downlink + ' Mb/s' : ''));
+          checkConnMeta();
+        }, { once: true });
+      }
+    } else {
+      setCheck('conn-meta', 'Connection metadata', 'good', 'Not exposed',
+        'This browser does not expose the Network Information API, so sites can’t read your link type or speed from it.');
+    }
+  }
+
+  /* ---------- public IP ---------- */
+  function lookupIP() {
+    $('tile-ip').textContent = '…';
+    fetch('https://api.ipify.org?format=json', { cache: 'no-store' })
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        httpPublicIP = j.ip;
+        $('tile-ip').textContent = j.ip;
+        logEvent('Public IP resolved: ' + j.ip);
+        return fetch('https://ipapi.co/json/', { cache: 'no-store' }).then(function (r) { return r.json(); });
+      })
+      .then(function (g) {
+        if (g && !g.error) {
+          var loc = [g.city, g.country_name].filter(Boolean).join(', ');
+          $('tile-ip-sub').textContent = [g.org, loc].filter(Boolean).join(' · ');
+        }
+      })
+      .catch(function () {
+        if (!httpPublicIP) {
+          $('tile-ip').textContent = 'Unknown';
+          $('tile-ip-sub').textContent = 'IP lookup blocked or offline';
+          logEvent('Public IP lookup failed', true);
+        }
+      })
+      .finally(function () { checkWebRTC(); });
+  }
+
+  function runChecks() {
+    checkHTTPS();
+    checkDoH();
+    checkPrivacySignals();
+    checkConnMeta();
+    lookupIP(); // chains into checkWebRTC so exit-consistency has the HTTP IP
+  }
+
+  /* ---------- controls ---------- */
+  $('interval').addEventListener('change', function () {
+    schedule();
+    logEvent('Probe interval set to ' + (parseInt(this.value, 10) / 1000) + ' s');
+  });
+  $('pause-btn').addEventListener('click', function () {
+    paused = !paused;
+    this.textContent = paused ? 'Resume' : 'Pause';
+    setPill();
+    logEvent(paused ? 'Monitoring paused' : 'Monitoring resumed');
+    if (!paused) tick();
+  });
+  $('recheck-btn').addEventListener('click', function () {
+    logEvent('Re-running security checks');
+    runChecks();
+  });
+  $('table-btn').addEventListener('click', function () {
+    tableMode = !tableMode;
+    this.setAttribute('aria-pressed', String(tableMode));
+    this.textContent = tableMode ? 'Chart view' : 'Table view';
+    $('chart-wrap').hidden = tableMode;
+    $('table-view').hidden = !tableMode;
+    setHover(-1);
+    render();
+  });
+
+  window.addEventListener('online', function () { setPill(); logEvent('Back online'); tick(); });
+  window.addEventListener('offline', function () { setPill(); logEvent('Connection lost — browser reports offline', true); });
+  document.addEventListener('visibilitychange', function () {
+    if (!document.hidden && !paused) tick();
+  });
+  window.addEventListener('resize', function () { if (!tableMode) drawChart(); });
+
+  /* ---------- boot ---------- */
+  setPill();
+  logEvent('NetWatch started');
+  runChecks();
+  schedule();
+  tick();
+})();
+</script>
+</body>
+</html>
