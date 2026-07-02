@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0d0d0d">
+<meta name="robots" content="noindex, nofollow">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<title>Your 401(k), Explained — 401(k) Tracker</title>
+<style>
+  :root {
+    --page: #0d0d0d;
+    --surface: #1a1a19;
+    --surface-2: #232322;
+    --ink: #ffffff;
+    --ink-2: #c3c2b7;
+    --muted: #898781;
+    --grid: #2c2c2a;
+    --baseline: #383835;
+    --border: rgba(255,255,255,0.10);
+    --accent: #3987e5;
+    --good: #0ca30c;
+    --glass: rgba(13,13,13,0.92);
+  }
+  :root[data-theme="light"] {
+    --page: #f9f9f7;
+    --surface: #fcfcfb;
+    --surface-2: #f0efec;
+    --ink: #0b0b0b;
+    --ink-2: #52514e;
+    --muted: #898781;
+    --grid: #e1e0d9;
+    --baseline: #c3c2b7;
+    --border: rgba(11,11,11,0.10);
+    --accent: #2a78d6;
+    --glass: rgba(249,249,247,0.92);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    background: var(--page); color: var(--ink);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 16px; line-height: 1.65;
+    padding-bottom: 4rem;
+  }
+  header.app {
+    position: sticky; top: 0; z-index: 20;
+    background: var(--glass); backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border);
+    padding: calc(0.8rem + env(safe-area-inset-top)) 1rem 0.8rem;
+    display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;
+  }
+  header.app a.back { color: var(--ink); text-decoration: none; font-weight: 650; font-size: 0.95rem; }
+  header.app a.back span { color: var(--muted); font-weight: 400; }
+  button.theme {
+    background: var(--surface); border: 1px solid var(--border); color: var(--ink-2);
+    border-radius: 999px; width: 30px; height: 30px; cursor: pointer; font-size: 0.85rem; line-height: 1;
+  }
+  main { max-width: 680px; margin: 0 auto; padding: 1.5rem 1.25rem; }
+  h1 { font-size: 1.65rem; line-height: 1.25; margin: 0.5rem 0 0.75rem; letter-spacing: -0.01em; }
+  .lede { color: var(--ink-2); }
+  h2 {
+    font-size: 0.85rem; font-weight: 650; text-transform: uppercase; letter-spacing: 0.09em;
+    color: var(--muted); margin: 2.5rem 0 0.5rem; padding-top: 1.5rem; border-top: 1px solid var(--grid);
+  }
+  h3 { font-size: 1.15rem; margin: 1.75rem 0 0.5rem; letter-spacing: -0.01em; }
+  p { margin: 0.7rem 0; }
+  ul, ol { margin: 0.7rem 0 0.7rem 1.4rem; }
+  li { margin: 0.45rem 0; }
+  b, strong { font-weight: 650; }
+  a { color: var(--accent); }
+  .card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+    padding: 1rem 1.1rem; margin: 1rem 0;
+  }
+  .callout { border-left: 3px solid var(--accent); }
+  .check { list-style: none; margin-left: 0; }
+  .check li { padding-left: 1.7rem; position: relative; }
+  .check li::before { content: "☐"; position: absolute; left: 0.2rem; color: var(--muted); }
+  .applink {
+    display: block; text-align: center; background: var(--ink); color: var(--page);
+    text-decoration: none; font-weight: 650; border-radius: 12px; padding: 0.8rem 1rem; margin: 2rem 0 0.5rem;
+  }
+  .foot { color: var(--muted); font-size: 0.8rem; text-align: center; margin-top: 0.75rem; }
+</style>
+</head>
+<body>
+
+<header class="app">
+  <a class="back" href="./">← <span>Back to</span> 401(k) Tracker</a>
+  <button class="theme" id="themeBtn" onclick="toggleTheme()" aria-label="Switch color theme" title="Switch light/dark">◐</button>
+</header>
+
+<main>
+  <h1>Your 401(k), Explained (And How to Use Your Tracker)</h1>
+  <p class="lede">Turning 30 with a $166k salary is a good problem to have. This is the moment your retirement savings actually starts compounding in a meaningful way, so it's worth ten minutes to understand what you're doing and why.</p>
+
+  <h2>Part 1: The ELI5 Version</h2>
+
+  <h3>What even is a 401(k)?</h3>
+  <p>It's a box you put money into from every paycheck, before it hits your bank account. The money sits in that box and grows over decades, and you're not supposed to touch it until you're 59&nbsp;½. In exchange for locking it up, the government gives you a tax break — either now or later, depending on which type you pick.</p>
+
+  <h3>There are three boxes, not one</h3>
+  <ul>
+    <li><b>Traditional 401(k):</b> money goes in before tax. You don't pay tax now, you pay tax when you take it out in retirement. Good if you think you'll be in a lower tax bracket later than you are now.</li>
+    <li><b>Roth 401(k):</b> money goes in after tax (you already paid tax on it as normal income). It grows completely tax-free and comes out tax-free in retirement. Good if you think your tax rate later will be the same or higher than now, or you just want certainty.</li>
+    <li><b>After-Tax Account:</b> a third, less common box. Also after-tax money going in, but it's taxed again on the <i>growth</i> when withdrawn, unless you convert it to Roth first (more on that below). This one doesn't get any employer match.</li>
+  </ul>
+  <p>You can put money in more than one box at the same time.</p>
+
+  <h3>The employer match is free money. Take it.</h3>
+  <div class="card callout">
+    <p>Blue Origin gives you $1 for every $1 you put in, up to 5% of your paycheck. If you contribute at least 5%, they add another 5% on top, on the house. If you contribute less than 5%, you're leaving money on the table that would otherwise just be given to you. There is no investment anywhere that reliably pays 100% instant return. This is as close as it gets. <b>Contribute at least 5%, full stop</b>, before worrying about anything else in this document.</p>
+  </div>
+
+  <h3>Vesting: the catch on the free money</h3>
+  <p>"Vesting" means the money becomes permanently yours. Your own contributions are yours the moment they land, no questions asked. The company's match money, though, is on a 3-year timer. If you leave Blue Origin before your 3-year mark, you lose whatever match money hasn't vested yet. This isn't a reason to contribute less. It's just something to know if you're ever weighing a job change in your first three years there.</p>
+
+  <h3>The "mega backdoor Roth" — the advanced move</h3>
+  <p>This is the one thing in this plan that's genuinely unusual and worth understanding, even if you don't use it right away. Here's the plain version:</p>
+  <ol>
+    <li>You max out your normal $24,500 employee contribution.</li>
+    <li>You max out the 5% match ($8,300).</li>
+    <li>You <i>still</i> have room to save more, up to $72,000 total for the year.</li>
+    <li>The plan lets you put extra money into the After-Tax Account (up to 10% of pay), and then immediately convert it into the Roth 401(k).</li>
+    <li>Net effect: money that would normally be capped at $24,500/year of Roth-style tax-free growth can instead get you closer to $72,000/year of tax-advantaged savings.</li>
+  </ol>
+  <p>You don't need to do this on day one. It's a "once you're comfortable with your budget" move, not a "figure this out this week" move.</p>
+
+  <h3>The limits you shouldn't blow past (2026)</h3>
+  <ul>
+    <li>$24,500/year combined into Traditional + Roth 401(k)</li>
+    <li>10% of pay max into the After-Tax Account</li>
+    <li>$72,000/year total across everything, including the match</li>
+  </ul>
+  <p>If you overcontribute, it creates a tax mess to unwind. The tracker app watches this for you so you don't have to do the math by hand every paycheck.</p>
+
+  <h2>Part 2: How to Use Your Tracker App</h2>
+  <p>Your app is live at: <a href="./">https://xebradelta.github.io/app-905909</a></p>
+  <p>It's built around five sections:</p>
+
+  <h3>Home</h3>
+  <p>Your dashboard. This is where you'll get the fastest read on where you stand: year-to-date contributions across all three account types, how close you are to the annual limits, and whether you're on pace to capture the full employer match by year-end.</p>
+
+  <h3>Log</h3>
+  <p>This is where you enter each paycheck's contribution. Every time you get paid, log:</p>
+  <ul>
+    <li>The pay date</li>
+    <li>How much went into Traditional, Roth, and After-Tax (whichever you're using)</li>
+    <li>The app will calculate the match you should have received on that paycheck automatically</li>
+  </ul>
+  <p>Do this every pay period if you can. It's a 30-second habit and it keeps the running totals accurate, which matters most as you approach the annual limits later in the year.</p>
+
+  <h3>Match</h3>
+  <p>This section checks the company's math against your own. Since the match is "up to 5% per pay period" with a year-end true-up, this tab flags any pay period where you didn't get the full match you were entitled to, so you can confirm the true-up deposit actually lands in Q1 of the following year.</p>
+
+  <h3>Balances</h3>
+  <p>This is for tracking your actual account balance over time, not just your contributions. Pull the number from your Fidelity statement periodically (monthly is a reasonable cadence) and log it here. Over time this becomes a simple growth chart so you can see contributions plus market performance combined, not just what you put in.</p>
+
+  <h3>More</h3>
+  <p>Settings and plan details live here: your salary, pay frequency, hire date (for tracking vesting), and the plan limits for the current tax year. Set this up first, before you start logging contributions, so the math elsewhere in the app is accurate. This is also where backups live — export your data as a file or copy it to the clipboard, and import it on another device to move or restore everything.</p>
+
+  <h2>Part 3: A Simple Monthly Checklist</h2>
+  <div class="card">
+    <ul class="check">
+      <li>Log each paycheck's contribution as it happens (or catch up monthly)</li>
+      <li>Check the Home dashboard to confirm you're on pace for the 5% match</li>
+      <li>Once a month, pull your balance from Fidelity and log it in Balances</li>
+      <li>In January, check the Match tab to confirm last year's true-up deposit landed</li>
+      <li>Once your budget has room, revisit the mega backdoor Roth option</li>
+    </ul>
+  </div>
+  <p>That's the whole system. The hard part isn't understanding it, it's the habit of logging every paycheck. The app does the math. You just have to feed it the numbers.</p>
+
+  <a class="applink" href="./">Open the tracker →</a>
+  <p class="foot">Personal reference — not tax or investment advice.</p>
+</main>
+
+<script>
+"use strict";
+// share the app's stored theme so both pages switch together
+const STORE_KEY = "k401.v1";
+function readState() {
+  try { return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; } catch (_) { return {}; }
+}
+function applyTheme() {
+  const s = readState();
+  const t = s.settings && s.settings.theme === "light" ? "light" : "dark";
+  document.documentElement.setAttribute("data-theme", t);
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.setAttribute("content", t === "light" ? "#f9f9f7" : "#0d0d0d");
+  const btn = document.getElementById("themeBtn");
+  if (btn) btn.textContent = t === "light" ? "☾" : "☀";
+}
+function toggleTheme() {
+  const s = readState();
+  s.settings = s.settings || {};
+  s.settings.theme = s.settings.theme === "light" ? "dark" : "light";
+  localStorage.setItem(STORE_KEY, JSON.stringify(s));
+  applyTheme();
+}
+applyTheme();
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+}
+</script>
+</body>
+</html>

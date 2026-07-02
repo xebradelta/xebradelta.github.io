@@ -36,6 +36,30 @@
     --serious: #ec835a;
     --critical: #d03b3b;
     --radius: 14px;
+    --glass: rgba(13,13,13,0.92);
+    --glass-2: rgba(13,13,13,0.95);
+    --shadow: rgba(0,0,0,0.4);
+  }
+  :root[data-theme="light"] {
+    --page: #f9f9f7;
+    --surface: #fcfcfb;
+    --surface-2: #f0efec;
+    --ink: #0b0b0b;
+    --ink-2: #52514e;
+    --muted: #898781;
+    --grid: #e1e0d9;
+    --baseline: #c3c2b7;
+    --border: rgba(11,11,11,0.10);
+    /* same hues stepped for the light surface (validated) */
+    --s-trad: #2a78d6;
+    --s-roth: #1baf7a;
+    --s-at:   #eda100;
+    --s-trad-track: rgba(42,120,214,0.15);
+    --s-roth-track: rgba(27,175,122,0.15);
+    --s-at-track:   rgba(237,161,0,0.18);
+    --glass: rgba(249,249,247,0.92);
+    --glass-2: rgba(249,249,247,0.95);
+    --shadow: rgba(0,0,0,0.12);
   }
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
   html { -webkit-text-size-adjust: 100%; }
@@ -50,7 +74,7 @@
   }
   header.app {
     position: sticky; top: 0; z-index: 20;
-    background: rgba(13,13,13,0.92);
+    background: var(--glass);
     backdrop-filter: blur(8px);
     border-bottom: 1px solid var(--border);
     padding: calc(0.8rem + env(safe-area-inset-top)) 1rem 0.8rem;
@@ -156,7 +180,7 @@
     position: absolute; pointer-events: none; background: var(--surface-2);
     border: 1px solid var(--border); border-radius: 8px; padding: 0.45rem 0.6rem;
     font-size: 0.75rem; line-height: 1.5; white-space: nowrap; display: none; z-index: 5;
-    box-shadow: 0 4px 14px rgba(0,0,0,0.4);
+    box-shadow: 0 4px 14px var(--shadow);
   }
   .tip .th { color: var(--muted); }
   .tip b { font-variant-numeric: tabular-nums; font-weight: 600; }
@@ -172,7 +196,7 @@
   /* bottom nav */
   nav.tabs {
     position: fixed; bottom: 0; left: 0; right: 0; z-index: 30;
-    display: flex; background: rgba(13,13,13,0.95); backdrop-filter: blur(10px);
+    display: flex; background: var(--glass-2); backdrop-filter: blur(10px);
     border-top: 1px solid var(--border);
     padding-bottom: env(safe-area-inset-bottom);
   }
@@ -195,6 +219,22 @@
   .hidden { display: none !important; }
   .mt { margin-top: 0.75rem; } .mb { margin-bottom: 0.75rem; }
   .estimate { border-left: 3px solid var(--baseline); padding-left: 0.7rem; font-size: 0.78rem; color: var(--muted); margin-top: 0.6rem; }
+
+  button.theme {
+    background: var(--surface); border: 1px solid var(--border); color: var(--ink-2);
+    border-radius: 999px; width: 30px; height: 30px; cursor: pointer; font-size: 0.85rem;
+    line-height: 1; flex: 0 0 auto;
+  }
+  a.starthere {
+    display: flex; align-items: center; gap: 0.6rem;
+    max-width: 720px; margin: 1rem auto -0.25rem; padding: 0.7rem 0.9rem;
+    background: var(--surface); border: 1px solid var(--border);
+    border-left: 3px solid var(--s-trad); border-radius: 10px;
+    color: var(--ink); text-decoration: none; font-size: 0.88rem;
+  }
+  a.starthere .arrow { margin-left: auto; color: var(--muted); }
+  a.starthere:hover .arrow { color: var(--ink); }
+  @media (max-width: 752px) { a.starthere { margin-left: 1rem; margin-right: 1rem; } }
 </style>
 </head>
 <body>
@@ -204,8 +244,15 @@
   <div class="yr">
     <span>Tax year</span>
     <select id="yearSel" onchange="setYear(this.value)"></select>
+    <button class="theme" id="themeBtn" onclick="toggleTheme()" aria-label="Switch color theme" title="Switch light/dark">◐</button>
   </div>
 </header>
+
+<a class="starthere" href="guide.html">
+  <span>📖</span>
+  <span><b>Start here</b> — your 401(k), explained, and how to use this tracker</span>
+  <span class="arrow">→</span>
+</a>
 
 <main id="view"></main>
 
@@ -229,7 +276,8 @@ const DEFAULT_STATE = () => ({
     annualSalary: 166000,
     payPeriodsPerYear: 24,
     hireDate: "",
-    currentTaxYear: new Date().getFullYear()
+    currentTaxYear: new Date().getFullYear(),
+    theme: "dark"
   },
   // per tax year, editable — limits change annually and catch-up brackets differ by age
   limits: {
@@ -379,6 +427,22 @@ function vesting() {
   for (const c of state.contributions) { own += c.traditional + c.roth + c.afterTax; match += c.matchReceived; }
   for (const t of state.trueUps) match += t.amount;
   return { hire: hd, cliff, pct, daysLeft, monthsLeft, vested, own, match };
+}
+
+/* ---------- theme ---------- */
+
+function applyTheme() {
+  const t = state.settings.theme === "light" ? "light" : "dark";
+  document.documentElement.setAttribute("data-theme", t);
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.setAttribute("content", t === "light" ? "#f9f9f7" : "#0d0d0d");
+  const btn = document.getElementById("themeBtn");
+  if (btn) btn.textContent = t === "light" ? "☾" : "☀";
+}
+function toggleTheme() {
+  state.settings.theme = state.settings.theme === "light" ? "dark" : "light";
+  save(); applyTheme();
+  if (tab === "balances" && chartSnaps) render(); // redraw chart chrome for the new surface
 }
 
 /* ---------- navigation ---------- */
@@ -981,13 +1045,17 @@ function renderMore() {
     </div>
 
     <div class="card">
-      <h2>Data</h2>
-      <p class="note mb">Everything lives in this browser only (localStorage) — no server, no sync. Export a backup periodically.</p>
+      <h2>Backup &amp; transfer</h2>
+      <p class="note mb">Everything lives in this browser only (localStorage) — no server, no sync. To back up, or to move your data to another device: <b>export here, then import there</b>. Use the file for backups you keep somewhere safe; use copy/paste to move between devices via any channel you trust (notes app, message to yourself, etc.).</p>
       <div style="display:flex; gap:0.6rem; flex-wrap:wrap">
-        <button class="ghost" onclick="exportData()">Export JSON</button>
-        <button class="ghost" onclick="document.getElementById('importFile').click()">Import JSON</button>
-        <button class="ghost" style="color:var(--critical); border-color:var(--critical)" onclick="resetAll()">Erase everything</button>
+        <button class="ghost" onclick="exportData()">Export file</button>
+        <button class="ghost" onclick="document.getElementById('importFile').click()">Import file</button>
+        <button class="ghost" onclick="copyBackup(this)">Copy to clipboard</button>
+        <button class="ghost" onclick="pasteBackup()">Paste from clipboard</button>
       </div>
+      <p class="sub mt" id="dataMsg"></p>
+      <hr class="divider">
+      <button class="ghost" style="color:var(--critical); border-color:var(--critical)" onclick="resetAll()">Erase everything</button>
       <input type="file" id="importFile" accept="application/json,.json" class="hidden" onchange="importData(this)">
     </div>
   `;
@@ -1099,22 +1167,47 @@ function exportData() {
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 5000);
 }
+function applyBackup(text) {
+  const s = JSON.parse(text);
+  if (!s.settings || !s.limits) throw new Error("that doesn't look like a tracker backup");
+  if (!confirm("Replace all current data with this backup?")) return false;
+  localStorage.setItem(STORE_KEY, JSON.stringify(s));
+  state = load();
+  applyTheme(); refreshYearSel(); render();
+  return true;
+}
+function dataMsg(text) {
+  const el = document.getElementById("dataMsg");
+  if (el) el.textContent = text;
+}
 function importData(input) {
   const f = input.files && input.files[0];
   if (!f) return;
   const r = new FileReader();
   r.onload = () => {
-    try {
-      const s = JSON.parse(r.result);
-      if (!s.settings || !s.limits) throw new Error("not a backup file");
-      if (!confirm("Replace all current data with this backup?")) return;
-      localStorage.setItem(STORE_KEY, JSON.stringify(s));
-      state = load();
-      refreshYearSel(); render();
-    } catch (e) { alert("Import failed: " + e.message); }
+    try { if (applyBackup(r.result)) dataMsg("Backup imported."); }
+    catch (e) { alert("Import failed: " + e.message); }
     input.value = "";
   };
   r.readAsText(f);
+}
+async function copyBackup(btn) {
+  const text = JSON.stringify(state);
+  try {
+    await navigator.clipboard.writeText(text);
+    dataMsg("Backup copied (" + text.length.toLocaleString() + " characters). Paste it into the app on your other device.");
+  } catch (_) {
+    // clipboard API can be unavailable (older browsers, permissions) — show the text for manual copy
+    prompt("Clipboard unavailable — select and copy this backup text:", text);
+  }
+}
+async function pasteBackup() {
+  let text = null;
+  try { text = await navigator.clipboard.readText(); } catch (_) {}
+  if (!text) text = prompt("Paste your backup text here:");
+  if (!text) return;
+  try { if (applyBackup(text)) dataMsg("Backup imported from clipboard."); }
+  catch (e) { alert("Import failed: " + e.message); }
 }
 function resetAll() {
   if (!confirm("Erase ALL data? This cannot be undone.")) return;
@@ -1131,6 +1224,7 @@ function render() {
   ({ home: renderHome, log: renderLog, match: renderMatch, balances: renderBalances, more: renderMore }[tab])();
 }
 
+applyTheme();
 go("home");
 
 if ("serviceWorker" in navigator) {

@@ -1,6 +1,6 @@
 /* 401(k) tracker - service worker */
-var CACHE = "k401-v1";
-var ASSETS = ["./","./index.html","./manifest.json","./icon-192.png","./icon-512.png","./icon-maskable-512.png","./apple-touch-icon.png"];
+var CACHE = "k401-v2";
+var ASSETS = ["./","./index.html","./guide.html","./manifest.json","./icon-192.png","./icon-512.png","./icon-maskable-512.png","./apple-touch-icon.png"];
 
 self.addEventListener("install", function(e){
   e.waitUntil(caches.open(CACHE).then(function(c){return c.addAll(ASSETS);}).then(function(){return self.skipWaiting();}));
