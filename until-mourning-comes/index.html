@@ -264,6 +264,23 @@
       color: var(--bone-dim);
     }
     .tag-row .diamond { color: var(--rose); font-style: normal; font-size: 0.7rem; }
+    .gazetteer { margin-top: 3rem; text-align: center; }
+    .gazetteer-title {
+      font-family: var(--caps);
+      font-size: 0.72rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 0.9rem;
+    }
+    .gazetteer-names {
+      font-style: italic;
+      font-size: 1.02rem;
+      line-height: 1.9;
+      color: var(--bone-dim);
+      max-width: 42rem;
+      margin: 0 auto;
+    }
 
     /* ─── STORY HOOK ─── */
     .hook-grid {
@@ -395,6 +412,29 @@
       margin-bottom: 0.15rem;
     }
     .char-card dd { font-size: 1.08rem; color: var(--bone-dim); }
+    .char-quote {
+      margin-top: 1.6rem;
+      padding-top: 1.2rem;
+      border-top: 1px solid rgba(200,180,131,0.16);
+      font-style: italic;
+      text-align: center;
+      font-size: 1.12rem;
+      color: var(--rose);
+    }
+    .char-card.vaela .char-quote { color: var(--moss); }
+    .char-card.mordren {
+      grid-column: 1 / -1;
+      background: linear-gradient(160deg, #10140f, #0c100b);
+      border-color: rgba(142,165,131,0.3);
+      box-shadow: inset 0 0 80px rgba(71,89,63,0.18);
+    }
+    .char-card.mordren .char-sub { color: var(--moss); }
+    .char-card.mordren .char-quote { color: var(--moss); }
+    .char-card.mordren dl { grid-template-columns: 1fr 1fr; gap: 0.85rem 2.2rem; }
+    @media (max-width: 860px) {
+      .char-card.mordren { grid-column: auto; }
+      .char-card.mordren dl { grid-template-columns: 1fr; }
+    }
 
     .raven-card {
       grid-column: 1 / -1;
@@ -518,6 +558,12 @@
       flex-wrap: wrap;
       margin-top: 2.4rem;
     }
+    .follow-note {
+      margin-top: 2rem;
+      font-style: italic;
+      font-size: 1.05rem;
+      color: var(--bone-dim);
+    }
     .seal {
       width: 74px; height: 74px;
       margin: 0 auto 1.8rem;
@@ -638,6 +684,10 @@
         <span>morally complex monsters</span><span class="diamond">❖</span>
         <span>love with teeth</span>
       </div>
+      <div class="gazetteer">
+        <p class="gazetteer-title">From the map of the Region</p>
+        <p class="gazetteer-names">Ebonhallow &middot; Port Veyrmont &middot; the Ebonmire Marshlands &middot; the Blackroot Weald &middot; the Gloomshelf Sea &middot; the Stormback Mountains &middot; the Blackhorn Range &middot; Silverreach &middot; Willowreach &middot; Rhosmere &middot; Aelwick &middot; Duskwick &middot; Blacktide &middot; the Elderbough Wilds &middot; the Hollowbriar &middot; Honeythorn Hollow &middot; the Hollow of Lost Memories &middot; Saint's Crossing &middot; Harrowgate Pass &middot; the Blackwater Vein</p>
+      </div>
     </div>
   </section>
 
@@ -738,33 +788,49 @@
   <section id="characters">
     <div class="wrap reveal">
       <h2 class="section-title">Meet the Characters</h2>
-      <p class="section-lede">Two hearts sworn to the dead — and the raven who judges them both.</p>
+      <p class="section-lede">Two hearts sworn to the dead, the keeper who claims them — and the raven who judges them all.</p>
       <div class="char-grid">
         <div class="char-card">
           <h3>Cassian Thorne</h3>
-          <p class="char-sub">Rogue &middot; thief &middot; lock specialist &middot; reluctant hero</p>
+          <p class="char-sub">Rogue &middot; thief &middot; lock specialist &middot; professional problem in expensive boots</p>
           <dl>
             <div><dt>Age / Race</dt><dd>185, high elf</dd></div>
             <div><dt>Skills</dt><dd>Infiltration, lockpicking, archery, sleight of hand, reading people, escaping consequences with dramatic flair</dd></div>
             <div><dt>Personality</dt><dd>Charming, sarcastic, theatrical, guarded, secretly tender, allergic to sincerity</dd></div>
+            <div><dt>Interests</dt><dd>Rare manuscripts, fine wine, impossible heists, teasing authority</dd></div>
+            <div><dt>Weaknesses</dt><dd>Sincerity, children &amp; animals, being understood, his own heart</dd></div>
             <div><dt>Companion</dt><dd>Cawsanova, his overly opinionated raven</dd></div>
-            <div><dt>Quirks</dt><dd>Flirts when uncomfortable, jokes during danger, insults architecture, and treats emotional vulnerability like a bear trap</dd></div>
+            <div><dt>Quirks</dt><dd>Uses sarcasm like armor, flirts when uncomfortable, jokes during danger, insults architecture, and treats emotional vulnerability like a bear trap</dd></div>
           </dl>
+          <p class="char-quote">&ldquo;Heroes get statues. I get blamed. Works for me.&rdquo;</p>
         </div>
         <div class="char-card vaela">
           <h3>Vaela Blackwell</h3>
-          <p class="char-sub">Paladin sworn to protect the dignity of the dead</p>
+          <p class="char-sub">Paladin devoted to the dignity and protection of the dead</p>
           <dl>
             <div><dt>Age / Race</dt><dd>174, high elf</dd></div>
             <div><dt>Skills</dt><dd>Greatsword combat, funeral rites, grave magic, divine smites, investigation, spiritual discipline</dd></div>
             <div><dt>Personality</dt><dd>Severe, blunt, disciplined, compassionate in a terrifyingly practical way</dd></div>
-            <div><dt>Quirks</dt><dd>Gives affection like a military order, refuses to admit when she is injured, has no patience for corruption or improper burial practices</dd></div>
+            <div><dt>Her Code</dt><dd>The dead deserve dignity. The truth must be unearthed. The living must be protected. The light does not falter.</dd></div>
+            <div><dt>Quirks</dt><dd>Expresses affection through commands like &ldquo;survive,&rdquo; refuses to admit when she is injured, has no patience for cowardice, corruption, or improper burial practice</dd></div>
           </dl>
+          <p class="char-quote">&ldquo;The dead do not need your fear. They deserve your respect.&rdquo;</p>
+        </div>
+        <div class="char-card mordren">
+          <h3>Mordren Varric</h3>
+          <p class="char-sub">Former Royal Mortuary Keeper &middot; scholar and embalmer &middot; necromancer &middot; lich</p>
+          <dl>
+            <div><dt>Age / Race</dt><dd>572, high elf &mdash; lich</dd></div>
+            <div><dt>Origin</dt><dd>Once the silent guardian of the royal dead, Mordren Varric cataloged every soul that passed through the marble doors. He knew where kings rested, what prayers were whispered, and which names were never meant to be spoken again. Knowledge became obsession. Obsession became sacrifice. Death became his inheritance.</dd></div>
+            <div><dt>Skills</dt><dd>Mortuary rites, embalming &amp; preservation, burial records &amp; genealogies, necromancy, cemetery magic, plague-era history, ritual systems, spiritual architecture</dd></div>
+            <div><dt>Quirks</dt><dd>Calm in a way that is either comforting or horrifying, speaks with old-world diction, remembers details others discarded, treats names like sacred objects, carries grief with frightening stillness</dd></div>
+          </dl>
+          <p class="char-quote">He keeps the names the world chose to forget.</p>
         </div>
         <div class="raven-card">
           <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13 3 c-2.4 0 -4 1.6 -4.4 3.6 c-1.6 0.4 -2.9 1.3 -3.4 2.7 c0.9 -0.4 1.9 -0.5 2.7 -0.2 c-1.2 0.9 -1.8 2.2 -1.7 3.7 c0.8 -0.9 1.8 -1.5 3 -1.5 c-0.1 0.5 -0.3 1.5 1.2 2.5 l0.4 -1.2 c0.6 0.7 1.4 1.2 2.3 1.2 c2.1 0 3.8 -2 3.8 -4.8 c0 -3.4 -1.7 -6 -3.9 -6 Z M14 17 l-1 4 l2 0 Z M11 16.5 l-2 4.5 l2 0 Z"/></svg>
           <h3>Cawsanova</h3>
-          <p>Judges. Critiques. Exaggerates. Adorably insufferable.</p>
+          <p>Professional wingman. Zero ethics. All drama.<br>Judges. Critiques. Exaggerates. Adorably insufferable.</p>
         </div>
       </div>
     </div>
@@ -799,8 +865,11 @@
           <span class="attr">— Morgan Johnson</span>
         </div>
         <div class="author-copy">
-          <p>Morgan Johnson writes emotionally charged gothic fantasy set within the Region of Ebonhallow, where grief has teeth, monsters have wounds, and healing is never clean.</p>
-          <p>Her stories are written for readers who have carried pain too deep to summarize and experiences too meaningful to be reduced to a diagnosis or <em>mistaken for weakness</em>.</p>
+          <p>I'm Morgan Johnson, and I write emotionally charged gothic fantasies set within my universe: the Region of Ebonhallow, a world born from life experience, grief, survival, love, loss, and the stubborn hope of becoming something softer without becoming less powerful. My stories are written for readers who have carried pain too deep to summarize, wounds too personal to neatly name, and experiences too meaningful to be reduced to a diagnosis or <em>mistaken for weakness</em>.</p>
+          <p>Drawn to stories of death, mercy, trauma, found family, and redemption, I have created a world where the dead are not forgotten, monsters are rarely simple, and healing is never clean, easy, or politely timed. My work blends dark fantasy, horror, romance, gallows humor, and deeply emotional character arcs centered around grief, survival, identity discovery, and the terrifying act of letting yourself be loved.</p>
+          <p>My debut novel, <em>Until Mourning Comes</em>, is a gothic fantasy requiem for the forgotten dead and the living souls who have ever felt like one. Born from personal grief and the ache of watching silence bury people who deserved to be remembered, the story explores loss, remembrance, mercy, and the difficult, defiant choice to keep going.</p>
+          <p>Through my writing, I hope to offer readers what stories have offered me: a place to feel seen, a reason to stay one more day, and proof that even the most broken souls are still worth saving.</p>
+          <p>When I'm not writing about haunted cemeteries, morally complicated villains, undead horrors, doomed devotion, or emotionally damaged elves with excellent cheekbones, I can usually be found playing Baldur's Gate 3 or DnD, building fantasy worlds, scrapbooking, crocheting, or managing the daily chaos of retail management with the theatrical patience of being one inconvenience away from becoming mall cryptid folklore.</p>
         </div>
       </div>
     </div>
@@ -810,13 +879,13 @@
   <section id="follow" class="alt follow">
     <div class="wrap-narrow reveal">
       <div class="seal" aria-hidden="true">M</div>
-      <h2 class="section-title">Follow the Mourning</h2>
-      <p class="section-lede">Follow Morgan Johnson for book updates, artwork, and worldbuilding from Ebonhallow.</p>
+      <h2 class="section-title">Ways to Engage</h2>
+      <p class="section-lede">More details coming soon — how and where to preorder, release events like signings and readings, and upcoming novel announcements.</p>
       <div class="follow-links">
         <a class="btn" href="https://www.facebook.com/search/top?q=The%20Region%20of%20Ebonhallow%20by%20Morgan%20Johnson" target="_blank" rel="noopener">Facebook — The Region of Ebonhallow</a>
-        <!-- TURNKEY: replace href with the author's mailing-list signup or contact email -->
-        <a class="btn btn-blood" href="mailto:hello@example.com?subject=Until%20Mourning%20Comes%20updates">Join the Mailing List</a>
+        <a class="btn btn-blood" href="mailto:untilmourningcomes2026@gmail.com?subject=Until%20Mourning%20Comes">Questions &amp; Comments</a>
       </div>
+      <p class="follow-note">Click through to share your love for dark fantasy and horror — for other inquiries, email <a href="mailto:untilmourningcomes2026@gmail.com">untilmourningcomes2026@gmail.com</a>.</p>
     </div>
   </section>
 
