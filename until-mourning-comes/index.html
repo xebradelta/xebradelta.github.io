@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Until Mourning Comes — Morgan Johnson</title>
+  <meta name="description" content="Until Mourning Comes: A Requiem for the Forgotten Dead. A gothic fantasy of grief, remembrance, and mercy by Morgan Johnson. Preorders begin July 26, 2026." />
+  <meta property="og:title" content="Until Mourning Comes — Morgan Johnson" />
+  <meta property="og:description" content="A gothic fantasy of grief, remembrance, and mercy. Enter the Region of Ebonhallow, where the dead are not forgotten and the unclaimed are never truly lost." />
+  <meta property="og:type" content="website" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600&family=Cinzel+Decorative:wght@400;700&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=UnifrakturMaguntia&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --night: #0a090c;         /* page background */
+      --crypt: #121016;         /* raised panels */
+      --crypt-2: #17141c;       /* card interiors */
+      --bone: #e7dfcd;          /* primary text */
+      --bone-dim: #b3aa95;      /* secondary text */
+      --gold: #c8b483;          /* ornament / rules */
+      --gold-dim: #7d7050;
+      --moss: #8ea583;          /* haunted green accent */
+      --moss-deep: #47593f;
+      --rose: #b06470;          /* dusty rose accent */
+      --blood: #6f2f38;
+      --serif: 'Cormorant Garamond', Georgia, serif;
+      --caps: 'Cinzel', 'Times New Roman', serif;
+      --display: 'Cinzel Decorative', 'Cinzel', serif;
+      --black-letter: 'UnifrakturMaguntia', 'Cinzel Decorative', serif;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--night);
+      color: var(--bone);
+      font-family: var(--serif);
+      font-size: 1.2rem;
+      line-height: 1.65;
+      overflow-x: hidden;
+    }
+
+    /* parchment grain over everything */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 60;
+    }
+
+    /* candlelight vignette */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(ellipse 90% 70% at 50% 30%, transparent 55%, rgba(0,0,0,0.55) 100%);
+      pointer-events: none;
+      z-index: 59;
+    }
+
+    a { color: var(--moss); text-decoration: none; }
+    a:hover { color: var(--bone); }
+
+    ::selection { background: var(--blood); color: var(--bone); }
+
+    /* ─── NAV ─── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 0.85rem 2rem;
+      background: linear-gradient(to bottom, rgba(10,9,12,0.96), rgba(10,9,12,0.82));
+      border-bottom: 1px solid rgba(200,180,131,0.22);
+      backdrop-filter: blur(6px);
+    }
+    .nav-mark {
+      font-family: var(--caps);
+      font-size: 0.95rem;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--gold);
+      white-space: nowrap;
+    }
+    .nav-links { display: flex; gap: 1.6rem; flex-wrap: wrap; justify-content: flex-end; }
+    .nav-links a {
+      font-family: var(--caps);
+      font-size: 0.72rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--bone-dim);
+    }
+    .nav-links a:hover { color: var(--gold); }
+
+    /* ─── HERO ─── */
+    .hero {
+      position: relative;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 7rem 1.5rem 0;
+      background:
+        radial-gradient(ellipse 60% 45% at 50% 24%, rgba(142,165,131,0.10), transparent 70%),
+        radial-gradient(ellipse 100% 70% at 50% 110%, rgba(23,20,28,0.9), transparent),
+        var(--night);
+      overflow: hidden;
+    }
+    .hero-moon {
+      position: absolute;
+      top: 4.5%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 108px; height: 108px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 42% 38%, #f4eeda 0%, #cfc6ab 55%, #8f8871 100%);
+      box-shadow: 0 0 60px 22px rgba(231,223,205,0.16), 0 0 140px 60px rgba(142,165,131,0.08);
+      opacity: 0.9;
+    }
+    .hero-skyline {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      width: 100%;
+      height: 42vh;
+      min-height: 240px;
+      pointer-events: none;
+    }
+    .hero-skyline svg { width: 100%; height: 100%; display: block; }
+
+    .hero-inner { position: relative; z-index: 5; max-width: 60rem; }
+
+    .hero-kicker {
+      font-family: var(--caps);
+      font-size: clamp(0.72rem, 1.6vw, 0.95rem);
+      letter-spacing: 0.42em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 1.6rem;
+    }
+    h1 {
+      font-family: var(--display);
+      font-weight: 700;
+      font-size: clamp(2.6rem, 8.5vw, 6rem);
+      line-height: 1.05;
+      letter-spacing: 0.04em;
+      color: var(--bone);
+      text-shadow: 0 0 40px rgba(200,180,131,0.25), 0 2px 24px rgba(0,0,0,0.9);
+      margin-bottom: 1.4rem;
+    }
+    .hero-tagline {
+      font-style: italic;
+      font-size: clamp(1.15rem, 2.6vw, 1.6rem);
+      color: var(--bone-dim);
+      margin-bottom: 0.7rem;
+    }
+    .hero-author {
+      font-family: var(--caps);
+      font-size: clamp(0.95rem, 2vw, 1.25rem);
+      letter-spacing: 0.5em;
+      text-transform: uppercase;
+      color: var(--bone);
+      margin: 1.6rem 0 2.4rem;
+    }
+    .hero-cta { display: flex; gap: 1.1rem; justify-content: center; flex-wrap: wrap; }
+
+    .btn {
+      display: inline-block;
+      font-family: var(--caps);
+      font-size: 0.82rem;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      padding: 0.95rem 2rem;
+      border: 1px solid var(--gold-dim);
+      color: var(--gold);
+      background: rgba(200,180,131,0.05);
+      transition: all 0.3s ease;
+    }
+    .btn:hover { background: rgba(200,180,131,0.14); color: var(--bone); border-color: var(--gold); }
+    .btn.btn-blood {
+      border-color: var(--blood);
+      color: var(--rose);
+      background: rgba(111,47,56,0.14);
+    }
+    .btn.btn-blood:hover { background: rgba(111,47,56,0.32); color: var(--bone); border-color: var(--rose); }
+
+    .hero-dates {
+      margin-top: 2.6rem;
+      font-family: var(--caps);
+      font-size: 0.8rem;
+      letter-spacing: 0.26em;
+      text-transform: uppercase;
+      color: var(--moss);
+    }
+    .hero-dates span { color: var(--bone-dim); }
+
+    /* ─── ORNAMENT ─── */
+    .ornament {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      margin: 0 auto 2.6rem;
+      color: var(--gold);
+    }
+    .ornament::before, .ornament::after {
+      content: '';
+      height: 1px;
+      width: min(110px, 22vw);
+      background: linear-gradient(to var(--dir, right), transparent, var(--gold-dim));
+    }
+    .ornament::before { --dir: right; }
+    .ornament::after { --dir: left; }
+    .ornament svg { width: 26px; height: 26px; }
+
+    /* ─── SECTIONS ─── */
+    section { position: relative; padding: 6rem 1.5rem; }
+    .wrap { max-width: 68rem; margin: 0 auto; }
+    .wrap-narrow { max-width: 46rem; margin: 0 auto; }
+
+    .section-title {
+      font-family: var(--caps);
+      font-weight: 500;
+      font-size: clamp(1.5rem, 4vw, 2.3rem);
+      letter-spacing: 0.24em;
+      text-transform: uppercase;
+      text-align: center;
+      color: var(--bone);
+      margin-bottom: 1.2rem;
+    }
+    .section-lede {
+      text-align: center;
+      font-style: italic;
+      color: var(--bone-dim);
+      max-width: 40rem;
+      margin: 0 auto 3rem;
+    }
+
+    .alt { background: linear-gradient(to bottom, var(--night), var(--crypt) 12%, var(--crypt) 88%, var(--night)); }
+
+    /* ─── ENTER EBONHALLOW ─── */
+    .ebon-copy { text-align: center; font-size: 1.3rem; }
+    .ebon-copy p + p { margin-top: 1.4rem; }
+    .ebon-copy strong { color: var(--moss); font-weight: 600; }
+    .tag-row {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+      gap: 0.4rem 1rem;
+      margin-top: 2.6rem;
+      font-style: italic;
+      font-size: 1.05rem;
+      color: var(--bone-dim);
+    }
+    .tag-row .diamond { color: var(--rose); font-style: normal; font-size: 0.7rem; }
+
+    /* ─── STORY HOOK ─── */
+    .hook-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+      gap: 3.5rem;
+      align-items: center;
+    }
+    .hook-copy p + p { margin-top: 1.3rem; }
+    .hook-pull {
+      font-family: var(--caps);
+      font-size: clamp(1.25rem, 3vw, 1.7rem);
+      line-height: 1.5;
+      letter-spacing: 0.08em;
+      color: var(--rose);
+      border-left: 2px solid var(--blood);
+      padding-left: 1.4rem;
+      margin-top: 2rem;
+    }
+    .hook-raven { display: flex; justify-content: center; }
+    .hook-raven svg { width: min(300px, 70vw); height: auto; opacity: 0.85; filter: drop-shadow(0 0 30px rgba(142,165,131,0.15)); }
+
+    /* ─── GENRE/TONE/SETTING CARDS ─── */
+    .triptych {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.4rem;
+      margin-top: 3rem;
+    }
+    .panel {
+      background: var(--crypt-2);
+      border: 1px solid rgba(200,180,131,0.2);
+      padding: 2.2rem 1.6rem;
+      text-align: center;
+      position: relative;
+    }
+    .panel::before {
+      content: '';
+      position: absolute;
+      inset: 7px;
+      border: 1px solid rgba(200,180,131,0.12);
+      pointer-events: none;
+    }
+    .panel svg { width: 44px; height: 44px; margin-bottom: 1.1rem; color: var(--gold); }
+    .panel h3 {
+      font-family: var(--caps);
+      font-size: 0.95rem;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 0.8rem;
+    }
+    .panel p { font-size: 1.05rem; color: var(--bone-dim); font-style: italic; }
+
+    /* ─── THEMES / READERS ─── */
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 3rem;
+      margin-top: 3rem;
+    }
+    .list-block h3 {
+      font-family: var(--caps);
+      font-size: 1.05rem;
+      letter-spacing: 0.24em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 1.4rem;
+      text-align: center;
+    }
+    .gothic-list { list-style: none; }
+    .gothic-list li {
+      padding: 0.55rem 0;
+      border-bottom: 1px solid rgba(200,180,131,0.13);
+      display: flex;
+      align-items: baseline;
+      gap: 0.8rem;
+      font-size: 1.15rem;
+    }
+    .gothic-list li::before { content: '❖'; color: var(--blood); font-size: 0.7rem; flex: none; }
+    .list-note {
+      margin-top: 1.4rem;
+      text-align: center;
+      font-style: italic;
+      color: var(--moss);
+      font-size: 1.1rem;
+    }
+
+    /* ─── CHARACTERS ─── */
+    .char-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.6rem; margin-top: 3rem; }
+    .char-card {
+      background: linear-gradient(160deg, var(--crypt-2), #100d14);
+      border: 1px solid rgba(200,180,131,0.22);
+      padding: 2.4rem 2.1rem;
+      position: relative;
+    }
+    .char-card::before {
+      content: '';
+      position: absolute;
+      inset: 8px;
+      border: 1px solid rgba(200,180,131,0.1);
+      pointer-events: none;
+    }
+    .char-card h3 {
+      font-family: var(--caps);
+      font-weight: 500;
+      font-size: 1.45rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      text-align: center;
+      color: var(--bone);
+      margin-bottom: 0.3rem;
+    }
+    .char-sub {
+      text-align: center;
+      font-style: italic;
+      color: var(--rose);
+      margin-bottom: 1.6rem;
+      font-size: 1.05rem;
+    }
+    .char-card.vaela .char-sub { color: var(--moss); }
+    .char-card dl { display: grid; gap: 0.85rem; }
+    .char-card dt {
+      font-family: var(--caps);
+      font-size: 0.7rem;
+      letter-spacing: 0.24em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 0.15rem;
+    }
+    .char-card dd { font-size: 1.08rem; color: var(--bone-dim); }
+
+    .raven-card {
+      grid-column: 1 / -1;
+      max-width: 34rem;
+      margin: 0.4rem auto 0;
+      background: linear-gradient(150deg, #d9cdb2, #c4b591);
+      color: #241d16;
+      border: 1px solid #8a7a58;
+      padding: 1.8rem 2.2rem;
+      text-align: center;
+      transform: rotate(-0.6deg);
+      box-shadow: 0 14px 40px rgba(0,0,0,0.55);
+      position: relative;
+    }
+    .raven-card h3 {
+      font-family: var(--caps);
+      font-size: 1.1rem;
+      letter-spacing: 0.26em;
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+    .raven-card p { font-style: italic; font-size: 1.1rem; color: #43382b; }
+    .raven-card svg { width: 40px; height: 40px; margin-bottom: 0.4rem; color: #241d16; }
+
+    /* ─── RELEASE ─── */
+    .release { text-align: center; }
+    .release-blackletter {
+      font-family: var(--black-letter);
+      font-size: clamp(2.4rem, 7vw, 4.4rem);
+      color: var(--bone);
+      text-shadow: 0 0 34px rgba(142,165,131,0.3);
+      margin-bottom: 2.4rem;
+      line-height: 1.15;
+    }
+    .date-lines {
+      display: grid;
+      gap: 1.1rem;
+      justify-items: center;
+      margin-bottom: 2.8rem;
+    }
+    .date-line {
+      font-family: var(--caps);
+      font-size: clamp(1rem, 2.6vw, 1.45rem);
+      letter-spacing: 0.24em;
+      text-transform: uppercase;
+      color: var(--moss);
+      border-bottom: 1px solid var(--moss-deep);
+      padding-bottom: 0.35rem;
+    }
+    .date-line small {
+      display: block;
+      font-size: 0.68rem;
+      letter-spacing: 0.34em;
+      color: var(--bone-dim);
+      margin-bottom: 0.3rem;
+    }
+    .countdown {
+      display: flex;
+      justify-content: center;
+      gap: 1.2rem;
+      flex-wrap: wrap;
+      margin-bottom: 2.8rem;
+    }
+    .count-cell {
+      min-width: 92px;
+      padding: 1.1rem 0.6rem 0.9rem;
+      background: var(--crypt-2);
+      border: 1px solid rgba(200,180,131,0.22);
+    }
+    .count-cell b {
+      display: block;
+      font-family: var(--caps);
+      font-weight: 500;
+      font-size: 2rem;
+      color: var(--bone);
+      line-height: 1;
+      margin-bottom: 0.45rem;
+    }
+    .count-cell span {
+      font-family: var(--caps);
+      font-size: 0.62rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--gold);
+    }
+    .release-note { font-style: italic; color: var(--bone-dim); max-width: 34rem; margin: 0 auto 2.2rem; }
+
+    /* ─── AUTHOR ─── */
+    .author-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+      gap: 3.5rem;
+      align-items: center;
+    }
+    .author-quote {
+      font-family: var(--display);
+      font-size: clamp(1.7rem, 4.5vw, 2.6rem);
+      line-height: 1.35;
+      color: var(--bone);
+      text-align: center;
+      text-shadow: 0 0 30px rgba(176,100,112,0.3);
+    }
+    .author-quote .attr {
+      display: block;
+      margin-top: 1.2rem;
+      font-family: var(--caps);
+      font-size: 0.78rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--rose);
+    }
+    .author-copy p + p { margin-top: 1.3rem; }
+    .author-copy em { color: var(--moss); }
+
+    /* ─── FOLLOW ─── */
+    .follow { text-align: center; }
+    .follow-links {
+      display: flex;
+      justify-content: center;
+      gap: 1.1rem;
+      flex-wrap: wrap;
+      margin-top: 2.4rem;
+    }
+    .seal {
+      width: 74px; height: 74px;
+      margin: 0 auto 1.8rem;
+      border-radius: 50%;
+      background: radial-gradient(circle at 38% 32%, #8a3d47, var(--blood) 60%, #4a1f26);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--black-letter);
+      font-size: 2.1rem;
+      color: rgba(231,223,205,0.85);
+      box-shadow: 0 6px 24px rgba(0,0,0,0.6), inset 0 2px 6px rgba(255,255,255,0.12), inset 0 -3px 8px rgba(0,0,0,0.4);
+    }
+
+    /* ─── FOOTER ─── */
+    footer {
+      position: relative;
+      padding: 0 1.5rem 2.4rem;
+      text-align: center;
+    }
+    .fence { width: 100%; height: 70px; color: #1d1a22; margin-bottom: 1.8rem; }
+    .fence svg { width: 100%; height: 100%; display: block; }
+    footer p {
+      font-family: var(--caps);
+      font-size: 0.68rem;
+      letter-spacing: 0.26em;
+      text-transform: uppercase;
+      color: var(--gold-dim);
+    }
+    footer p + p { margin-top: 0.7rem; }
+
+    /* ─── REVEAL ─── */
+    .reveal { opacity: 0; transform: translateY(26px); transition: opacity 0.9s ease, transform 0.9s ease; }
+    .reveal.shown { opacity: 1; transform: none; }
+    @media (prefers-reduced-motion: reduce) {
+      .reveal { opacity: 1; transform: none; transition: none; }
+      html { scroll-behavior: auto; }
+    }
+
+    /* ─── RESPONSIVE ─── */
+    @media (max-width: 860px) {
+      body { font-size: 1.1rem; }
+      .nav-links { display: none; }
+      .hook-grid, .author-grid, .two-col, .char-grid { grid-template-columns: 1fr; }
+      .triptych { grid-template-columns: 1fr; }
+      .hook-raven { order: -1; }
+      section { padding: 4.5rem 1.25rem; }
+      .raven-card { grid-column: auto; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <div class="nav-mark">Until Mourning Comes</div>
+    <div class="nav-links">
+      <a href="#ebonhallow">Ebonhallow</a>
+      <a href="#story">The Story</a>
+      <a href="#characters">Characters</a>
+      <a href="#release">Release</a>
+      <a href="#author">Author</a>
+      <a href="#follow">Follow</a>
+    </div>
+  </nav>
+
+  <!-- ═══ HERO ═══ -->
+  <header class="hero">
+    <div class="hero-moon" aria-hidden="true"></div>
+    <div class="hero-skyline" aria-hidden="true">
+      <svg viewBox="0 0 1440 320" preserveAspectRatio="xMidYMax slice" fill="currentColor" style="color:#16121c">
+        <!-- fog band -->
+        <rect x="0" y="250" width="1440" height="70" fill="#1e1926" opacity="0.55"/>
+        <!-- distant ridge -->
+        <path d="M0 220 L120 200 L260 215 L420 190 L600 210 L780 185 L960 205 L1140 190 L1300 210 L1440 195 L1440 320 L0 320 Z" fill="#120f18"/>
+        <!-- cathedral city silhouette -->
+        <path d="M0 320 L0 250 L40 250 L40 220 L48 220 L48 250 L90 250 L90 200 L98 178 L106 200 L106 250 L150 250 L150 230 L190 230 L190 250 L235 250 L235 170 L242 170 L242 155 L236 155 L245 118 L254 155 L248 155 L248 170 L255 170 L255 250 L300 250 L300 215 L340 215 L340 250 L390 250 L390 195 L400 172 L410 195 L410 250 L455 250 L455 225 L500 225 L500 250 L545 250 L545 160 L552 160 L552 142 L546 142 L557 92 L568 142 L562 142 L562 160 L569 160 L569 250 L620 250 L620 205 L660 205 L660 250 L700 250 L700 140 L707 140 L707 120 L701 120 L714 60 L727 120 L721 120 L721 140 L728 140 L728 250 L775 250 L775 210 L815 210 L815 250 L860 250 L860 180 L868 158 L876 180 L876 250 L920 250 L920 228 L965 228 L965 250 L1010 250 L1010 165 L1017 165 L1017 148 L1011 148 L1021 105 L1031 148 L1025 148 L1025 165 L1032 165 L1032 250 L1080 250 L1080 215 L1120 215 L1120 250 L1170 250 L1170 190 L1180 168 L1190 190 L1190 250 L1235 250 L1235 222 L1280 222 L1280 250 L1330 250 L1330 200 L1338 178 L1346 200 L1346 250 L1395 250 L1395 232 L1440 232 L1440 320 Z"/>
+        <!-- window lights -->
+        <g fill="#8ea583" opacity="0.75">
+          <rect x="712" y="150" width="4" height="8"/>
+          <rect x="554" y="168" width="4" height="7"/>
+          <rect x="1020" y="175" width="4" height="7"/>
+          <rect x="243" y="180" width="4" height="7"/>
+          <rect x="398" y="205" width="4" height="6"/>
+          <rect x="866" y="192" width="4" height="6"/>
+        </g>
+        <!-- perched raven -->
+        <path d="M714 44 c-5 0 -8 3 -9 7 c-4 1 -7 3 -8 6 c2 -1 5 -1 6 0 c-3 2 -4 5 -4 8 c2 -2 4 -3 7 -3 c0 0 -1 4 3 6 l1 -3 c1 2 3 3 5 3 c4 0 8 -4 8 -10 c0 -8 -4 -14 -9 -14 Z" fill="#080709"/>
+      </svg>
+    </div>
+
+    <div class="hero-inner">
+      <p class="hero-kicker">A Requiem for the Forgotten Dead</p>
+      <h1>Until<br>Mourning<br>Comes</h1>
+      <p class="hero-tagline">A gothic fantasy of grief, remembrance, and mercy.</p>
+      <p class="hero-author">Morgan Johnson</p>
+      <div class="hero-cta">
+        <a class="btn btn-blood" href="#release">Preorder — July 26, 2026</a>
+        <a class="btn" href="#ebonhallow">Enter Ebonhallow</a>
+      </div>
+      <p class="hero-dates">Release Date <span>·</span> September 4<sup>th</sup>, 2026</p>
+    </div>
+  </header>
+
+  <!-- ═══ ENTER EBONHALLOW ═══ -->
+  <section id="ebonhallow" class="alt">
+    <div class="wrap-narrow reveal">
+      <div class="ornament" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 L14.5 9.5 L22 12 L14.5 14.5 L12 22 L9.5 14.5 L2 12 L9.5 9.5 Z"/></svg>
+      </div>
+      <h2 class="section-title">Enter Ebonhallow</h2>
+      <div class="ebon-copy">
+        <p>In the haunted <strong>Region of Ebonhallow</strong>, the dead are not forgotten and the unclaimed are never truly lost.</p>
+        <p>When grief curdles into power and the forgotten begin to stir, the living must choose whether remembrance is mercy&hellip; or a prison.</p>
+      </div>
+      <div class="tag-row">
+        <span>Dark fantasy</span><span class="diamond">❖</span>
+        <span>haunted cemeteries</span><span class="diamond">❖</span>
+        <span>morally complex monsters</span><span class="diamond">❖</span>
+        <span>love with teeth</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ THE STORY HOOK ═══ -->
+  <section id="story">
+    <div class="wrap reveal">
+      <h2 class="section-title">The Story Hook</h2>
+      <div class="hook-grid" style="margin-top:3rem">
+        <div class="hook-copy">
+          <p>In a city that prefers its dead quiet, missing bodies begin moving through old plague routes toward an abandoned royal cemetery.</p>
+          <p>Cassian Thorne, a rogue with too many secrets, and Vaela Blackwell, a paladin with no patience for violated graves, uncover a system of falsified records, stolen names, and dead roads reopening beneath the fog.</p>
+          <p class="hook-pull">The dead are not only rising.<br>They are being claimed.</p>
+        </div>
+        <div class="hook-raven" aria-hidden="true">
+          <svg viewBox="0 0 200 220" fill="none">
+            <!-- raven perched on iron cross -->
+            <g fill="#b8ae95">
+              <!-- heavy wedge beak, flat crown, folded wing, long ragged tail -->
+              <path d="M40 74 L68 64 Q78 50 94 51 Q112 52 120 63 Q138 71 146 85 Q158 98 168 116 L153 110 L160 125 L145 114 Q128 104 114 99 Q96 98 80 92 Q64 86 54 80 Z"/>
+              <circle cx="82" cy="61" r="2.3" fill="#0a090c"/>
+            </g>
+            <path d="M40 74 L66 70" stroke="#0a090c" stroke-width="1.2"/>
+            <g stroke="#b8ae95" stroke-width="2.5" stroke-linecap="round">
+              <path d="M92 99 L90 108 M104 100 L104 108"/>
+            </g>
+            <g stroke="#7d7050" stroke-width="3" opacity="0.8">
+              <line x1="97" y1="108" x2="97" y2="200"/>
+              <line x1="67" y1="136" x2="127" y2="136"/>
+              <line x1="67" y1="132" x2="67" y2="146"/>
+              <line x1="127" y1="132" x2="127" y2="146"/>
+            </g>
+            <g stroke="#47593f" stroke-width="1.4" opacity="0.6" fill="none">
+              <path d="M60 200 q10 -18 4 -34 q14 8 18 -6"/>
+              <path d="M140 200 q-10 -18 -4 -34 q-14 8 -18 -6"/>
+            </g>
+          </svg>
+        </div>
+      </div>
+
+      <div class="triptych">
+        <div class="panel reveal">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2 C7 2 4 6 4 10 c0 3 1.5 5 3 6 l0 3 c0 0.6 0.4 1 1 1 l1 0 0 -2 1.5 0 0 2 2 0 0 -2 1.5 0 0 2 1 0 c0.6 0 1 -0.4 1 -1 l0 -3 c1.5 -1 3 -3 3 -6 c0 -4 -3 -8 -8 -8 Z M8.8 12 a1.8 1.8 0 1 1 0 -3.6 a1.8 1.8 0 0 1 0 3.6 Z M15.2 12 a1.8 1.8 0 1 1 0 -3.6 a1.8 1.8 0 0 1 0 3.6 Z"/></svg>
+          <h3>Genre</h3>
+          <p>Gothic dark fantasy horror</p>
+        </div>
+        <div class="panel reveal">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 8 l3.5 4 L12 5 l5.5 7 L21 8 l-1.5 10 l-15 0 Z M5 20 l14 0 l0 1.5 l-14 0 Z"/></svg>
+          <h3>Tone</h3>
+          <p>Grief-soaked, eerie, brutal, romantic, sarcastic, and emotionally intense</p>
+        </div>
+        <div class="panel reveal">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 2 a5 5 0 1 0 4.6 7 L13 9 l0 2 2 0 0 2 2 0 0 2 2 0 1.6 -1.6 c0.3 -0.3 0.4 -0.6 0.4 -1 L21 11 c0 -0.5 -0.2 -0.8 -0.5 -1 L11.6 7 A5 5 0 0 0 7 2 Z M6 5 a2 2 0 1 1 0 4 a2 2 0 0 1 0 -4 Z"/></svg>
+          <h3>Setting</h3>
+          <p>A haunted city, abandoned plague roads, marshland cemeteries, sealed chapels, and an ancient royal burial ground where the dead were never properly allowed to rest</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ THEMES + READERS ═══ -->
+  <section class="alt">
+    <div class="wrap reveal">
+      <div class="ornament" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 L14.5 9.5 L22 12 L14.5 14.5 L12 22 L9.5 14.5 L2 12 L9.5 9.5 Z"/></svg>
+      </div>
+      <div class="two-col">
+        <div class="list-block">
+          <h3>Core Themes</h3>
+          <ul class="gothic-list">
+            <li>Grief</li>
+            <li>Memory</li>
+            <li>Burial</li>
+            <li>Corruption</li>
+            <li>Sacred Rage</li>
+            <li>Lost Faith</li>
+            <li>Found Worth</li>
+          </ul>
+          <p class="list-note">The difference between Remembrance and Possession.</p>
+        </div>
+        <div class="list-block">
+          <h3>Best for Readers Who Like</h3>
+          <ul class="gothic-list">
+            <li>Haunted cemeteries</li>
+            <li>Necromancy &amp; undead horrors</li>
+            <li>Corrupt officials</li>
+            <li>Slow-burn romance</li>
+            <li>Sharp banter</li>
+            <li>Morally complex villains</li>
+            <li>Emotional damage</li>
+            <li>A mischievous raven</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ CHARACTERS ═══ -->
+  <section id="characters">
+    <div class="wrap reveal">
+      <h2 class="section-title">Meet the Characters</h2>
+      <p class="section-lede">Two hearts sworn to the dead — and the raven who judges them both.</p>
+      <div class="char-grid">
+        <div class="char-card">
+          <h3>Cassian Thorne</h3>
+          <p class="char-sub">Rogue &middot; thief &middot; lock specialist &middot; reluctant hero</p>
+          <dl>
+            <div><dt>Age / Race</dt><dd>185, high elf</dd></div>
+            <div><dt>Skills</dt><dd>Infiltration, lockpicking, archery, sleight of hand, reading people, escaping consequences with dramatic flair</dd></div>
+            <div><dt>Personality</dt><dd>Charming, sarcastic, theatrical, guarded, secretly tender, allergic to sincerity</dd></div>
+            <div><dt>Companion</dt><dd>Cawsanova, his overly opinionated raven</dd></div>
+            <div><dt>Quirks</dt><dd>Flirts when uncomfortable, jokes during danger, insults architecture, and treats emotional vulnerability like a bear trap</dd></div>
+          </dl>
+        </div>
+        <div class="char-card vaela">
+          <h3>Vaela Blackwell</h3>
+          <p class="char-sub">Paladin sworn to protect the dignity of the dead</p>
+          <dl>
+            <div><dt>Age / Race</dt><dd>174, high elf</dd></div>
+            <div><dt>Skills</dt><dd>Greatsword combat, funeral rites, grave magic, divine smites, investigation, spiritual discipline</dd></div>
+            <div><dt>Personality</dt><dd>Severe, blunt, disciplined, compassionate in a terrifyingly practical way</dd></div>
+            <div><dt>Quirks</dt><dd>Gives affection like a military order, refuses to admit when she is injured, has no patience for corruption or improper burial practices</dd></div>
+          </dl>
+        </div>
+        <div class="raven-card">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13 3 c-2.4 0 -4 1.6 -4.4 3.6 c-1.6 0.4 -2.9 1.3 -3.4 2.7 c0.9 -0.4 1.9 -0.5 2.7 -0.2 c-1.2 0.9 -1.8 2.2 -1.7 3.7 c0.8 -0.9 1.8 -1.5 3 -1.5 c-0.1 0.5 -0.3 1.5 1.2 2.5 l0.4 -1.2 c0.6 0.7 1.4 1.2 2.3 1.2 c2.1 0 3.8 -2 3.8 -4.8 c0 -3.4 -1.7 -6 -3.9 -6 Z M14 17 l-1 4 l2 0 Z M11 16.5 l-2 4.5 l2 0 Z"/></svg>
+          <h3>Cawsanova</h3>
+          <p>Judges. Critiques. Exaggerates. Adorably insufferable.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ RELEASE ═══ -->
+  <section id="release" class="alt release">
+    <div class="wrap-narrow reveal">
+      <p class="release-blackletter">Until Mourning Comes</p>
+      <div class="date-lines">
+        <p class="date-line"><small>Preorders Begin</small>July 26<sup>th</sup>, 2026</p>
+        <p class="date-line"><small>Release Date</small>September 4<sup>th</sup>, 2026</p>
+      </div>
+      <div class="countdown" id="countdown" data-deadline="2026-07-26T00:00:00-05:00" aria-label="Countdown to preorders">
+        <div class="count-cell"><b id="cd-days">—</b><span>Days</span></div>
+        <div class="count-cell"><b id="cd-hours">—</b><span>Hours</span></div>
+        <div class="count-cell"><b id="cd-mins">—</b><span>Minutes</span></div>
+        <div class="count-cell"><b id="cd-secs">—</b><span>Seconds</span></div>
+      </div>
+      <p class="release-note" id="countdown-note">Until preorders open. Follow along for cover reveals, artwork, and worldbuilding from Ebonhallow.</p>
+      <a class="btn btn-blood" href="#follow">Be First to Know</a>
+    </div>
+  </section>
+
+  <!-- ═══ AUTHOR ═══ -->
+  <section id="author">
+    <div class="wrap reveal">
+      <h2 class="section-title">About the Author</h2>
+      <div class="author-grid" style="margin-top:3rem">
+        <div class="author-quote">
+          &ldquo;Your pain is not&nbsp;weakness.&rdquo;
+          <span class="attr">— Morgan Johnson</span>
+        </div>
+        <div class="author-copy">
+          <p>Morgan Johnson writes emotionally charged gothic fantasy set within the Region of Ebonhallow, where grief has teeth, monsters have wounds, and healing is never clean.</p>
+          <p>Her stories are written for readers who have carried pain too deep to summarize and experiences too meaningful to be reduced to a diagnosis or <em>mistaken for weakness</em>.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ FOLLOW ═══ -->
+  <section id="follow" class="alt follow">
+    <div class="wrap-narrow reveal">
+      <div class="seal" aria-hidden="true">M</div>
+      <h2 class="section-title">Follow the Mourning</h2>
+      <p class="section-lede">Follow Morgan Johnson for book updates, artwork, and worldbuilding from Ebonhallow.</p>
+      <div class="follow-links">
+        <a class="btn" href="https://www.facebook.com/search/top?q=The%20Region%20of%20Ebonhallow%20by%20Morgan%20Johnson" target="_blank" rel="noopener">Facebook — The Region of Ebonhallow</a>
+        <!-- TURNKEY: replace href with the author's mailing-list signup or contact email -->
+        <a class="btn btn-blood" href="mailto:hello@example.com?subject=Until%20Mourning%20Comes%20updates">Join the Mailing List</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ FOOTER ═══ -->
+  <footer>
+    <div class="fence" aria-hidden="true">
+      <svg viewBox="0 0 1440 70" preserveAspectRatio="none" fill="currentColor">
+        <rect x="0" y="30" width="1440" height="4"/>
+        <rect x="0" y="52" width="1440" height="3"/>
+        <g>
+          <!-- repeated pickets -->
+          <path d="M20 70 L20 18 L24 8 L28 18 L28 70 Z"/><path d="M80 70 L80 24 L84 14 L88 24 L88 70 Z"/><path d="M140 70 L140 24 L144 14 L148 24 L148 70 Z"/><path d="M200 70 L200 18 L204 8 L208 18 L208 70 Z"/><path d="M260 70 L260 24 L264 14 L268 24 L268 70 Z"/><path d="M320 70 L320 24 L324 14 L328 24 L328 70 Z"/><path d="M380 70 L380 18 L384 8 L388 18 L388 70 Z"/><path d="M440 70 L440 24 L444 14 L448 24 L448 70 Z"/><path d="M500 70 L500 24 L504 14 L508 24 L508 70 Z"/><path d="M560 70 L560 18 L564 8 L568 18 L568 70 Z"/><path d="M620 70 L620 24 L624 14 L628 24 L628 70 Z"/><path d="M680 70 L680 24 L684 14 L688 24 L688 70 Z"/><path d="M740 70 L740 18 L744 8 L748 18 L748 70 Z"/><path d="M800 70 L800 24 L804 14 L808 24 L808 70 Z"/><path d="M860 70 L860 24 L864 14 L868 24 L868 70 Z"/><path d="M920 70 L920 18 L924 8 L928 18 L928 70 Z"/><path d="M980 70 L980 24 L984 14 L988 24 L988 70 Z"/><path d="M1040 70 L1040 24 L1044 14 L1048 24 L1048 70 Z"/><path d="M1100 70 L1100 18 L1104 8 L1108 18 L1108 70 Z"/><path d="M1160 70 L1160 24 L1164 14 L1168 24 L1168 70 Z"/><path d="M1220 70 L1220 24 L1224 14 L1228 24 L1228 70 Z"/><path d="M1280 70 L1280 18 L1284 8 L1288 18 L1288 70 Z"/><path d="M1340 70 L1340 24 L1344 14 L1348 24 L1348 70 Z"/><path d="M1400 70 L1400 24 L1404 14 L1408 24 L1408 70 Z"/>
+        </g>
+      </svg>
+    </div>
+    <p>Until Mourning Comes &middot; A Requiem for the Forgotten Dead</p>
+    <p>&copy; 2026 Morgan Johnson &middot; The Region of Ebonhallow</p>
+  </footer>
+
+  <script>
+    // Countdown — switches to release date once preorders open
+    (function () {
+      const el = document.getElementById('countdown');
+      const note = document.getElementById('countdown-note');
+      const preorder = new Date('2026-07-26T00:00:00-05:00');
+      const release = new Date('2026-09-04T00:00:00-05:00');
+      const cells = {
+        d: document.getElementById('cd-days'),
+        h: document.getElementById('cd-hours'),
+        m: document.getElementById('cd-mins'),
+        s: document.getElementById('cd-secs')
+      };
+      function tick() {
+        const now = new Date();
+        let target = preorder, label = 'Until preorders open.';
+        if (now >= preorder) { target = release; label = 'Until release day.'; }
+        if (now >= release) {
+          el.style.display = 'none';
+          note.textContent = 'Until Mourning Comes is out now.';
+          return;
+        }
+        note.textContent = label + ' Follow along for cover reveals, artwork, and worldbuilding from Ebonhallow.';
+        let diff = Math.max(0, target - now);
+        const day = 86400000, hr = 3600000, min = 60000;
+        cells.d.textContent = Math.floor(diff / day);
+        cells.h.textContent = Math.floor((diff % day) / hr);
+        cells.m.textContent = Math.floor((diff % hr) / min);
+        cells.s.textContent = Math.floor((diff % min) / 1000);
+        setTimeout(tick, 1000);
+      }
+      tick();
+    })();
+
+    // Scroll reveal
+    (function () {
+      const io = new IntersectionObserver((entries) => {
+        entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('shown'); io.unobserve(e.target); } });
+      }, { threshold: 0.12 });
+      document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+    })();
+  </script>
+</body>
+</html>
