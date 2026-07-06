@@ -262,6 +262,9 @@
   .ed-add{appearance:none;width:100%;border:1px dashed var(--line-strong);background:transparent;color:var(--muted);
     font:inherit;font-weight:600;font-size:13.5px;padding:10px;border-radius:11px;cursor:pointer;margin-top:8px}
   .ed-add.big{border-style:solid;background:var(--surface-2);color:var(--text);margin-top:2px}
+  .linkbtn{appearance:none;border:none;background:transparent;color:var(--accent);font:inherit;font-weight:650;
+    font-size:13px;cursor:pointer;padding:6px 2px 0;margin-top:2px}
+  .linkbtn:active{opacity:.6}
 
   /* start-here guide */
   .starthere{margin:14px 16px 2px;background:var(--accent-soft);border:1px solid var(--line);
@@ -489,6 +492,7 @@
         <div class="field">
           <label for="edStart">Day 1</label>
           <input type="date" id="edStart">
+          <button type="button" class="linkbtn" id="edStartToday">Start today</button>
         </div>
       </div>
       <div class="hint" id="edEndHint" style="margin-top:-8px"></div>
@@ -1026,6 +1030,7 @@
   $("edName").addEventListener("input",function(){cfg().name=this.value;save();$("brandName").textContent=cfg().name||"Intention";});
   $("edDays").addEventListener("change",function(){var n=Math.max(1,Math.min(3650,parseInt(this.value,10)||1));cfg().totalDays=n;this.value=n;save();edEndHint();});
   $("edStart").addEventListener("change",function(){if(this.value){cfg().startDate=this.value;save();edEndHint();}});
+  $("edStartToday").addEventListener("click",function(){cfg().startDate=iso(today());$("edStart").value=cfg().startDate;save();edEndHint();});
 
   function renderEditor(){
     $("edName").value=cfg().name||"";
