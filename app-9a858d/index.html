@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Intention</title>
 <meta name="description" content="A configurable daily intention &amp; habit tracker.">
-<meta name="theme-color" content="#13161C" id="themeColor">
+<meta name="theme-color" content="#0E1116" id="themeColor">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -14,24 +14,25 @@
 <link rel="icon" type="image/png" href="icon-192.png">
 <link rel="manifest" href="manifest.json">
 <style>
+  /* Xebra Delta palette: charcoal #0E1116, cobalt #2563EB, off-white #F6F7FB */
   :root{
-    --bg:#EDEEEA; --surface:#FFFFFF; --surface-2:#F4F4F1; --surface-3:#ECEDE8;
-    --text:#15181E; --muted:#6A7280; --faint:#9AA1AC;
-    --line:#E1E2DC; --line-strong:#D2D3CC;
-    --accent:#5A52E0; --accent-soft:#ECEBFB; --on-accent:#FFFFFF;
-    --amber:#C98A1E;
-    --g-start:#5A52E0; --g-end:#E0A23C;
-    --shadow:0 1px 2px rgba(20,24,32,.06), 0 8px 24px rgba(20,24,32,.06);
-    --radius:18px;
+    --bg:#F6F7FB; --surface:#FFFFFF; --surface-2:#EEF0F5; --surface-3:#E4E8F0;
+    --text:#0E1116; --muted:#5A626E; --faint:#89909C;
+    --line:#E1E4EC; --line-strong:#CDD2DD;
+    --accent:#2563EB; --accent-soft:#E9EFFD; --on-accent:#FFFFFF;
+    --amber:#2563EB;
+    --g-start:#2563EB; --g-end:#2563EB;
+    --shadow:0 1px 2px rgba(14,17,22,.06);
+    --radius:8px;
   }
   html[data-theme="dark"]{
-    --bg:#13161C; --surface:#1A1E26; --surface-2:#222732; --surface-3:#272D39;
-    --text:#EDEEF2; --muted:#8C94A2; --faint:#5E6675;
-    --line:#262B35; --line-strong:#343B49;
-    --accent:#6E66F2; --accent-soft:#23253B; --on-accent:#FFFFFF;
-    --amber:#E0A23C;
-    --g-start:#6E66F2; --g-end:#E6AC4A;
-    --shadow:0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.35);
+    --bg:#0E1116; --surface:#161B22; --surface-2:#1C222C; --surface-3:#252C37;
+    --text:#F6F7FB; --muted:#9BA3B0; --faint:#6E7681;
+    --line:#242A33; --line-strong:#333B46;
+    --accent:#2563EB; --accent-soft:#15233C; --on-accent:#FFFFFF;
+    --amber:#2563EB;
+    --g-start:#2563EB; --g-end:#2563EB;
+    --shadow:0 1px 2px rgba(0,0,0,.4);
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{margin:0;padding:0;height:100%}
@@ -89,7 +90,7 @@
     background:linear-gradient(90deg,var(--g-start),var(--g-end));}
   .horizonLbl{display:flex;justify-content:space-between;color:var(--faint);font-size:11px;font-weight:600;margin-top:7px;letter-spacing:.02em}
 
-  .banner{margin:14px 20px 0;padding:12px 14px;border-radius:14px;background:var(--accent-soft);
+  .banner{margin:14px 20px 0;padding:12px 14px;border-radius:8px;background:var(--accent-soft);
     color:var(--text);font-size:13.5px;display:flex;gap:9px;align-items:center}
   .banner svg{width:17px;height:17px;flex:0 0 auto;color:var(--accent)}
 
@@ -154,7 +155,7 @@
   .wtoggle:active{transform:scale(.96)}
 
   .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:6px 16px 0}
-  .stat{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:15px 13px;text-align:center}
+  .stat{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:15px 13px;text-align:center}
   .stat b{display:block;font-size:30px;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
   .stat span{font-size:11px;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;font-weight:600}
   .stat .fire{color:var(--amber)}
@@ -206,17 +207,17 @@
   .sheet h2{margin:0 0 18px;font-size:20px;font-weight:750}
   .field{margin-bottom:18px}
   .field label{display:block;font-size:13px;font-weight:650;color:var(--muted);margin-bottom:7px;letter-spacing:.02em}
-  .field input[type=text],.field input[type=date],.field input[type=number],.field textarea{width:100%;padding:12px 13px;border-radius:12px;
+  .field input[type=text],.field input[type=date],.field input[type=number],.field textarea{width:100%;padding:12px 13px;border-radius:8px;
     border:1px solid var(--line);background:var(--surface-2);color:var(--text);font:inherit}
   .field textarea{min-height:84px;resize:vertical;line-height:1.5}
-  .seg{display:flex;background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:3px;gap:3px}
+  .seg{display:flex;background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:3px;gap:3px}
   .seg button{flex:1;appearance:none;border:none;background:transparent;color:var(--muted);font:inherit;
     font-weight:600;font-size:14px;padding:9px 0;border-radius:9px;cursor:pointer}
   .seg button.on{background:var(--surface);color:var(--text);box-shadow:var(--shadow)}
   .seg.wrap{flex-wrap:wrap}
   .btnrow{display:flex;gap:10px;flex-wrap:wrap}
   .btn{flex:1;min-width:120px;appearance:none;border:1px solid var(--line);background:var(--surface-2);
-    color:var(--text);font:inherit;font-weight:600;padding:12px;border-radius:12px;cursor:pointer;text-align:center}
+    color:var(--text);font:inherit;font-weight:600;padding:12px;border-radius:8px;cursor:pointer;text-align:center}
   .btn:active{transform:scale(.98)}
   .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
   .btn.danger{color:#C2453B;border-color:transparent;background:color-mix(in srgb,#C2453B 12%,transparent)}
@@ -305,6 +306,23 @@
   @media (prefers-reduced-motion: reduce){*{transition:none!important}}
   .view{display:none}
   .view.active{display:block}
+
+  /* print: clean, readable document. dark drops to white, controls hidden. */
+  @media print{
+    :root, html[data-theme="dark"]{
+      --bg:#FFFFFF; --surface:#FFFFFF; --surface-2:#FFFFFF; --surface-3:#F2F2F2;
+      --text:#0E1116; --muted:#333B46; --faint:#555C66;
+      --line:#CCD1DA; --line-strong:#AEB4BF;
+      --accent:#2563EB; --accent-soft:#EEF3FD; --on-accent:#0E1116;
+      --amber:#2563EB; --g-start:#2563EB; --g-end:#2563EB; --shadow:none;
+    }
+    html,body{height:auto;overflow:visible;background:#FFFFFF}
+    .app{display:block;height:auto;max-width:none}
+    .scrollarea{overflow:visible;padding-bottom:0}
+    .nav,.scrim,.sheet,.editor,.iconbtn,.chev,.todaypill,.counter-ctrl .cstep,
+    .starthere,.lockline{display:none!important}
+    *{box-shadow:none!important;transition:none!important}
+  }
 </style>
 </head>
 <body>
@@ -336,7 +354,7 @@
         <b>Start here</b>
         <button class="sh-x" id="shClose" aria-label="Dismiss">&times;</button>
       </div>
-      <p>This is your own daily tracker. It comes pre-filled with a 90-day plan as an example &mdash; change any of it to fit you.</p>
+      <p>This is your own daily tracker. It comes pre-filled with a 90-day plan as an example. Change any of it to fit you.</p>
       <ul class="sh-list">
         <li><b>Make it yours.</b> Tap the gear icon (top right) &rarr; <em>Edit categories &amp; items</em> to add, rename, reorder or delete anything.</li>
         <li><b>Pick your Day 1 &amp; length.</b> In the editor, set the start date and how many days the program runs. Day&nbsp;1 anchors to the date you choose.</li>
@@ -345,7 +363,7 @@
         <li><b>See the arc.</b> <em>Journey</em> shows your streak and day grid; <em>Plan</em> shows the whole blueprint.</li>
         <li><b>Yours &amp; offline.</b> Everything saves on this device only. Use your browser's <em>Add to Home Screen</em> to install it like an app.</li>
       </ul>
-      <div class="sh-actions"><button class="btn primary" id="shGotit">Got it &mdash; let's go</button></div>
+      <div class="sh-actions"><button class="btn primary" id="shGotit">Got it, let's go</button></div>
       <div class="sh-reopen">You can reopen this later from Settings.</div>
     </div>
     <div class="hero">
@@ -683,18 +701,18 @@
   }
   function lerp(a,b,t){return Math.round(a+(b-a)*t);}
   function hx(c){return "#"+c.map(function(v){return ("0"+v.toString(16)).slice(-2);}).join("");}
-  var GA=[90,82,224], GB=[224,162,60];
+  var GA=[37,99,235], GB=[37,99,235];   // flat cobalt (no gradient)
   function gradAt(t){return hx([lerp(GA[0],GB[0],t),lerp(GA[1],GB[1],t),lerp(GA[2],GB[2],t)]);}
 
   /* ---------- state ---------- */
   var state=load();
   function load(){
     try{var s=JSON.parse(localStorage.getItem(KEY));if(s&&typeof s==="object"){
-      s.days=s.days||{};s.weeks=s.weeks||{};s.theme=s.theme||"auto";
+      s.days=s.days||{};s.weeks=s.weeks||{};s.theme=s.theme||"dark";
       s.config=normalizeConfig(s.config);return s;}}catch(e){}
     // Fresh install: seed the plan and freeze Day 1 to today (the creation date)
     // by persisting right away, so the anchor doesn't drift on later opens.
-    var fresh={config:defaultConfig(),theme:"auto",days:{},weeks:{}};
+    var fresh={config:defaultConfig(),theme:"dark",days:{},weeks:{}};
     try{localStorage.setItem(KEY,JSON.stringify(fresh));}catch(e){}
     return fresh;
   }
@@ -954,7 +972,7 @@
       if(!ct.items.length)return;
       html+='<div class="planSec"><h3>'+esc(ct.title)+'</h3><ul class="clean">';
       ct.items.forEach(function(it){
-        html+='<li>'+esc(it.label)+'<span class="pmeta">'+esc(schedText(it))+(it.note?(" — "+esc(it.note)):"")+'</span></li>';
+        html+='<li>'+esc(it.label)+'<span class="pmeta">'+esc(schedText(it))+(it.note?(" - "+esc(it.note)):"")+'</span></li>';
       });
       html+='</ul></div>';
     });
@@ -999,7 +1017,7 @@
     var pref=state.theme||"auto", resolved=pref;
     if(pref==="auto")resolved=window.matchMedia&&window.matchMedia("(prefers-color-scheme: light)").matches?"light":"dark";
     document.documentElement.setAttribute("data-theme",resolved);
-    $("themeColor").setAttribute("content",resolved==="light"?"#EDEEEA":"#13161C");
+    $("themeColor").setAttribute("content",resolved==="light"?"#F6F7FB":"#0E1116");
   }
   if(window.matchMedia){window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change",function(){if((state.theme||"auto")==="auto")applyTheme();});}
 
