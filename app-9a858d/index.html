@@ -263,6 +263,23 @@
     font:inherit;font-weight:600;font-size:13.5px;padding:10px;border-radius:11px;cursor:pointer;margin-top:8px}
   .ed-add.big{border-style:solid;background:var(--surface-2);color:var(--text);margin-top:2px}
 
+  /* start-here guide */
+  .starthere{margin:14px 16px 2px;background:var(--accent-soft);border:1px solid var(--line);
+    border-radius:var(--radius);padding:15px 16px 14px}
+  .sh-head{display:flex;align-items:center;gap:9px;margin-bottom:8px}
+  .sh-head svg{width:20px;height:20px;color:var(--accent);flex:0 0 auto}
+  .sh-head b{font-size:16px;font-weight:750;flex:1;letter-spacing:-.01em}
+  .sh-x{appearance:none;border:none;background:transparent;color:var(--muted);font-size:20px;line-height:1;
+    cursor:pointer;width:30px;height:30px;border-radius:8px;display:grid;place-items:center;flex:0 0 auto}
+  .sh-x:active{background:var(--surface-2)}
+  .starthere p{margin:0 0 10px;font-size:13.5px;color:var(--text);line-height:1.5}
+  .sh-list{margin:0;padding:0;list-style:none}
+  .sh-list li{position:relative;padding:5px 0 5px 20px;font-size:13.5px;color:var(--text);line-height:1.45}
+  .sh-list li::before{content:"";position:absolute;left:2px;top:11px;width:6px;height:6px;border-radius:50%;background:var(--accent)}
+  .sh-list li b{font-weight:650}
+  .sh-actions{margin-top:13px}
+  .sh-reopen{margin-top:9px;font-size:12px;color:var(--faint);text-align:center}
+
   .footer{text-align:center;color:var(--faint);font-size:12px;margin:26px 0 8px;letter-spacing:.02em}
 
   @media (prefers-reduced-motion: reduce){*{transition:none!important}}
@@ -293,6 +310,24 @@
   <div class="scrollarea" id="scrollarea">
   <!-- TODAY -->
   <section class="view active" id="view-today">
+    <div class="starthere" id="startHere" hidden>
+      <div class="sh-head">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>
+        <b>Start here</b>
+        <button class="sh-x" id="shClose" aria-label="Dismiss">&times;</button>
+      </div>
+      <p>This is your own daily tracker. It comes pre-filled with a 90-day plan as an example &mdash; change any of it to fit you.</p>
+      <ul class="sh-list">
+        <li><b>Make it yours.</b> Tap the gear icon (top right) &rarr; <em>Edit categories &amp; items</em> to add, rename, reorder or delete anything.</li>
+        <li><b>Pick your Day 1 &amp; length.</b> In the editor, set the start date and how many days the program runs. Day&nbsp;1 anchors to the date you choose.</li>
+        <li><b>Check things off.</b> Tap a row to complete it. Counter items (like pushups or water) use the &minus; / + buttons toward a target.</li>
+        <li><b>Set how often.</b> Each item can repeat every day, on certain weekdays, a number of times per week, or once a week.</li>
+        <li><b>See the arc.</b> <em>Journey</em> shows your streak and day grid; <em>Plan</em> shows the whole blueprint.</li>
+        <li><b>Yours &amp; offline.</b> Everything saves on this device only. Use your browser's <em>Add to Home Screen</em> to install it like an app.</li>
+      </ul>
+      <div class="sh-actions"><button class="btn primary" id="shGotit">Got it &mdash; let's go</button></div>
+      <div class="sh-reopen">You can reopen this later from Settings.</div>
+    </div>
     <div class="hero">
       <div class="heroTop">
         <div class="daynav">
@@ -398,6 +433,10 @@
 <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="Settings">
   <div class="grab"></div>
   <h2>Settings</h2>
+  <div class="field">
+    <label>Getting started</label>
+    <div class="btnrow"><button class="btn" id="guideBtn">Show the Start-here guide</button></div>
+  </div>
   <div class="field">
     <label>Your program</label>
     <div class="btnrow"><button class="btn primary" id="editProgramBtn">Edit categories &amp; items</button></div>
@@ -661,6 +700,7 @@
   function cfg(){return state.config;}
 
   var selected=null;
+  var forceGuide=false;
   function clampSel(){
     var t=today(), s=startDate(), e=endDate();
     if(t<s) selected=s; else if(t>e) selected=e; else selected=t;
@@ -785,6 +825,7 @@
     $("lockline").classList.toggle("show",isDone(k,d));
 
     renderWeekCard(d);
+    $("startHere").hidden = !(!state.guideSeen || forceGuide);
     $("brandName").textContent=cfg().name||"Intention";
     $("todayFoot").textContent=cfg().name||"";
   }
@@ -923,6 +964,12 @@
   $("openSettings").addEventListener("click",openSheet);
   $("scrim").addEventListener("click",closeSheet);
 
+  /* start-here guide */
+  function dismissGuide(){state.guideSeen=true;forceGuide=false;save();$("startHere").hidden=true;}
+  $("shClose").addEventListener("click",dismissGuide);
+  $("shGotit").addEventListener("click",dismissGuide);
+  $("guideBtn").addEventListener("click",function(){forceGuide=true;closeSheet();switchView("today");});
+
   function setThemeSeg(v){document.querySelectorAll("#themeSeg button").forEach(function(b){b.classList.toggle("on",b.getAttribute("data-theme-opt")===v);});}
   document.querySelectorAll("#themeSeg button").forEach(function(b){
     b.addEventListener("click",function(){state.theme=b.getAttribute("data-theme-opt");save();setThemeSeg(state.theme);applyTheme();});
@@ -947,7 +994,7 @@
     var f=this.files[0];if(!f)return;var r=new FileReader();
     r.onload=function(){try{var s=JSON.parse(r.result);
       if(s&&s.days&&s.config){
-        state={config:normalizeConfig(s.config),theme:s.theme||state.theme,days:s.days||{},weeks:s.weeks||{}};
+        state={config:normalizeConfig(s.config),theme:s.theme||state.theme,days:s.days||{},weeks:s.weeks||{},guideSeen:s.guideSeen!==false};
         save();afterStructuralChange();closeSheet();
       } else alert("That file doesn't look like an Intention backup.");
     }catch(e){alert("Could not read that file.");}};
