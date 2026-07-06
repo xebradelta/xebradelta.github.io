@@ -565,7 +565,7 @@
     return {
       name:"90 Days of Intention",
       totalDays:90,
-      startDate:"2026-06-29",
+      startDate:iso(today()),   // anchor Day 1 to when this person starts, not a build date
       categories:[
         cat("Movement",[
           mk("Morning yoga",{sched:wd([1,3])}),
@@ -632,13 +632,17 @@
     try{var s=JSON.parse(localStorage.getItem(KEY));if(s&&typeof s==="object"){
       s.days=s.days||{};s.weeks=s.weeks||{};s.theme=s.theme||"auto";
       s.config=normalizeConfig(s.config);return s;}}catch(e){}
-    return {config:defaultConfig(),theme:"auto",days:{},weeks:{}};
+    // Fresh install: seed the plan and freeze Day 1 to today (the creation date)
+    // by persisting right away, so the anchor doesn't drift on later opens.
+    var fresh={config:defaultConfig(),theme:"auto",days:{},weeks:{}};
+    try{localStorage.setItem(KEY,JSON.stringify(fresh));}catch(e){}
+    return fresh;
   }
   function normalizeConfig(c){
     if(!c||!c.categories||!c.categories.length) return defaultConfig();
     c.name=c.name||"Intention";
     c.totalDays=Math.max(1,parseInt(c.totalDays,10)||90);
-    c.startDate=c.startDate||"2026-06-29";
+    c.startDate=c.startDate||iso(today());
     c.categories.forEach(function(ct){
       ct.id=ct.id||genId("cat"); ct.title=ct.title||"Category"; ct.items=ct.items||[];
       ct.items.forEach(function(it){
