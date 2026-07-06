@@ -262,6 +262,26 @@
   .ed-add{appearance:none;width:100%;border:1px dashed var(--line-strong);background:transparent;color:var(--muted);
     font:inherit;font-weight:600;font-size:13.5px;padding:10px;border-radius:11px;cursor:pointer;margin-top:8px}
   .ed-add.big{border-style:solid;background:var(--surface-2);color:var(--text);margin-top:2px}
+  .linkbtn{appearance:none;border:none;background:transparent;color:var(--accent);font:inherit;font-weight:650;
+    font-size:13px;cursor:pointer;padding:6px 2px 0;margin-top:2px}
+  .linkbtn:active{opacity:.6}
+
+  /* start-here guide */
+  .starthere{margin:14px 16px 2px;background:var(--accent-soft);border:1px solid var(--line);
+    border-radius:var(--radius);padding:15px 16px 14px}
+  .sh-head{display:flex;align-items:center;gap:9px;margin-bottom:8px}
+  .sh-head svg{width:20px;height:20px;color:var(--accent);flex:0 0 auto}
+  .sh-head b{font-size:16px;font-weight:750;flex:1;letter-spacing:-.01em}
+  .sh-x{appearance:none;border:none;background:transparent;color:var(--muted);font-size:20px;line-height:1;
+    cursor:pointer;width:30px;height:30px;border-radius:8px;display:grid;place-items:center;flex:0 0 auto}
+  .sh-x:active{background:var(--surface-2)}
+  .starthere p{margin:0 0 10px;font-size:13.5px;color:var(--text);line-height:1.5}
+  .sh-list{margin:0;padding:0;list-style:none}
+  .sh-list li{position:relative;padding:5px 0 5px 20px;font-size:13.5px;color:var(--text);line-height:1.45}
+  .sh-list li::before{content:"";position:absolute;left:2px;top:11px;width:6px;height:6px;border-radius:50%;background:var(--accent)}
+  .sh-list li b{font-weight:650}
+  .sh-actions{margin-top:13px}
+  .sh-reopen{margin-top:9px;font-size:12px;color:var(--faint);text-align:center}
 
   /* start-here guide */
   .starthere{margin:14px 16px 2px;background:var(--accent-soft);border:1px solid var(--line);
@@ -489,6 +509,7 @@
         <div class="field">
           <label for="edStart">Day 1</label>
           <input type="date" id="edStart">
+          <button type="button" class="linkbtn" id="edStartToday">Start today</button>
         </div>
       </div>
       <div class="hint" id="edEndHint" style="margin-top:-8px"></div>
@@ -1026,6 +1047,7 @@
   $("edName").addEventListener("input",function(){cfg().name=this.value;save();$("brandName").textContent=cfg().name||"Intention";});
   $("edDays").addEventListener("change",function(){var n=Math.max(1,Math.min(3650,parseInt(this.value,10)||1));cfg().totalDays=n;this.value=n;save();edEndHint();});
   $("edStart").addEventListener("change",function(){if(this.value){cfg().startDate=this.value;save();edEndHint();}});
+  $("edStartToday").addEventListener("click",function(){cfg().startDate=iso(today());$("edStart").value=cfg().startDate;save();edEndHint();});
 
   function renderEditor(){
     $("edName").value=cfg().name||"";
