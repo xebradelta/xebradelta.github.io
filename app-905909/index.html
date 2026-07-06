@@ -1,0 +1,1235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0d0d0d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="401k">
+<meta name="robots" content="noindex, nofollow">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<title>401(k) Tracker</title>
+<style>
+  :root {
+    --page: #0d0d0d;
+    --surface: #1a1a19;
+    --surface-2: #232322;
+    --ink: #ffffff;
+    --ink-2: #c3c2b7;
+    --muted: #898781;
+    --grid: #2c2c2a;
+    --baseline: #383835;
+    --border: rgba(255,255,255,0.10);
+    /* series (validated for dark surface): traditional / roth / after-tax */
+    --s-trad: #3987e5;
+    --s-roth: #199e70;
+    --s-at:   #c98500;
+    --s-trad-track: rgba(57,135,229,0.18);
+    --s-roth-track: rgba(25,158,112,0.18);
+    --s-at-track:   rgba(201,133,0,0.18);
+    /* status — reserved, never reused as series */
+    --good: #0ca30c;
+    --warning: #fab219;
+    --serious: #ec835a;
+    --critical: #d03b3b;
+    --radius: 14px;
+    --glass: rgba(13,13,13,0.92);
+    --glass-2: rgba(13,13,13,0.95);
+    --shadow: rgba(0,0,0,0.4);
+  }
+  :root[data-theme="light"] {
+    --page: #f9f9f7;
+    --surface: #fcfcfb;
+    --surface-2: #f0efec;
+    --ink: #0b0b0b;
+    --ink-2: #52514e;
+    --muted: #898781;
+    --grid: #e1e0d9;
+    --baseline: #c3c2b7;
+    --border: rgba(11,11,11,0.10);
+    /* same hues stepped for the light surface (validated) */
+    --s-trad: #2a78d6;
+    --s-roth: #1baf7a;
+    --s-at:   #eda100;
+    --s-trad-track: rgba(42,120,214,0.15);
+    --s-roth-track: rgba(27,175,122,0.15);
+    --s-at-track:   rgba(237,161,0,0.18);
+    --glass: rgba(249,249,247,0.92);
+    --glass-2: rgba(249,249,247,0.95);
+    --shadow: rgba(0,0,0,0.12);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    background: var(--page);
+    color: var(--ink);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 15px;
+    line-height: 1.45;
+    min-height: 100vh;
+    padding-bottom: calc(64px + env(safe-area-inset-bottom));
+  }
+  header.app {
+    position: sticky; top: 0; z-index: 20;
+    background: var(--glass);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border);
+    padding: calc(0.8rem + env(safe-area-inset-top)) 1rem 0.8rem;
+    display: flex; align-items: baseline; justify-content: space-between; gap: 0.75rem;
+  }
+  header.app h1 { font-size: 1.05rem; font-weight: 650; letter-spacing: 0.01em; }
+  header.app .yr {
+    display: flex; align-items: center; gap: 0.4rem; color: var(--muted); font-size: 0.85rem;
+  }
+  header.app select {
+    background: var(--surface); color: var(--ink); border: 1px solid var(--border);
+    border-radius: 8px; padding: 0.25rem 0.5rem; font-size: 0.9rem;
+  }
+  main { max-width: 720px; margin: 0 auto; padding: 1rem; display: grid; gap: 1rem; }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 1rem;
+  }
+  .card h2 { font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 0.75rem; }
+  .card h3 { font-size: 0.95rem; font-weight: 600; margin-bottom: 0.5rem; }
+  .sub { color: var(--muted); font-size: 0.8rem; }
+  .note { color: var(--ink-2); font-size: 0.82rem; }
+
+  /* stat tiles */
+  .tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+  .tile { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.85rem 1rem; }
+  .tile .lbl { font-size: 0.75rem; color: var(--muted); margin-bottom: 0.2rem; }
+  .tile .val { font-size: 1.35rem; font-weight: 650; }
+  .tile .delta { font-size: 0.75rem; color: var(--ink-2); margin-top: 0.15rem; }
+
+  /* meters */
+  .meter { margin-bottom: 1rem; }
+  .meter:last-child { margin-bottom: 0; }
+  .meter .row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.35rem; gap: 0.5rem; }
+  .meter .name { font-size: 0.85rem; color: var(--ink-2); }
+  .meter .nums { font-size: 0.85rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .meter .track { height: 10px; border-radius: 5px; overflow: hidden; position: relative; }
+  .meter .fill { height: 100%; border-radius: 5px 0 0 5px; min-width: 2px; transition: width 0.4s ease; }
+  .meter .fill.full { border-radius: 5px; }
+  .meter .foot { display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--muted); margin-top: 0.25rem; }
+
+  /* alerts */
+  .alert { display: flex; gap: 0.6rem; align-items: flex-start; border-radius: 10px; padding: 0.65rem 0.8rem; font-size: 0.85rem; margin-bottom: 0.5rem; border: 1px solid var(--border); background: var(--surface-2); }
+  .alert:last-child { margin-bottom: 0; }
+  .alert .ic { font-weight: 700; flex: 0 0 auto; }
+  .alert.warning .ic { color: var(--warning); }
+  .alert.critical .ic { color: var(--critical); }
+  .alert.good .ic { color: var(--good); }
+  .alert.info .ic { color: var(--ink-2); }
+
+  /* forms */
+  form.grid, .formgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+  .fw { grid-column: 1 / -1; }
+  label.f { display: block; }
+  label.f .t { display: block; font-size: 0.72rem; color: var(--muted); margin-bottom: 0.25rem; }
+  input, select, button, textarea {
+    font-family: inherit; font-size: 0.95rem;
+  }
+  input[type=date], input[type=number], input[type=text], select {
+    width: 100%; background: var(--page); color: var(--ink);
+    border: 1px solid var(--baseline); border-radius: 9px; padding: 0.5rem 0.6rem;
+  }
+  input:focus, select:focus { outline: 2px solid var(--s-trad); outline-offset: -1px; border-color: transparent; }
+  button.primary {
+    background: var(--ink); color: var(--page); border: none; border-radius: 10px;
+    padding: 0.6rem 1rem; font-weight: 650; cursor: pointer; width: 100%;
+  }
+  button.primary:active { transform: scale(0.99); }
+  button.ghost {
+    background: transparent; color: var(--ink-2); border: 1px solid var(--baseline);
+    border-radius: 10px; padding: 0.5rem 0.9rem; cursor: pointer;
+  }
+  button.mini { background: transparent; border: none; color: var(--muted); cursor: pointer; font-size: 0.8rem; padding: 0.2rem 0.4rem; }
+  button.mini.danger { color: var(--serious); }
+
+  /* lists & tables */
+  table { width: 100%; border-collapse: collapse; font-size: 0.83rem; }
+  th { text-align: right; font-weight: 500; color: var(--muted); padding: 0.35rem 0.4rem; border-bottom: 1px solid var(--grid); font-size: 0.72rem; }
+  th:first-child, td:first-child { text-align: left; padding-left: 0; }
+  td { text-align: right; padding: 0.4rem; border-bottom: 1px solid var(--grid); font-variant-numeric: tabular-nums; }
+  tr:last-child td { border-bottom: none; }
+  td.pos { color: var(--good); }
+  td.neg { color: var(--serious); }
+  .scrollx { overflow-x: auto; }
+
+  .entry { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; padding: 0.55rem 0; border-bottom: 1px solid var(--grid); }
+  .entry:last-child { border-bottom: none; }
+  .entry .l .d1 { font-size: 0.9rem; }
+  .entry .l .d2 { font-size: 0.75rem; color: var(--muted); }
+  .entry .r { text-align: right; font-variant-numeric: tabular-nums; }
+  .entry .r .a1 { font-weight: 600; }
+  .entry .r .a2 { font-size: 0.75rem; color: var(--muted); }
+
+  .swatch { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 0.35rem; vertical-align: baseline; }
+  .legend { display: flex; flex-wrap: wrap; gap: 0.8rem; font-size: 0.78rem; color: var(--ink-2); margin-bottom: 0.5rem; }
+  .legend span { white-space: nowrap; }
+
+  /* chart */
+  .chartwrap { position: relative; }
+  .chartwrap svg { width: 100%; height: auto; display: block; touch-action: pan-y; }
+  .tip {
+    position: absolute; pointer-events: none; background: var(--surface-2);
+    border: 1px solid var(--border); border-radius: 8px; padding: 0.45rem 0.6rem;
+    font-size: 0.75rem; line-height: 1.5; white-space: nowrap; display: none; z-index: 5;
+    box-shadow: 0 4px 14px var(--shadow);
+  }
+  .tip .th { color: var(--muted); }
+  .tip b { font-variant-numeric: tabular-nums; font-weight: 600; }
+
+  /* vesting ring/progress */
+  .vestbar { height: 8px; background: var(--surface-2); border-radius: 4px; overflow: hidden; margin: 0.5rem 0 0.35rem; }
+  .vestbar .fill { height: 100%; background: var(--s-roth); border-radius: 4px; }
+  .split { display: flex; gap: 1.5rem; margin-top: 0.6rem; }
+  .split .b { flex: 1; }
+  .split .b .lbl { font-size: 0.72rem; color: var(--muted); }
+  .split .b .val { font-size: 1.05rem; font-weight: 650; font-variant-numeric: tabular-nums; }
+
+  /* bottom nav */
+  nav.tabs {
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 30;
+    display: flex; background: var(--glass-2); backdrop-filter: blur(10px);
+    border-top: 1px solid var(--border);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  nav.tabs button {
+    flex: 1; background: none; border: none; color: var(--muted);
+    padding: 0.7rem 0 0.75rem; font-size: 0.78rem; font-weight: 600; cursor: pointer;
+    letter-spacing: 0.01em;
+  }
+  nav.tabs button.active { color: var(--ink); }
+  nav.tabs button.active::after { content: ""; display: block; width: 18px; height: 3px; border-radius: 2px; background: var(--ink); margin: 4px auto 0; }
+  nav.tabs button::after { content: ""; display: block; width: 18px; height: 3px; margin: 4px auto 0; }
+
+  .rowline { display: flex; justify-content: space-between; align-items: baseline; padding: 0.3rem 0; font-size: 0.87rem; }
+  .rowline .k { color: var(--ink-2); }
+  .rowline .v { font-variant-numeric: tabular-nums; font-weight: 550; }
+  .divider { border: none; border-top: 1px solid var(--grid); margin: 0.75rem 0; }
+  details.limits { margin-bottom: 0.75rem; }
+  details.limits summary { cursor: pointer; font-size: 0.9rem; padding: 0.35rem 0; color: var(--ink-2); }
+  .badge { display: inline-block; font-size: 0.68rem; padding: 0.1rem 0.45rem; border-radius: 999px; border: 1px solid var(--baseline); color: var(--muted); vertical-align: middle; }
+  .hidden { display: none !important; }
+  .mt { margin-top: 0.75rem; } .mb { margin-bottom: 0.75rem; }
+  .estimate { border-left: 3px solid var(--baseline); padding-left: 0.7rem; font-size: 0.78rem; color: var(--muted); margin-top: 0.6rem; }
+
+  button.theme {
+    background: var(--surface); border: 1px solid var(--border); color: var(--ink-2);
+    border-radius: 999px; width: 30px; height: 30px; cursor: pointer; font-size: 0.85rem;
+    line-height: 1; flex: 0 0 auto;
+  }
+  a.starthere {
+    display: flex; align-items: center; gap: 0.6rem;
+    max-width: 720px; margin: 1rem auto -0.25rem; padding: 0.7rem 0.9rem;
+    background: var(--surface); border: 1px solid var(--border);
+    border-left: 3px solid var(--s-trad); border-radius: 10px;
+    color: var(--ink); text-decoration: none; font-size: 0.88rem;
+  }
+  a.starthere .arrow { margin-left: auto; color: var(--muted); }
+  a.starthere:hover .arrow { color: var(--ink); }
+  @media (max-width: 752px) { a.starthere { margin-left: 1rem; margin-right: 1rem; } }
+</style>
+</head>
+<body>
+
+<header class="app">
+  <h1>401(k) Tracker</h1>
+  <div class="yr">
+    <span>Tax year</span>
+    <select id="yearSel" onchange="setYear(this.value)"></select>
+    <button class="theme" id="themeBtn" onclick="toggleTheme()" aria-label="Switch color theme" title="Switch light/dark">◐</button>
+  </div>
+</header>
+
+<a class="starthere" href="guide.html">
+  <span>📖</span>
+  <span><b>Start here</b> — your 401(k), explained, and how to use this tracker</span>
+  <span class="arrow">→</span>
+</a>
+
+<main id="view"></main>
+
+<nav class="tabs" id="tabs">
+  <button data-tab="home" onclick="go('home')">Home</button>
+  <button data-tab="log" onclick="go('log')">Log</button>
+  <button data-tab="match" onclick="go('match')">Match</button>
+  <button data-tab="balances" onclick="go('balances')">Balances</button>
+  <button data-tab="more" onclick="go('more')">More</button>
+</nav>
+
+<script>
+"use strict";
+
+/* ---------- persistence ---------- */
+
+const STORE_KEY = "k401.v1";
+
+const DEFAULT_STATE = () => ({
+  settings: {
+    annualSalary: 166000,
+    payPeriodsPerYear: 24,
+    hireDate: "",
+    currentTaxYear: new Date().getFullYear(),
+    theme: "dark"
+  },
+  // per tax year, editable — limits change annually and catch-up brackets differ by age
+  limits: {
+    "2026": {
+      employeeElectiveLimit: 24500,
+      totalPlanLimit: 72000,
+      afterTaxMaxPercent: 10,
+      matchPercent: 100,
+      matchCapPercent: 5
+    }
+  },
+  contributions: [],   // {id, date, payPeriodNumber, taxYear, traditional, roth, afterTax, matchReceived}
+  trueUps: [],         // {id, date, forYear, amount}
+  conversions: [],     // {id, date, amountConverted}  after-tax → Roth in-plan
+  snapshots: []        // {id, date, traditional, roth, afterTax}
+});
+
+let state = load();
+let tab = "home";
+
+function load() {
+  try {
+    const raw = localStorage.getItem(STORE_KEY);
+    if (!raw) return DEFAULT_STATE();
+    const s = JSON.parse(raw);
+    const d = DEFAULT_STATE();
+    return {
+      settings: Object.assign(d.settings, s.settings || {}),
+      limits: Object.assign(d.limits, s.limits || {}),
+      contributions: s.contributions || [],
+      trueUps: s.trueUps || [],
+      conversions: s.conversions || [],
+      snapshots: s.snapshots || []
+    };
+  } catch (_) { return DEFAULT_STATE(); }
+}
+function save() { localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+
+/* ---------- helpers ---------- */
+
+const USD = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+const USD2 = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const fmt = n => USD.format(Math.round(n));
+const fmt2 = n => USD2.format(n);
+const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+const parseDate = iso => { const [y,m,d] = String(iso).split("-").map(Number); return new Date(y, m-1, d); };
+const fmtDate = iso => iso ? parseDate(iso).toLocaleDateString("en-US", { month:"short", day:"numeric", year:"numeric" }) : "—";
+const fmtDateShort = iso => parseDate(iso).toLocaleDateString("en-US", { month:"short", day:"numeric" });
+const todayISO = () => { const d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); };
+const num = v => { const n = parseFloat(v); return isFinite(n) ? n : 0; };
+const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+
+function year() { return Number(state.settings.currentTaxYear); }
+
+function limitsFor(y) {
+  if (state.limits[y]) return state.limits[y];
+  // fall back to nearest defined year at or below, else nearest overall
+  const years = Object.keys(state.limits).map(Number).sort((a,b)=>a-b);
+  let best = years[0];
+  for (const yy of years) if (yy <= y) best = yy;
+  return state.limits[best];
+}
+
+const SERIES = [
+  { key: "traditional", label: "Traditional", color: "var(--s-trad)", hex: "#3987e5", track: "var(--s-trad-track)" },
+  { key: "roth",        label: "Roth",        color: "var(--s-roth)", hex: "#199e70", track: "var(--s-roth-track)" },
+  { key: "afterTax",    label: "After-Tax",   color: "var(--s-at)",   hex: "#c98500", track: "var(--s-at-track)" }
+];
+
+/* ---------- core calculations ---------- */
+
+function entriesFor(y) {
+  return state.contributions.filter(c => Number(c.taxYear) === Number(y))
+    .sort((a,b) => (a.payPeriodNumber - b.payPeriodNumber) || a.date.localeCompare(b.date));
+}
+function trueUpTotal(y) {
+  return state.trueUps.filter(t => Number(t.forYear) === Number(y)).reduce((s,t) => s + t.amount, 0);
+}
+
+function calcYear(y) {
+  const L = limitsFor(y);
+  const S = state.settings;
+  const entries = entriesFor(y);
+  const periodComp = S.annualSalary / S.payPeriodsPerYear;
+
+  let trad = 0, roth = 0, afterTax = 0, matchReceived = 0;
+  const periods = new Map(); // periodNumber -> {elective, afterTax, matchReceived, date}
+  for (const e of entries) {
+    trad += e.traditional; roth += e.roth; afterTax += e.afterTax; matchReceived += e.matchReceived;
+    const p = periods.get(e.payPeriodNumber) || { elective: 0, afterTax: 0, matchReceived: 0, date: e.date };
+    p.elective += e.traditional + e.roth;
+    p.afterTax += e.afterTax;
+    p.matchReceived += e.matchReceived;
+    if (e.date > p.date) p.date = e.date;
+    periods.set(e.payPeriodNumber, p);
+  }
+  const elective = trad + roth;
+  const trueUp = trueUpTotal(y);
+  const match = matchReceived + trueUp;
+  const total = elective + afterTax + match;
+
+  // per-period match entitlement: matchPercent% of the first matchCapPercent% of comp
+  const perPeriod = [...periods.entries()].sort((a,b) => a[0]-b[0]).map(([n, p]) => {
+    const entitled = Math.min(p.elective, periodComp * L.matchCapPercent/100) * L.matchPercent/100;
+    return { n, date: p.date, elective: p.elective, afterTax: p.afterTax,
+             entitled, received: p.matchReceived, delta: p.matchReceived - entitled };
+  });
+  const periodEntitledSum = perPeriod.reduce((s,p) => s + p.entitled, 0);
+
+  // annual true-up basis: match on annual totals, ignoring per-period timing
+  const annualCompToDate = periodComp * perPeriod.length;
+  const annualEntitled = Math.min(elective, annualCompToDate * L.matchCapPercent/100) * L.matchPercent/100;
+  const fullYearEntitled = Math.min(elective, S.annualSalary * L.matchCapPercent/100) * L.matchPercent/100;
+  const trueUpShortfall = Math.max(0, annualEntitled - matchReceived - trueUp);
+
+  // year-end projections from pace so far
+  const lastPeriod = perPeriod.length ? perPeriod[perPeriod.length-1].n : 0;
+  const remaining = Math.max(0, S.payPeriodsPerYear - lastPeriod);
+  const avgElective = perPeriod.length ? elective / perPeriod.length : 0;
+  const avgAfterTax = perPeriod.length ? afterTax / perPeriod.length : 0;
+  const avgMatch = perPeriod.length ? matchReceived / perPeriod.length : 0;
+  const projElective = elective + avgElective * remaining;
+  const projAfterTax = afterTax + avgAfterTax * remaining;
+  const projTotal = total + (avgElective + avgAfterTax + avgMatch) * remaining;
+
+  const afterTaxCap = S.annualSalary * L.afterTaxMaxPercent/100;
+
+  return { L, entries, periodComp, trad, roth, afterTax, elective, matchReceived, trueUp, match, total,
+           perPeriod, periodEntitledSum, annualEntitled, fullYearEntitled, trueUpShortfall,
+           lastPeriod, remaining, projElective, projAfterTax, projTotal, afterTaxCap };
+}
+
+function vesting() {
+  const hd = state.settings.hireDate;
+  if (!hd) return null;
+  const hire = parseDate(hd);
+  const cliff = new Date(hire.getFullYear() + 3, hire.getMonth(), hire.getDate());
+  const now = new Date(); now.setHours(0,0,0,0);
+  const msTotal = cliff - hire, msDone = now - hire;
+  const pct = clamp(msDone / msTotal, 0, 1);
+  const daysLeft = Math.max(0, Math.ceil((cliff - now) / 86400000));
+  const monthsLeft = Math.floor(daysLeft / 30.44);
+  const vested = pct >= 1;
+  // across all years: own contributions always vested; match vests at the cliff
+  let own = 0, match = 0;
+  for (const c of state.contributions) { own += c.traditional + c.roth + c.afterTax; match += c.matchReceived; }
+  for (const t of state.trueUps) match += t.amount;
+  return { hire: hd, cliff, pct, daysLeft, monthsLeft, vested, own, match };
+}
+
+/* ---------- theme ---------- */
+
+function applyTheme() {
+  const t = state.settings.theme === "light" ? "light" : "dark";
+  document.documentElement.setAttribute("data-theme", t);
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.setAttribute("content", t === "light" ? "#f9f9f7" : "#0d0d0d");
+  const btn = document.getElementById("themeBtn");
+  if (btn) btn.textContent = t === "light" ? "☾" : "☀";
+}
+function toggleTheme() {
+  state.settings.theme = state.settings.theme === "light" ? "dark" : "light";
+  save(); applyTheme();
+  if (tab === "balances" && chartSnaps) render(); // redraw chart chrome for the new surface
+}
+
+/* ---------- navigation ---------- */
+
+function go(t) {
+  tab = t;
+  document.querySelectorAll("nav.tabs button").forEach(b => b.classList.toggle("active", b.dataset.tab === t));
+  render();
+  window.scrollTo(0, 0);
+}
+function setYear(y) {
+  state.settings.currentTaxYear = Number(y);
+  save(); render();
+}
+function refreshYearSel() {
+  const sel = document.getElementById("yearSel");
+  const ys = new Set(Object.keys(state.limits).map(Number));
+  ys.add(new Date().getFullYear());
+  ys.add(year());
+  for (const c of state.contributions) ys.add(Number(c.taxYear));
+  const sorted = [...ys].sort((a,b) => a-b);
+  sel.innerHTML = sorted.map(y => `<option value="${y}" ${y===year()?"selected":""}>${y}</option>`).join("");
+}
+
+/* ---------- shared UI bits ---------- */
+
+function meterHTML({ name, value, cap, color, track, projected }) {
+  const pct = cap > 0 ? clamp(value / cap, 0, 1) : 0;
+  const over = value > cap + 0.005;
+  const fillColor = over ? "var(--critical)" : color;
+  const left = Math.max(0, cap - value);
+  return `
+    <div class="meter" role="progressbar" aria-valuemin="0" aria-valuemax="${cap.toFixed(0)}" aria-valuenow="${value.toFixed(0)}" aria-label="${esc(name)}">
+      <div class="row">
+        <span class="name">${esc(name)}</span>
+        <span class="nums">${fmt(value)} <span class="sub">/ ${fmt(cap)}</span></span>
+      </div>
+      <div class="track" style="background:${track}">
+        <div class="fill ${pct>=1?"full":""}" style="width:${(pct*100).toFixed(1)}%;background:${fillColor}"></div>
+      </div>
+      <div class="foot">
+        <span>${(pct*100).toFixed(1)}% used</span>
+        <span>${over ? "over by " + fmt(value - cap) : fmt(left) + " remaining"}${projected != null ? " · proj. " + fmt(projected) : ""}</span>
+      </div>
+    </div>`;
+}
+
+function alertHTML(kind, text) {
+  const ic = { critical: "●", warning: "▲", good: "✓", info: "○" }[kind] || "○";
+  return `<div class="alert ${kind}"><span class="ic">${ic}</span><span>${text}</span></div>`;
+}
+
+/* ---------- HOME ---------- */
+
+function renderHome() {
+  const y = year();
+  const C = calcYear(y);
+  const V = vesting();
+  const convYTD = state.conversions.filter(c => parseDate(c.date).getFullYear() === y).reduce((s,c) => s + c.amountConverted, 0);
+  const convAll = state.conversions.reduce((s,c) => s + c.amountConverted, 0);
+  const afterTaxAll = state.contributions.reduce((s,c) => s + c.afterTax, 0);
+  const unconverted = Math.max(0, afterTaxAll - convAll);
+
+  // alerts
+  const alerts = [];
+  if (C.elective > C.L.employeeElectiveLimit) alerts.push(alertHTML("critical", `Elective contributions exceed the ${fmt(C.L.employeeElectiveLimit)} limit by <b>${fmt(C.elective - C.L.employeeElectiveLimit)}</b>.`));
+  else if (C.remaining > 0 && C.projElective > C.L.employeeElectiveLimit && C.perPeriod.length)
+    alerts.push(alertHTML("warning", `On current pace, Traditional + Roth contributions hit the ${fmt(C.L.employeeElectiveLimit)} elective limit before year-end (projected ${fmt(C.projElective)}). Adjust your election if that's not intentional.`));
+  if (C.afterTax > C.afterTaxCap) alerts.push(alertHTML("critical", `After-tax contributions exceed the ${C.L.afterTaxMaxPercent}% cap (${fmt(C.afterTaxCap)}) by <b>${fmt(C.afterTax - C.afterTaxCap)}</b>.`));
+  else if (C.remaining > 0 && C.projAfterTax > C.afterTaxCap && C.afterTax > 0)
+    alerts.push(alertHTML("warning", `On current pace, after-tax contributions exceed the ${C.L.afterTaxMaxPercent}% cap (projected ${fmt(C.projAfterTax)}).`));
+  if (C.total > C.L.totalPlanLimit) alerts.push(alertHTML("critical", `Total annual additions exceed the ${fmt(C.L.totalPlanLimit)} plan limit by <b>${fmt(C.total - C.L.totalPlanLimit)}</b>.`));
+  else if (C.remaining > 0 && C.projTotal > C.L.totalPlanLimit && C.perPeriod.length)
+    alerts.push(alertHTML("warning", `On current pace, total additions exceed the ${fmt(C.L.totalPlanLimit)} plan limit (projected ${fmt(C.projTotal)}).`));
+  // prior-year true-up reconciliation (deposits typically land in Q1)
+  const prev = calcYear(y - 1);
+  if (prev.trueUpShortfall > 0.005 && prev.entries.length)
+    alerts.push(alertHTML("warning", `${y-1} match shortfall of <b>${fmt2(prev.trueUpShortfall)}</b> awaiting true-up — Blue Origin typically deposits it in Q1 ${y}. Log it on the Match tab when it lands.`));
+  if (C.trueUpShortfall > 0.005)
+    alerts.push(alertHTML("info", `Current ${y} match shortfall vs. annual entitlement: ${fmt2(C.trueUpShortfall)}. If it remains at year-end, it's trued up in Q1 ${y+1}.`));
+
+  const el = document.getElementById("view");
+  el.innerHTML = `
+    ${state.contributions.length === 0 ? `
+      <div class="card">
+        <h3>Fresh start</h3>
+        <p class="note">This tracker begins at your plan launch — no history needed. Set your hire date and salary under <b>More → Settings</b>, then log your first paycheck on the <b>Log</b> tab.</p>
+      </div>` : ""}
+
+    <div class="tiles">
+      <div class="tile"><div class="lbl">You contributed · ${y} YTD</div><div class="val">${fmt(C.elective + C.afterTax)}</div>
+        <div class="delta">Trad ${fmt(C.trad)} · Roth ${fmt(C.roth)} · AT ${fmt(C.afterTax)}</div></div>
+      <div class="tile"><div class="lbl">Employer match · ${y} YTD</div><div class="val">${fmt(C.match)}</div>
+        <div class="delta">${C.trueUp > 0 ? "incl. " + fmt(C.trueUp) + " true-up" : "always pre-tax"}</div></div>
+      <div class="tile"><div class="lbl">Total additions · ${y}</div><div class="val">${fmt(C.total)}</div>
+        <div class="delta">of ${fmt(C.L.totalPlanLimit)} plan cap</div></div>
+      <div class="tile"><div class="lbl">Mega backdoor headroom</div><div class="val">${fmt(Math.max(0, C.L.totalPlanLimit - C.total))}</div>
+        <div class="delta">left under total cap</div></div>
+    </div>
+
+    ${alerts.length ? `<div class="card"><h2>Alerts</h2>${alerts.join("")}</div>` : ""}
+
+    <div class="card">
+      <h2>${y} limits</h2>
+      ${meterHTML({ name: "Traditional + Roth elective", value: C.elective, cap: C.L.employeeElectiveLimit,
+                    color: "var(--s-trad)", track: "var(--s-trad-track)",
+                    projected: C.remaining > 0 && C.perPeriod.length ? C.projElective : null })}
+      ${meterHTML({ name: `After-tax (${C.L.afterTaxMaxPercent}% of salary)`, value: C.afterTax, cap: C.afterTaxCap,
+                    color: "var(--s-at)", track: "var(--s-at-track)",
+                    projected: C.remaining > 0 && C.afterTax > 0 ? C.projAfterTax : null })}
+      ${meterHTML({ name: "Total annual additions", value: C.total, cap: C.L.totalPlanLimit,
+                    color: "var(--s-roth)", track: "var(--s-roth-track)",
+                    projected: C.remaining > 0 && C.perPeriod.length ? C.projTotal : null })}
+      <p class="sub">Pay periods logged: ${C.perPeriod.length} of ${state.settings.payPeriodsPerYear}${C.lastPeriod ? " (through #" + C.lastPeriod + ")" : ""}. Projections assume your current per-period pace.</p>
+    </div>
+
+    <div class="card">
+      <h2>Vesting</h2>
+      ${V ? `
+        ${V.vested
+          ? `<h3 style="color:var(--good)">Fully vested ✓</h3><p class="note">Cliff passed ${fmtDate(V.cliff.toISOString().slice(0,10))}. All employer match is yours.</p>`
+          : `<h3>${V.daysLeft.toLocaleString()} days to full vesting</h3>
+             <p class="sub">3-year cliff on employer match · hired ${fmtDate(V.hire)} · cliff ${V.cliff.toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})} (~${V.monthsLeft} months)</p>`}
+        <div class="vestbar"><div class="fill" style="width:${(V.pct*100).toFixed(1)}%"></div></div>
+        <div class="sub">${(V.pct*100).toFixed(1)}% of the way there</div>
+        <div class="split">
+          <div class="b"><div class="lbl">Vested (your contributions${V.vested ? " + match" : ""})</div>
+            <div class="val">${fmt(V.vested ? V.own + V.match : V.own)}</div></div>
+          <div class="b"><div class="lbl">${V.vested ? "Unvested" : "Unvested match"}</div>
+            <div class="val">${fmt(V.vested ? 0 : V.match)}</div></div>
+        </div>
+        <p class="sub mt">Amounts shown are contributions, not market value — see Balances for account value.</p>
+      ` : `<p class="note">Set your hire date in <b>More → Settings</b> to track the 3-year cliff.</p>`}
+    </div>
+
+    <div class="card">
+      <h2>Mega backdoor Roth · ${y}</h2>
+      <div class="rowline"><span class="k">After-tax contributed (YTD)</span><span class="v">${fmt(C.afterTax)}</span></div>
+      <div class="rowline"><span class="k">Converted to Roth in-plan (YTD)</span><span class="v">${fmt(convYTD)}</span></div>
+      <div class="rowline"><span class="k">Unconverted after-tax (all time)</span><span class="v">${fmt(unconverted)}</span></div>
+      <div class="rowline"><span class="k">Headroom under ${fmt(C.L.totalPlanLimit)} cap</span><span class="v">${fmt(Math.max(0, C.L.totalPlanLimit - C.total))}</span></div>
+      <p class="sub mt">Headroom = total cap − elective − after-tax − match. Log conversions on the Log tab.</p>
+    </div>
+  `;
+}
+
+/* ---------- LOG (contributions + conversions) ---------- */
+
+function suggestPeriod() {
+  const es = entriesFor(year());
+  return es.length ? Math.max(...es.map(e => e.payPeriodNumber)) + 1 : 1;
+}
+
+function renderLog() {
+  const y = year();
+  const entries = entriesFor(y).slice().sort((a,b) => (b.payPeriodNumber - a.payPeriodNumber) || b.date.localeCompare(a.date));
+  const last = entries[0];
+  const convs = state.conversions.slice().sort((a,b) => b.date.localeCompare(a.date));
+  const el = document.getElementById("view");
+  el.innerHTML = `
+    <div class="card">
+      <h2>Log a paycheck · ${y}</h2>
+      <form class="grid" onsubmit="return addContribution(this)">
+        <label class="f"><span class="t">Pay date</span><input type="date" name="date" required value="${todayISO()}"></label>
+        <label class="f"><span class="t">Pay period # (1–${state.settings.payPeriodsPerYear})</span><input type="number" name="period" min="1" max="99" step="1" required value="${suggestPeriod()}"></label>
+        <label class="f"><span class="t"><span class="swatch" style="background:var(--s-trad)"></span>Traditional $</span><input type="number" name="traditional" min="0" step="0.01" inputmode="decimal" placeholder="0.00" value="${last ? last.traditional || "" : ""}"></label>
+        <label class="f"><span class="t"><span class="swatch" style="background:var(--s-roth)"></span>Roth $</span><input type="number" name="roth" min="0" step="0.01" inputmode="decimal" placeholder="0.00" value="${last ? last.roth || "" : ""}"></label>
+        <label class="f"><span class="t"><span class="swatch" style="background:var(--s-at)"></span>After-tax $</span><input type="number" name="afterTax" min="0" step="0.01" inputmode="decimal" placeholder="0.00" value="${last ? last.afterTax || "" : ""}"></label>
+        <label class="f"><span class="t">Match received $ <span class="sub">(pre-tax)</span></span><input type="number" name="match" min="0" step="0.01" inputmode="decimal" placeholder="0.00" value="${last ? last.matchReceived || "" : ""}"></label>
+        <div class="fw sub" id="matchHint"></div>
+        <div class="fw"><button class="primary" type="submit">Add contribution</button></div>
+      </form>
+    </div>
+
+    <div class="card">
+      <h2>${y} contributions (${entries.length})</h2>
+      ${entries.length ? entries.map(e => `
+        <div class="entry">
+          <div class="l">
+            <div class="d1">Period #${e.payPeriodNumber} <span class="sub">· ${fmtDate(e.date)}</span></div>
+            <div class="d2">T ${fmt2(e.traditional)} · R ${fmt2(e.roth)} · AT ${fmt2(e.afterTax)} · match ${fmt2(e.matchReceived)}</div>
+          </div>
+          <div class="r">
+            <div class="a1">${fmt2(e.traditional + e.roth + e.afterTax)}</div>
+            <button class="mini danger" onclick="delContribution('${e.id}')">delete</button>
+          </div>
+        </div>`).join("") : `<p class="note">Nothing logged for ${y} yet.</p>`}
+    </div>
+
+    <div class="card">
+      <h2>Roth in-plan conversions</h2>
+      <p class="note mb">Log each after-tax → Roth conversion (the mega backdoor step) as Fidelity processes it.</p>
+      <form class="grid" onsubmit="return addConversion(this)">
+        <label class="f"><span class="t">Date</span><input type="date" name="date" required value="${todayISO()}"></label>
+        <label class="f"><span class="t">Amount converted $</span><input type="number" name="amount" min="0.01" step="0.01" inputmode="decimal" required placeholder="0.00"></label>
+        <div class="fw"><button class="primary" type="submit">Add conversion</button></div>
+      </form>
+      ${convs.length ? `<hr class="divider">` + convs.map(c => `
+        <div class="entry">
+          <div class="l"><div class="d1">${fmtDate(c.date)}</div><div class="d2">after-tax → Roth</div></div>
+          <div class="r"><div class="a1">${fmt2(c.amountConverted)}</div>
+            <button class="mini danger" onclick="delConversion('${c.id}')">delete</button></div>
+        </div>`).join("") : ""}
+    </div>
+  `;
+  updateMatchHint();
+  const form = el.querySelector("form");
+  ["traditional","roth"].forEach(n => form.elements[n].addEventListener("input", updateMatchHint));
+}
+
+function updateMatchHint() {
+  const form = document.querySelector("#view form");
+  const hint = document.getElementById("matchHint");
+  if (!form || !hint) return;
+  const L = limitsFor(year());
+  const comp = state.settings.annualSalary / state.settings.payPeriodsPerYear;
+  const elective = num(form.elements.traditional.value) + num(form.elements.roth.value);
+  const entitled = Math.min(elective, comp * L.matchCapPercent/100) * L.matchPercent/100;
+  hint.textContent = `Expected match this period: ${fmt2(entitled)} (${L.matchPercent}% of first ${L.matchCapPercent}% of ${fmt(comp)} comp)`;
+}
+
+function addContribution(form) {
+  const e = {
+    id: uid(),
+    date: form.elements.date.value,
+    payPeriodNumber: Math.round(num(form.elements.period.value)),
+    taxYear: year(),
+    traditional: num(form.elements.traditional.value),
+    roth: num(form.elements.roth.value),
+    afterTax: num(form.elements.afterTax.value),
+    matchReceived: num(form.elements.match.value)
+  };
+  if (!e.date || e.payPeriodNumber < 1) return false;
+  if (e.traditional + e.roth + e.afterTax + e.matchReceived <= 0) { alert("Enter at least one amount."); return false; }
+  state.contributions.push(e);
+  save(); renderLog();
+  return false;
+}
+function delContribution(id) {
+  if (!confirm("Delete this contribution entry?")) return;
+  state.contributions = state.contributions.filter(c => c.id !== id);
+  save(); renderLog();
+}
+function addConversion(form) {
+  const c = { id: uid(), date: form.elements.date.value, amountConverted: num(form.elements.amount.value), fromAccount: "afterTax", toAccount: "roth" };
+  if (!c.date || c.amountConverted <= 0) return false;
+  state.conversions.push(c);
+  save(); renderLog();
+  return false;
+}
+function delConversion(id) {
+  if (!confirm("Delete this conversion?")) return;
+  state.conversions = state.conversions.filter(c => c.id !== id);
+  save(); renderLog();
+}
+
+/* ---------- MATCH ---------- */
+
+function renderMatch() {
+  const y = year();
+  const C = calcYear(y);
+  const tus = state.trueUps.slice().sort((a,b) => b.date.localeCompare(a.date));
+  const prevY = y - 1, prev = calcYear(prevY);
+  const el = document.getElementById("view");
+  el.innerHTML = `
+    <div class="card">
+      <h2>${y} match summary</h2>
+      <div class="rowline"><span class="k">Match formula</span><span class="v">${C.L.matchPercent}% of first ${C.L.matchCapPercent}%</span></div>
+      <div class="rowline"><span class="k">Comp per period</span><span class="v">${fmt2(C.periodComp)}</span></div>
+      <div class="rowline"><span class="k">Full match per period</span><span class="v">${fmt2(C.periodComp * C.L.matchCapPercent/100 * C.L.matchPercent/100)}</span></div>
+      <hr class="divider">
+      <div class="rowline"><span class="k">Entitled (per-period basis)</span><span class="v">${fmt2(C.periodEntitledSum)}</span></div>
+      <div class="rowline"><span class="k">Entitled (annual true-up basis)</span><span class="v">${fmt2(C.annualEntitled)}</span></div>
+      <div class="rowline"><span class="k">Match received</span><span class="v">${fmt2(C.matchReceived)}</span></div>
+      <div class="rowline"><span class="k">True-up received (for ${y})</span><span class="v">${fmt2(C.trueUp)}</span></div>
+      <div class="rowline"><span class="k">Outstanding shortfall</span><span class="v" style="color:${C.trueUpShortfall > 0.005 ? "var(--serious)" : "var(--good)"}">${fmt2(C.trueUpShortfall)}</span></div>
+      ${C.trueUpShortfall > 0.005 ? `<p class="sub mt">Shortfalls from per-period timing are trued up by Blue Origin in Q1 ${y+1}, based on your annual contribution total.</p>` : ""}
+      <p class="sub mt">If you max the elective limit early in the year, per-period match stops when contributions stop — the annual true-up restores the difference. Match is always deposited pre-tax.</p>
+    </div>
+
+    <div class="card">
+      <h2>Per pay period</h2>
+      ${C.perPeriod.length ? `<div class="scrollx"><table>
+        <thead><tr><th>#</th><th>Elective</th><th>Entitled</th><th>Received</th><th>Δ</th></tr></thead>
+        <tbody>
+        ${C.perPeriod.map(p => { const d = Math.abs(p.delta) < 0.005 ? 0 : p.delta; return `<tr>
+          <td>#${p.n} <span class="sub">${fmtDateShort(p.date)}</span></td>
+          <td>${fmt2(p.elective)}</td>
+          <td>${fmt2(p.entitled)}</td>
+          <td>${fmt2(p.received)}</td>
+          <td class="${d < 0 ? "neg" : d > 0 ? "pos" : ""}">${d > 0 ? "+" : ""}${fmt2(d)}</td>
+        </tr>`; }).join("")}
+        </tbody></table></div>` : `<p class="note">No pay periods logged for ${y} yet.</p>`}
+    </div>
+
+    <div class="card">
+      <h2>True-up deposits</h2>
+      ${prev.entries.length && prev.trueUpShortfall > 0.005
+        ? alertHTML("warning", `${prevY} shortfall of <b>${fmt2(prev.trueUpShortfall)}</b> still outstanding — expect the true-up in Q1 ${y}.`)
+        : ""}
+      <p class="note mb">When the year-end true-up lands (typically Q1 of the following year), log it here against the year it reconciles.</p>
+      <form class="grid" onsubmit="return addTrueUp(this)">
+        <label class="f"><span class="t">Deposit date</span><input type="date" name="date" required value="${todayISO()}"></label>
+        <label class="f"><span class="t">For tax year</span><input type="number" name="forYear" required value="${prevY}" step="1"></label>
+        <label class="f fw"><span class="t">Amount $</span><input type="number" name="amount" min="0.01" step="0.01" inputmode="decimal" required placeholder="0.00"></label>
+        <div class="fw"><button class="primary" type="submit">Confirm true-up deposit</button></div>
+      </form>
+      ${tus.length ? `<hr class="divider">` + tus.map(t => `
+        <div class="entry">
+          <div class="l"><div class="d1">True-up for ${t.forYear}</div><div class="d2">deposited ${fmtDate(t.date)}</div></div>
+          <div class="r"><div class="a1">${fmt2(t.amount)}</div>
+            <button class="mini danger" onclick="delTrueUp('${t.id}')">delete</button></div>
+        </div>`).join("") : ""}
+    </div>
+  `;
+}
+function addTrueUp(form) {
+  const t = { id: uid(), date: form.elements.date.value, forYear: Math.round(num(form.elements.forYear.value)), amount: num(form.elements.amount.value) };
+  if (!t.date || t.amount <= 0) return false;
+  state.trueUps.push(t);
+  save(); renderMatch();
+  return false;
+}
+function delTrueUp(id) {
+  if (!confirm("Delete this true-up record?")) return;
+  state.trueUps = state.trueUps.filter(t => t.id !== id);
+  save(); renderMatch();
+}
+
+/* ---------- BALANCES ---------- */
+
+function renderBalances() {
+  const snaps = state.snapshots.slice().sort((a,b) => a.date.localeCompare(b.date));
+  const latest = snaps[snaps.length - 1];
+  const el = document.getElementById("view");
+  el.innerHTML = `
+    ${latest ? `
+    <div class="tiles">
+      <div class="tile"><div class="lbl">Latest total balance</div>
+        <div class="val">${fmt(latest.traditional + latest.roth + latest.afterTax)}</div>
+        <div class="delta">as of ${fmtDate(latest.date)}</div></div>
+      <div class="tile"><div class="lbl">By account</div>
+        <div class="delta" style="margin-top:0.3rem"><span class="swatch" style="background:var(--s-trad)"></span>Trad ${fmt(latest.traditional)}</div>
+        <div class="delta"><span class="swatch" style="background:var(--s-roth)"></span>Roth ${fmt(latest.roth)}</div>
+        <div class="delta"><span class="swatch" style="background:var(--s-at)"></span>After-tax ${fmt(latest.afterTax)}</div></div>
+    </div>` : ""}
+
+    <div class="card">
+      <h2>Balance over time</h2>
+      ${snaps.length >= 2 ? `
+        <div class="legend">${SERIES.map(s => `<span><span class="swatch" style="background:${s.color}"></span>${s.label}</span>`).join("")}</div>
+        <div class="chartwrap" id="chartwrap"></div>
+      ` : `<p class="note">Add at least two snapshots to see the growth chart. Log one per month or per statement.</p>`}
+    </div>
+
+    <div class="card">
+      <h2>Add a snapshot</h2>
+      <p class="note mb">Copy balances from your Fidelity statement — one snapshot per date.</p>
+      <form class="grid" onsubmit="return addSnapshot(this)">
+        <label class="f fw"><span class="t">Statement date</span><input type="date" name="date" required value="${todayISO()}"></label>
+        <label class="f"><span class="t"><span class="swatch" style="background:var(--s-trad)"></span>Traditional $</span><input type="number" name="traditional" min="0" step="0.01" inputmode="decimal" placeholder="0.00" value="${latest ? latest.traditional || "" : ""}"></label>
+        <label class="f"><span class="t"><span class="swatch" style="background:var(--s-roth)"></span>Roth $</span><input type="number" name="roth" min="0" step="0.01" inputmode="decimal" placeholder="0.00" value="${latest ? latest.roth || "" : ""}"></label>
+        <label class="f fw"><span class="t"><span class="swatch" style="background:var(--s-at)"></span>After-tax $</span><input type="number" name="afterTax" min="0" step="0.01" inputmode="decimal" placeholder="0.00" value="${latest ? latest.afterTax || "" : ""}"></label>
+        <div class="fw"><button class="primary" type="submit">Save snapshot</button></div>
+      </form>
+    </div>
+
+    <div class="card">
+      <h2>Snapshots (${snaps.length})</h2>
+      ${snaps.length ? `<div class="scrollx"><table>
+        <thead><tr><th>Date</th><th>Trad</th><th>Roth</th><th>After-tax</th><th>Total</th><th></th></tr></thead>
+        <tbody>${snaps.slice().reverse().map(s => `<tr>
+          <td>${fmtDate(s.date)}</td>
+          <td>${fmt(s.traditional)}</td><td>${fmt(s.roth)}</td><td>${fmt(s.afterTax)}</td>
+          <td><b>${fmt(s.traditional + s.roth + s.afterTax)}</b></td>
+          <td><button class="mini danger" onclick="delSnapshot('${s.id}')">✕</button></td>
+        </tr>`).join("")}</tbody></table></div>` : `<p class="note">No snapshots yet.</p>`}
+    </div>
+  `;
+  if (snaps.length >= 2) drawChart(snaps);
+}
+
+function addSnapshot(form) {
+  const s = {
+    id: uid(), date: form.elements.date.value,
+    traditional: num(form.elements.traditional.value),
+    roth: num(form.elements.roth.value),
+    afterTax: num(form.elements.afterTax.value)
+  };
+  if (!s.date) return false;
+  // one snapshot per date — replace if same date exists
+  state.snapshots = state.snapshots.filter(x => x.date !== s.date);
+  state.snapshots.push(s);
+  save(); renderBalances();
+  return false;
+}
+function delSnapshot(id) {
+  if (!confirm("Delete this snapshot?")) return;
+  state.snapshots = state.snapshots.filter(s => s.id !== id);
+  save(); renderBalances();
+}
+
+/* ---------- chart (hand-rolled SVG line chart) ---------- */
+
+function niceTicks(max, n) {
+  if (max <= 0) return [0, 1];
+  const rough = max / n;
+  const mag = Math.pow(10, Math.floor(Math.log10(rough)));
+  const steps = [1, 2, 2.5, 5, 10];
+  let step = steps.find(s => s * mag >= rough) * mag;
+  const ticks = [];
+  for (let v = 0; v <= max + step * 0.999; v += step) ticks.push(Math.round(v * 100) / 100);
+  return ticks;
+}
+const compact = n => n >= 1e6 ? "$" + (+(n/1e6).toFixed(1)) + "M"
+                   : n >= 1e3 ? "$" + (+(n/1e3).toFixed(1)) + "K" : "$" + Math.round(n);
+
+let chartSnaps = null;
+window.addEventListener("resize", () => {
+  clearTimeout(window.__chartRz);
+  window.__chartRz = setTimeout(() => {
+    if (tab === "balances" && chartSnaps && document.getElementById("chartwrap")) drawChart(chartSnaps);
+  }, 150);
+});
+
+function drawChart(snaps) {
+  chartSnaps = snaps;
+  const wrap = document.getElementById("chartwrap");
+  // draw at rendered width so axis text stays at native size on any screen
+  const W = Math.max(300, Math.round(wrap.clientWidth || 680));
+  const H = Math.round(clamp(W * 0.55, 220, 320));
+  const padL = 44, padR = 14, padT = 12, padB = 26;
+  const xs = snaps.map(s => parseDate(s.date).getTime());
+  const x0 = Math.min(...xs), x1 = Math.max(...xs);
+  const span = x1 - x0 || 1;
+  const maxVal = Math.max(...snaps.map(s => Math.max(s.traditional, s.roth, s.afterTax)), 1);
+  const ticks = niceTicks(maxVal * 1.08, 4);
+  const yMax = ticks[ticks.length - 1];
+  const X = t => padL + (t - x0) / span * (W - padL - padR);
+  const Y = v => padT + (1 - v / yMax) * (H - padT - padB);
+
+  const grid = ticks.map(v => `<line x1="${padL}" x2="${W - padR}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--grid)" stroke-width="1"/>
+    <text x="${padL - 6}" y="${Y(v) + 3.5}" text-anchor="end" font-size="10" fill="var(--muted)" style="font-variant-numeric:tabular-nums">${compact(v)}</text>`).join("");
+
+  // x labels: first, last, and up to 2 between
+  const nLbl = Math.min(4, snaps.length);
+  const lblIdx = new Set(Array.from({length: nLbl}, (_, i) => Math.round(i * (snaps.length - 1) / (nLbl - 1))));
+  const xlabels = [...lblIdx].map(i => {
+    const t = xs[i];
+    const anchor = i === 0 ? "start" : i === snaps.length - 1 ? "end" : "middle";
+    return `<text x="${X(t)}" y="${H - 8}" text-anchor="${anchor}" font-size="10" fill="var(--muted)">${fmtDateShort(snaps[i].date)}</text>`;
+  }).join("");
+
+  const lines = SERIES.map(s => {
+    const pts = snaps.map((sn, i) => `${X(xs[i]).toFixed(1)},${Y(sn[s.key]).toFixed(1)}`).join(" ");
+    const lastSn = snaps[snaps.length - 1];
+    // end marker: ≥8px dot with a 2px surface ring
+    return `<polyline points="${pts}" fill="none" stroke="${s.color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+      <circle cx="${X(x1)}" cy="${Y(lastSn[s.key])}" r="6" fill="var(--surface)"/>
+      <circle cx="${X(x1)}" cy="${Y(lastSn[s.key])}" r="4" fill="${s.color}"/>`;
+  }).join("");
+
+  // direct labels at line ends — nudged apart only via leader-free spacing check
+  const lastSn = snaps[snaps.length - 1];
+  const ends = SERIES.map(s => ({ label: compact(lastSn[s.key]), y: Y(lastSn[s.key]) }))
+    .sort((a, b) => a.y - b.y);
+  for (let i = 1; i < ends.length; i++) if (ends[i].y - ends[i-1].y < 12) ends[i].y = ends[i-1].y + 12;
+  const endLabels = ends.map(e =>
+    `<text x="${X(x1) - 10}" y="${clamp(e.y, padT + 8, H - padB - 2) + 3.5}" text-anchor="end" font-size="10" fill="var(--ink-2)" style="font-variant-numeric:tabular-nums">${e.label}</text>`).join("");
+
+  wrap.innerHTML = `
+    <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Balance over time by account type">
+      ${grid}
+      <line x1="${padL}" x2="${W - padR}" y1="${Y(0)}" y2="${Y(0)}" stroke="var(--baseline)" stroke-width="1"/>
+      ${xlabels}
+      ${lines}
+      ${endLabels}
+      <line id="xhair" y1="${padT}" y2="${H - padB}" stroke="var(--baseline)" stroke-width="1" visibility="hidden"/>
+      <rect id="hover" x="${padL}" y="${padT}" width="${W - padL - padR}" height="${H - padT - padB}" fill="transparent"/>
+    </svg>
+    <div class="tip" id="tip"></div>`;
+
+  const svg = wrap.querySelector("svg");
+  const tip = wrap.querySelector("#tip");
+  const xhair = wrap.querySelector("#xhair");
+  const onmove = ev => {
+    const rect = svg.getBoundingClientRect();
+    const cx = (ev.touches ? ev.touches[0].clientX : ev.clientX) - rect.left;
+    const vx = cx / rect.width * W;
+    // nearest snapshot
+    let best = 0, bd = Infinity;
+    xs.forEach((t, i) => { const d = Math.abs(X(t) - vx); if (d < bd) { bd = d; best = i; } });
+    const sn = snaps[best], px = X(xs[best]);
+    xhair.setAttribute("x1", px); xhair.setAttribute("x2", px);
+    xhair.setAttribute("visibility", "visible");
+    tip.style.display = "block";
+    tip.innerHTML = `<div class="th">${fmtDate(sn.date)}</div>` +
+      SERIES.map(s => `<div><span class="swatch" style="background:${s.color}"></span>${s.label} <b>${fmt(sn[s.key])}</b></div>`).join("") +
+      `<div>Total <b>${fmt(sn.traditional + sn.roth + sn.afterTax)}</b></div>`;
+    const tw = tip.offsetWidth;
+    const left = clamp(px / W * rect.width - tw / 2, 0, rect.width - tw);
+    tip.style.left = left + "px";
+    tip.style.top = "8px";
+  };
+  const onleave = () => { tip.style.display = "none"; xhair.setAttribute("visibility", "hidden"); };
+  svg.addEventListener("mousemove", onmove);
+  svg.addEventListener("touchstart", onmove, { passive: true });
+  svg.addEventListener("touchmove", onmove, { passive: true });
+  svg.addEventListener("mouseleave", onleave);
+}
+
+/* ---------- MORE (tools + settings) ---------- */
+
+function renderMore() {
+  const y = year();
+  const S = state.settings;
+  const L = limitsFor(y);
+  const snaps = state.snapshots.slice().sort((a,b) => a.date.localeCompare(b.date));
+  const latest = snaps[snaps.length - 1];
+  const latestTotal = latest ? latest.traditional + latest.roth + latest.afterTax : 0;
+  const V = vesting();
+  const vestedDefault = latest
+    ? (V && V.vested ? latestTotal : Math.max(0, latestTotal - (V ? V.match : 0)))
+    : (V ? (V.vested ? V.own + V.match : V.own) : 0);
+  const limitYears = Object.keys(state.limits).map(Number).sort((a,b) => b-a);
+  const el = document.getElementById("view");
+  el.innerHTML = `
+    <div class="card">
+      <h2>Paycheck calculator</h2>
+      <p class="note mb">What a given election looks like per paycheck, and when it hits a limit.</p>
+      <form class="grid" onsubmit="return runCalc(this)">
+        <label class="f"><span class="t">Annual salary $</span><input type="number" name="salary" min="0" step="0.01" value="${S.annualSalary}"></label>
+        <label class="f"><span class="t">Pay periods / year</span><input type="number" name="periods" min="1" max="53" step="1" value="${S.payPeriodsPerYear}"></label>
+        <label class="f"><span class="t">Traditional %</span><input type="number" name="pTrad" min="0" max="90" step="any" value="10"></label>
+        <label class="f"><span class="t">Roth %</span><input type="number" name="pRoth" min="0" max="90" step="any" value="0"></label>
+        <label class="f"><span class="t">After-tax %</span><input type="number" name="pAT" min="0" max="${L.afterTaxMaxPercent}" step="any" value="0"></label>
+        <div class="f" style="align-self:end"><button class="primary" type="submit">Calculate</button></div>
+      </form>
+      <div id="calcOut" class="mt"></div>
+    </div>
+
+    <div class="card">
+      <h2>Growth projection</h2>
+      <p class="note mb">Rough compound-growth estimate — an illustration, not advice or a prediction.</p>
+      <form class="grid" onsubmit="return runProj(this)">
+        <label class="f"><span class="t">Starting balance $</span><input type="number" name="start" min="0" step="0.01" value="${Math.round(latestTotal)}"></label>
+        <label class="f"><span class="t">Contribution / period $ <span class="sub">(incl. match)</span></span><input type="number" name="per" min="0" step="0.01" value="${Math.round((S.annualSalary * 0.15) / S.payPeriodsPerYear)}"></label>
+        <label class="f"><span class="t">Assumed annual return %</span><input type="number" name="rate" min="-20" max="30" step="any" value="7"></label>
+        <label class="f"><span class="t">Years from now</span><input type="number" name="years" min="1" max="50" step="1" value="30"></label>
+        <div class="fw"><button class="primary" type="submit">Project</button></div>
+      </form>
+      <div id="projOut" class="mt"></div>
+    </div>
+
+    <div class="card">
+      <h2>Loan check</h2>
+      <p class="note mb">Plan rules: one loan per calendar year, one outstanding at a time, $75 setup fee, 5-year repayment (10 for a primary residence).</p>
+      <form class="grid" onsubmit="return runLoan(this)">
+        <label class="f fw"><span class="t">Vested balance $ <span class="sub">(prefilled from latest snapshot &amp; vesting status)</span></span>
+          <input type="number" name="vested" min="0" step="0.01" value="${Math.round(vestedDefault)}"></label>
+        <div class="fw"><button class="primary" type="submit">Check max loan</button></div>
+      </form>
+      <div id="loanOut" class="mt"></div>
+    </div>
+
+    <div class="card">
+      <h2>Settings</h2>
+      <form class="grid" onsubmit="return saveSettings(this)">
+        <label class="f"><span class="t">Annual salary $</span><input type="number" name="salary" min="0" step="0.01" required value="${S.annualSalary}"></label>
+        <label class="f"><span class="t">Pay periods / year</span>
+          <select name="periods">
+            <option value="12" ${S.payPeriodsPerYear===12?"selected":""}>12 · monthly</option>
+            <option value="24" ${S.payPeriodsPerYear===24?"selected":""}>24 · semi-monthly</option>
+            <option value="26" ${S.payPeriodsPerYear===26?"selected":""}>26 · biweekly</option>
+            <option value="52" ${S.payPeriodsPerYear===52?"selected":""}>52 · weekly</option>
+          </select></label>
+        <label class="f"><span class="t">Hire date (vesting start)</span><input type="date" name="hire" value="${S.hireDate}"></label>
+        <label class="f"><span class="t">Current tax year</span><input type="number" name="taxYear" step="1" required value="${S.currentTaxYear}"></label>
+        <div class="fw"><button class="primary" type="submit">Save settings</button></div>
+      </form>
+      <p class="sub mt">Check your paystub for pay frequency — Blue Origin may be semi-monthly (24) or biweekly (26).</p>
+    </div>
+
+    <div class="card">
+      <h2>Plan limits by tax year</h2>
+      <p class="note mb">IRS limits change annually, and catch-up brackets (50–59/64+, 60–63) raise them — edit per year rather than assuming.</p>
+      ${limitYears.map(yy => { const l = state.limits[yy]; return `
+        <details class="limits" ${yy===y?"open":""}>
+          <summary><b>${yy}</b> <span class="badge">${fmt(l.employeeElectiveLimit)} elective · ${fmt(l.totalPlanLimit)} total</span></summary>
+          <form class="grid mt" onsubmit="return saveLimits(this, ${yy})">
+            <label class="f"><span class="t">Employee elective limit $</span><input type="number" name="elective" min="0" step="0.01" value="${l.employeeElectiveLimit}"></label>
+            <label class="f"><span class="t">Total plan limit $</span><input type="number" name="total" min="0" step="0.01" value="${l.totalPlanLimit}"></label>
+            <label class="f"><span class="t">After-tax max % of salary</span><input type="number" name="atPct" min="0" max="100" step="any" value="${l.afterTaxMaxPercent}"></label>
+            <label class="f"><span class="t">Match % rate</span><input type="number" name="mPct" min="0" max="200" step="any" value="${l.matchPercent}"></label>
+            <label class="f"><span class="t">Match cap % of comp</span><input type="number" name="mCap" min="0" max="100" step="any" value="${l.matchCapPercent}"></label>
+            <div class="f" style="align-self:end"><button class="primary" type="submit">Save ${yy}</button></div>
+          </form>
+        </details>`; }).join("")}
+      <button class="ghost mt" onclick="addLimitYear()">+ Add ${Math.max(...limitYears) + 1} (copies latest)</button>
+    </div>
+
+    <div class="card">
+      <h2>Backup &amp; transfer</h2>
+      <p class="note mb">Everything lives in this browser only (localStorage) — no server, no sync. To back up, or to move your data to another device: <b>export here, then import there</b>. Use the file for backups you keep somewhere safe; use copy/paste to move between devices via any channel you trust (notes app, message to yourself, etc.).</p>
+      <div style="display:flex; gap:0.6rem; flex-wrap:wrap">
+        <button class="ghost" onclick="exportData()">Export file</button>
+        <button class="ghost" onclick="document.getElementById('importFile').click()">Import file</button>
+        <button class="ghost" onclick="copyBackup(this)">Copy to clipboard</button>
+        <button class="ghost" onclick="pasteBackup()">Paste from clipboard</button>
+      </div>
+      <p class="sub mt" id="dataMsg"></p>
+      <hr class="divider">
+      <button class="ghost" style="color:var(--critical); border-color:var(--critical)" onclick="resetAll()">Erase everything</button>
+      <input type="file" id="importFile" accept="application/json,.json" class="hidden" onchange="importData(this)">
+    </div>
+  `;
+}
+
+function runCalc(form) {
+  const salary = num(form.elements.salary.value);
+  const periods = Math.max(1, Math.round(num(form.elements.periods.value)));
+  const pTrad = num(form.elements.pTrad.value), pRoth = num(form.elements.pRoth.value), pAT = num(form.elements.pAT.value);
+  const L = limitsFor(year());
+  const comp = salary / periods;
+  const perTrad = comp * pTrad/100, perRoth = comp * pRoth/100, perAT = comp * pAT/100;
+  const perElective = perTrad + perRoth;
+  const perMatch = Math.min(perElective, comp * L.matchCapPercent/100) * L.matchPercent/100;
+  const annElective = perElective * periods, annAT = perAT * periods, annMatch = perMatch * periods;
+  const annTotal = annElective + annAT + annMatch;
+  const hitElective = perElective > 0 ? Math.ceil(L.employeeElectiveLimit / perElective) : Infinity;
+  const atCap = salary * L.afterTaxMaxPercent/100;
+  const hitAT = perAT > 0 ? Math.ceil(atCap / perAT) : Infinity;
+  const rows = [];
+  rows.push(`<div class="rowline"><span class="k"><span class="swatch" style="background:var(--s-trad)"></span>Traditional / paycheck</span><span class="v">${fmt2(perTrad)}</span></div>`);
+  rows.push(`<div class="rowline"><span class="k"><span class="swatch" style="background:var(--s-roth)"></span>Roth / paycheck</span><span class="v">${fmt2(perRoth)}</span></div>`);
+  rows.push(`<div class="rowline"><span class="k"><span class="swatch" style="background:var(--s-at)"></span>After-tax / paycheck</span><span class="v">${fmt2(perAT)}</span></div>`);
+  rows.push(`<div class="rowline"><span class="k">Employer match / paycheck</span><span class="v">${fmt2(perMatch)}</span></div>`);
+  rows.push(`<hr class="divider">`);
+  rows.push(`<div class="rowline"><span class="k">Full-year elective</span><span class="v">${fmt(annElective)} <span class="sub">/ ${fmt(L.employeeElectiveLimit)}</span></span></div>`);
+  rows.push(`<div class="rowline"><span class="k">Full-year after-tax</span><span class="v">${fmt(annAT)} <span class="sub">/ ${fmt(atCap)}</span></span></div>`);
+  rows.push(`<div class="rowline"><span class="k">Full-year total incl. match</span><span class="v">${fmt(annTotal)} <span class="sub">/ ${fmt(L.totalPlanLimit)}</span></span></div>`);
+  const warns = [];
+  if (perElective > 0 && annElective > L.employeeElectiveLimit)
+    warns.push(alertHTML("warning", `Elective hits the ${fmt(L.employeeElectiveLimit)} limit at paycheck <b>#${hitElective}</b> of ${periods}. Contributions stop there — and so does per-period match (trued up later).`));
+  else if (perElective > 0 && annElective >= L.employeeElectiveLimit * 0.999)
+    warns.push(alertHTML("good", `This election exactly maxes the elective limit across ${periods} paychecks.`));
+  if (pAT > L.afterTaxMaxPercent) warns.push(alertHTML("critical", `After-tax election exceeds the plan's ${L.afterTaxMaxPercent}% cap.`));
+  else if (perAT > 0 && annAT > atCap) warns.push(alertHTML("warning", `After-tax hits its ${fmt(atCap)} cap at paycheck <b>#${hitAT}</b>.`));
+  if (annTotal > L.totalPlanLimit) warns.push(alertHTML("warning", `Combined additions exceed the ${fmt(L.totalPlanLimit)} total plan limit by ${fmt(annTotal - L.totalPlanLimit)}.`));
+  if (pTrad + pRoth > 0 && pTrad + pRoth < L.matchCapPercent)
+    warns.push(alertHTML("info", `Electing under ${L.matchCapPercent}% leaves match on the table: full match needs ${L.matchCapPercent}% (${fmt2(comp * L.matchCapPercent/100)}/paycheck).`));
+  document.getElementById("calcOut").innerHTML = rows.join("") + (warns.length ? `<div class="mt">${warns.join("")}</div>` : "");
+  return false;
+}
+
+function runProj(form) {
+  const start = num(form.elements.start.value);
+  const per = num(form.elements.per.value);
+  const rate = num(form.elements.rate.value) / 100;
+  const years = Math.max(1, Math.round(num(form.elements.years.value)));
+  const n = state.settings.payPeriodsPerYear;
+  const r = Math.pow(1 + rate, 1 / n) - 1;
+  let bal = start;
+  const marks = [];
+  for (let yy = 1; yy <= years; yy++) {
+    for (let p = 0; p < n; p++) bal = bal * (1 + r) + per;
+    if (yy === 5 || yy === 10 || yy === 20 || yy === years) marks.push([yy, bal]);
+  }
+  const contributed = start + per * n * years;
+  document.getElementById("projOut").innerHTML =
+    marks.filter((m, i, a) => a.findIndex(x => x[0] === m[0]) === i)
+      .map(([yy, b]) => `<div class="rowline"><span class="k">In ${yy} year${yy>1?"s":""}</span><span class="v">${fmt(b)}</span></div>`).join("") +
+    `<div class="rowline"><span class="k">Total contributed by then</span><span class="v">${fmt(contributed)}</span></div>
+     <p class="estimate">Estimate only — assumes a constant ${(rate*100).toFixed(1)}% annual return compounded per pay period, constant contributions, and no limit changes. Markets don't work like that. Not financial advice.</p>`;
+  return false;
+}
+
+function runLoan(form) {
+  const vested = num(form.elements.vested.value);
+  const max = Math.min(vested * 0.5, 50000);
+  const ok = max >= 1000;
+  document.getElementById("loanOut").innerHTML = `
+    <div class="rowline"><span class="k">50% of vested balance</span><span class="v">${fmt(vested * 0.5)}</span></div>
+    <div class="rowline"><span class="k">Statutory ceiling</span><span class="v">${fmt(50000)}</span></div>
+    <div class="rowline"><span class="k"><b>Max loan available</b></span><span class="v"><b>${ok ? fmt(max) : "—"}</b></span></div>
+    ${ok ? alertHTML("info", `Minimum loan $1,000 · $75 setup fee comes out of the loan · repay within 5 years (10 if buying your primary residence).`)
+         : alertHTML("warning", `Vested balance too low — the plan minimum loan is $1,000, which requires at least $2,000 vested.`)}`;
+  return false;
+}
+
+function saveSettings(form) {
+  state.settings.annualSalary = num(form.elements.salary.value);
+  state.settings.payPeriodsPerYear = Math.max(1, Math.round(num(form.elements.periods.value)));
+  state.settings.hireDate = form.elements.hire.value;
+  state.settings.currentTaxYear = Math.round(num(form.elements.taxYear.value));
+  save(); refreshYearSel(); renderMore();
+  return false;
+}
+function saveLimits(form, yy) {
+  state.limits[yy] = {
+    employeeElectiveLimit: num(form.elements.elective.value),
+    totalPlanLimit: num(form.elements.total.value),
+    afterTaxMaxPercent: num(form.elements.atPct.value),
+    matchPercent: num(form.elements.mPct.value),
+    matchCapPercent: num(form.elements.mCap.value)
+  };
+  save(); refreshYearSel(); renderMore();
+  return false;
+}
+function addLimitYear() {
+  const years = Object.keys(state.limits).map(Number).sort((a,b) => a-b);
+  const latest = years[years.length - 1];
+  state.limits[latest + 1] = Object.assign({}, state.limits[latest]);
+  save(); refreshYearSel(); renderMore();
+}
+
+function exportData() {
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "401k-tracker-backup-" + todayISO() + ".json";
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+}
+function applyBackup(text) {
+  const s = JSON.parse(text);
+  if (!s.settings || !s.limits) throw new Error("that doesn't look like a tracker backup");
+  if (!confirm("Replace all current data with this backup?")) return false;
+  localStorage.setItem(STORE_KEY, JSON.stringify(s));
+  state = load();
+  applyTheme(); refreshYearSel(); render();
+  return true;
+}
+function dataMsg(text) {
+  const el = document.getElementById("dataMsg");
+  if (el) el.textContent = text;
+}
+function importData(input) {
+  const f = input.files && input.files[0];
+  if (!f) return;
+  const r = new FileReader();
+  r.onload = () => {
+    try { if (applyBackup(r.result)) dataMsg("Backup imported."); }
+    catch (e) { alert("Import failed: " + e.message); }
+    input.value = "";
+  };
+  r.readAsText(f);
+}
+async function copyBackup(btn) {
+  const text = JSON.stringify(state);
+  try {
+    await navigator.clipboard.writeText(text);
+    dataMsg("Backup copied (" + text.length.toLocaleString() + " characters). Paste it into the app on your other device.");
+  } catch (_) {
+    // clipboard API can be unavailable (older browsers, permissions) — show the text for manual copy
+    prompt("Clipboard unavailable — select and copy this backup text:", text);
+  }
+}
+async function pasteBackup() {
+  let text = null;
+  try { text = await navigator.clipboard.readText(); } catch (_) {}
+  if (!text) text = prompt("Paste your backup text here:");
+  if (!text) return;
+  try { if (applyBackup(text)) dataMsg("Backup imported from clipboard."); }
+  catch (e) { alert("Import failed: " + e.message); }
+}
+function resetAll() {
+  if (!confirm("Erase ALL data? This cannot be undone.")) return;
+  if (!confirm("Really erase everything? Export a backup first if unsure.")) return;
+  localStorage.removeItem(STORE_KEY);
+  state = DEFAULT_STATE();
+  save(); refreshYearSel(); go("home");
+}
+
+/* ---------- boot ---------- */
+
+function render() {
+  refreshYearSel();
+  ({ home: renderHome, log: renderLog, match: renderMatch, balances: renderBalances, more: renderMore }[tab])();
+}
+
+applyTheme();
+go("home");
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+}
+</script>
+</body>
+</html>
