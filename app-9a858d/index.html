@@ -1089,6 +1089,7 @@
               '<div class="ed-tools">'+
               miniBtn("itUp",it.id,"","M18 15l-6-6-6 6")+
               miniBtn("itDown",it.id,"","M6 9l6 6 6-6")+
+              miniBtn("itDel",it.id,"del","M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6")+
               '</div></div>';
       });
       html+='<button class="ed-add" data-act="itAdd" data-cat="'+ct.id+'">+ Add item</button>';
@@ -1120,6 +1121,12 @@
         var prow=btn.closest(".ed-item"),cid=prow.getAttribute("data-cat"),ct=findCat(cid);
         var ix=-1;for(var i=0;i<ct.items.length;i++)if(ct.items[i].id===id)ix=i;
         moveArr(ct.items,ix,act==="itUp"?-1:1);save();renderEditor();return;}
+      if(act==="itDel"){
+        var drow=btn.closest(".ed-item"),dct=findCat(drow.getAttribute("data-cat"));
+        var dit=dct?dct.items.filter(function(x){return x.id===id;})[0]:null;
+        if(dct&&dit&&confirm('Delete "'+dit.label+'"?')){
+          dct.items=dct.items.filter(function(x){return x.id!==id;});save();renderEditor();}
+        return;}
     }
     var item=e.target.closest(".ed-item");
     if(item){openItem(item.getAttribute("data-cat"),item.getAttribute("data-item"));}
