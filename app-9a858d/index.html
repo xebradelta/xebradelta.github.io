@@ -283,6 +283,23 @@
   .sh-actions{margin-top:13px}
   .sh-reopen{margin-top:9px;font-size:12px;color:var(--faint);text-align:center}
 
+  /* start-here guide */
+  .starthere{margin:14px 16px 2px;background:var(--accent-soft);border:1px solid var(--line);
+    border-radius:var(--radius);padding:15px 16px 14px}
+  .sh-head{display:flex;align-items:center;gap:9px;margin-bottom:8px}
+  .sh-head svg{width:20px;height:20px;color:var(--accent);flex:0 0 auto}
+  .sh-head b{font-size:16px;font-weight:750;flex:1;letter-spacing:-.01em}
+  .sh-x{appearance:none;border:none;background:transparent;color:var(--muted);font-size:20px;line-height:1;
+    cursor:pointer;width:30px;height:30px;border-radius:8px;display:grid;place-items:center;flex:0 0 auto}
+  .sh-x:active{background:var(--surface-2)}
+  .starthere p{margin:0 0 10px;font-size:13.5px;color:var(--text);line-height:1.5}
+  .sh-list{margin:0;padding:0;list-style:none}
+  .sh-list li{position:relative;padding:5px 0 5px 20px;font-size:13.5px;color:var(--text);line-height:1.45}
+  .sh-list li::before{content:"";position:absolute;left:2px;top:11px;width:6px;height:6px;border-radius:50%;background:var(--accent)}
+  .sh-list li b{font-weight:650}
+  .sh-actions{margin-top:13px}
+  .sh-reopen{margin-top:9px;font-size:12px;color:var(--faint);text-align:center}
+
   .footer{text-align:center;color:var(--faint);font-size:12px;margin:26px 0 8px;letter-spacing:.02em}
 
   @media (prefers-reduced-motion: reduce){*{transition:none!important}}
