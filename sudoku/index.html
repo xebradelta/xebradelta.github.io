@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+<title>Mini Sudoku</title>
+<meta name="description" content="Unlimited 6×6 mini sudoku. Play as much as you want, offline." />
+<meta name="theme-color" content="#ffffff" />
+<link rel="manifest" href="manifest.json" />
+<link rel="icon" href="icon-192.png" type="image/png" />
+<link rel="apple-touch-icon" href="apple-touch-icon.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="Mini Sudoku" />
+<style>
+  :root{
+    --ink:#1a1a1c;
+    --entry:#71717a;
+    --line:#c9c9ce;
+    --line-heavy:#55555c;
+    --sel:#cfe3f8;
+    --peer:#f0f3f8;
+    --same:#e2ecf9;
+    --bad:#c9372c;
+    --bad-bg:#fbe9e7;
+    --btn:#f2f2f5;
+    --btn-ink:#3f3f46;
+    --accent:#1a1a1c;
+    --muted:#8e8e96;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:#fff;color:var(--ink);
+    padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    user-select:none;-webkit-user-select:none;
+    display:flex;justify-content:center;
+  }
+  .app{width:100%;max-width:480px;padding:10px 14px 20px;}
+
+  header{display:flex;align-items:center;justify-content:space-between;padding:4px 2px 2px;}
+  header .spacer{width:40px;}
+  .title-wrap{text-align:center;flex:1;}
+  .title-wrap h1{margin:0;font-size:1.35rem;font-weight:800;letter-spacing:-.02em;}
+  .title-wrap .sub{font-size:.72rem;color:var(--muted);margin-top:1px;}
+  .icon-btn{
+    width:40px;height:40px;border:none;background:none;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;color:var(--btn-ink);cursor:pointer;
+  }
+  .icon-btn:active{background:var(--btn);}
+  .icon-btn svg{width:22px;height:22px;}
+
+  .topbar{display:flex;align-items:center;justify-content:space-between;margin:10px 2px 12px;font-size:1rem;}
+  .timer{display:flex;align-items:center;gap:6px;font-weight:700;font-variant-numeric:tabular-nums;min-width:70px;}
+  .timer svg{width:17px;height:17px;}
+  .puz-label{font-weight:700;text-align:center;flex:1;}
+  .puz-label .diff{font-weight:600;}
+  .reset-btn{border:none;background:none;color:var(--muted);font-size:1rem;font-weight:500;cursor:pointer;min-width:70px;text-align:right;padding:4px 0;}
+  .reset-btn:active{color:var(--ink);}
+
+  .board-wrap{position:relative;}
+  .board{
+    display:grid;grid-template-columns:repeat(6,1fr);grid-template-rows:repeat(6,1fr);
+    aspect-ratio:1;width:100%;
+    border:3px solid var(--line-heavy);border-radius:6px;background:#fff;overflow:hidden;
+  }
+  .cell{
+    position:relative;display:flex;align-items:center;justify-content:center;
+    border-right:1px solid var(--line);border-bottom:1px solid var(--line);
+    font-size:clamp(1.4rem,7.5vw,2.2rem);cursor:pointer;background:#fff;
+  }
+  .cell:nth-child(6n){border-right:none;}
+  .cell.box-r{border-right:2.5px solid var(--line-heavy);}
+  .cell.box-b{border-bottom:2.5px solid var(--line-heavy);}
+  .cell:nth-child(n+31){border-bottom:none;}
+  .cell.given{font-weight:700;color:var(--ink);}
+  .cell.entry{font-weight:600;color:var(--entry);}
+  .cell.peer{background:var(--peer);}
+  .cell.same{background:var(--same);}
+  .cell.sel{background:var(--sel);}
+  .cell.bad{color:var(--bad) !important;}
+  .cell.bad.sel{background:var(--bad-bg);}
+  .notes{
+    position:absolute;inset:0;display:grid;
+    grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(2,1fr);
+    padding:7%;pointer-events:none;
+  }
+  .notes span{
+    display:flex;align-items:center;justify-content:center;
+    font-size:clamp(.55rem,2.9vw,.85rem);font-weight:600;color:var(--muted);
+  }
+
+  .tools{display:flex;justify-content:space-around;align-items:center;margin:16px 0 6px;}
+  .tool-btn{
+    display:flex;align-items:center;gap:8px;border:none;background:none;
+    font-size:1.05rem;font-weight:600;color:var(--btn-ink);cursor:pointer;padding:8px 14px;border-radius:10px;
+  }
+  .tool-btn:active{background:var(--btn);}
+  .tool-btn svg{width:21px;height:21px;}
+  .tool-btn .state{color:var(--muted);font-weight:700;}
+  .tool-btn.notes-on .state{color:#0a66c2;}
+
+  .pad{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:10px;}
+  .pad button{
+    border:none;border-radius:12px;background:var(--btn);color:var(--btn-ink);
+    font-size:1.7rem;font-weight:500;padding:0;height:64px;cursor:pointer;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  }
+  .pad button:active{background:#e2e2e8;}
+  .pad button.done{opacity:.25;pointer-events:none;}
+  .pad button.small{font-size:.78rem;font-weight:600;gap:4px;}
+  .pad button.small svg{width:22px;height:22px;}
+
+  .newgame{
+    width:100%;margin-top:18px;border:none;border-radius:999px;
+    background:var(--accent);color:#fff;font-size:1.1rem;font-weight:700;
+    padding:15px 0;cursor:pointer;
+  }
+  .newgame:active{opacity:.85;}
+
+  /* ---- overlays ---- */
+  .overlay{
+    position:fixed;inset:0;background:rgba(20,20,24,.45);
+    display:none;align-items:flex-end;justify-content:center;z-index:50;
+  }
+  .overlay.show{display:flex;}
+  .sheet{
+    background:#fff;border-radius:20px 20px 0 0;width:100%;max-width:480px;
+    padding:22px 22px calc(26px + env(safe-area-inset-bottom));
+    animation:up .18s ease-out;max-height:85vh;overflow-y:auto;
+  }
+  @keyframes up{from{transform:translateY(40px);opacity:.5;}to{transform:none;opacity:1;}}
+  .sheet h2{margin:0 0 4px;font-size:1.3rem;letter-spacing:-.01em;}
+  .sheet .sheet-sub{color:var(--muted);font-size:.9rem;margin:0 0 16px;}
+  .diff-btn{
+    width:100%;display:flex;justify-content:space-between;align-items:center;
+    border:1.5px solid var(--line);border-radius:14px;background:#fff;
+    padding:14px 16px;margin-bottom:10px;font-size:1.05rem;font-weight:700;color:var(--ink);cursor:pointer;
+  }
+  .diff-btn:active{background:var(--btn);}
+  .diff-btn .d-note{font-size:.8rem;font-weight:500;color:var(--muted);}
+  .sheet .cancel{width:100%;border:none;background:none;color:var(--muted);font-size:1rem;font-weight:600;padding:10px 0 0;cursor:pointer;}
+
+  .win-emoji{font-size:2.6rem;text-align:center;margin:4px 0 6px;}
+  .win-title{text-align:center;font-size:1.5rem;font-weight:800;margin:0 0 2px;}
+  .win-sub{text-align:center;color:var(--muted);font-size:.95rem;margin:0 0 18px;}
+  .win-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:18px;}
+  .win-stat{background:var(--btn);border-radius:14px;padding:12px 4px;text-align:center;}
+  .win-stat .v{font-size:1.25rem;font-weight:800;font-variant-numeric:tabular-nums;}
+  .win-stat .k{font-size:.72rem;color:var(--muted);margin-top:2px;}
+  .win-stat .v .flame{font-size:1.05rem;}
+
+  .stats-table{width:100%;border-collapse:collapse;margin:6px 0 14px;}
+  .stats-table th{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;text-align:right;padding:6px 4px;font-weight:600;}
+  .stats-table th:first-child{text-align:left;}
+  .stats-table td{padding:9px 4px;border-top:1px solid #ececf0;font-size:.95rem;text-align:right;font-variant-numeric:tabular-nums;}
+  .stats-table td:first-child{text-align:left;font-weight:700;}
+  .streak-row{display:flex;gap:8px;margin-bottom:14px;}
+  .streak-row .win-stat{flex:1;}
+  .rules{font-size:.82rem;color:var(--muted);line-height:1.5;border-top:1px solid #ececf0;padding-top:12px;}
+
+  .toast{
+    position:fixed;left:50%;bottom:calc(30px + env(safe-area-inset-bottom));transform:translateX(-50%);
+    background:var(--ink);color:#fff;font-size:.9rem;font-weight:600;
+    padding:10px 18px;border-radius:999px;opacity:0;transition:opacity .25s;pointer-events:none;z-index:60;white-space:nowrap;
+  }
+  .toast.show{opacity:1;}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <div class="spacer"></div>
+    <div class="title-wrap">
+      <h1>Mini Sudoku</h1>
+      <div class="sub">unlimited edition</div>
+    </div>
+    <button class="icon-btn" id="statsBtn" aria-label="Statistics">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/></svg>
+    </button>
+  </header>
+
+  <div class="topbar">
+    <div class="timer">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9 2h6"/></svg>
+      <span id="timer">0:00</span>
+    </div>
+    <div class="puz-label">#<span id="puzNum">1</span> <span class="diff" id="puzDiff">Medium</span></div>
+    <button class="reset-btn" id="resetBtn">Reset</button>
+  </div>
+
+  <div class="board-wrap">
+    <div class="board" id="board" aria-label="Sudoku board"></div>
+  </div>
+
+  <div class="tools">
+    <button class="tool-btn" id="hintBtn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.7.6 1 1.5 1 2.5h6c0-1 .3-1.9 1-2.5A6 6 0 0 0 12 3z"/></svg>
+      Hint
+    </button>
+    <button class="tool-btn" id="notesBtn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.8 2.8 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
+      Notes <span class="state" id="notesState">OFF</span>
+    </button>
+  </div>
+
+  <div class="pad">
+    <button data-n="1">1</button>
+    <button data-n="2">2</button>
+    <button data-n="3">3</button>
+    <button class="small" id="eraseBtn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      Erase
+    </button>
+    <button data-n="4">4</button>
+    <button data-n="5">5</button>
+    <button data-n="6">6</button>
+    <button class="small" id="undoBtn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10h11a5 5 0 0 1 0 10h-3M4 10l4-4M4 10l4 4"/></svg>
+      Undo
+    </button>
+  </div>
+
+  <button class="newgame" id="newGameBtn">New game</button>
+</div>
+
+<!-- difficulty sheet -->
+<div class="overlay" id="diffOverlay">
+  <div class="sheet">
+    <h2>New game</h2>
+    <p class="sheet-sub">Pick a difficulty. Puzzles are generated on your phone with a single unique solution.</p>
+    <button class="diff-btn" data-diff="easy">Easy <span class="d-note">more clues, quick solve</span></button>
+    <button class="diff-btn" data-diff="medium">Medium <span class="d-note">a balanced puzzle</span></button>
+    <button class="diff-btn" data-diff="hard">Hard <span class="d-note">minimal clues</span></button>
+    <button class="cancel" id="diffCancel">Cancel</button>
+  </div>
+</div>
+
+<!-- win sheet -->
+<div class="overlay" id="winOverlay">
+  <div class="sheet">
+    <div class="win-emoji">🎉</div>
+    <p class="win-title">Solved!</p>
+    <p class="win-sub" id="winSub">Puzzle #1 · Medium</p>
+    <div class="win-grid">
+      <div class="win-stat"><div class="v" id="winTime">0:00</div><div class="k">Time</div></div>
+      <div class="win-stat"><div class="v" id="winBest">–</div><div class="k">Best</div></div>
+      <div class="win-stat"><div class="v"><span class="flame">🔥</span> <span id="winStreak">1</span></div><div class="k">Day streak</div></div>
+    </div>
+    <button class="diff-btn" id="winAgain">Play again <span class="d-note" id="winAgainDiff">same difficulty</span></button>
+    <button class="diff-btn" id="winPick">New game <span class="d-note">choose difficulty</span></button>
+    <button class="cancel" id="winClose">Close</button>
+  </div>
+</div>
+
+<!-- stats sheet -->
+<div class="overlay" id="statsOverlay">
+  <div class="sheet">
+    <h2>Statistics</h2>
+    <p class="sheet-sub">Stored locally on this device.</p>
+    <div class="streak-row">
+      <div class="win-stat"><div class="v"><span class="flame">🔥</span> <span id="stCur">0</span></div><div class="k">Current streak</div></div>
+      <div class="win-stat"><div class="v" id="stBestStreak">0</div><div class="k">Best streak</div></div>
+      <div class="win-stat"><div class="v" id="stSolved">0</div><div class="k">Total solved</div></div>
+    </div>
+    <table class="stats-table">
+      <thead><tr><th>Difficulty</th><th>Played</th><th>Solved</th><th>Best</th><th>Avg</th></tr></thead>
+      <tbody id="statsBody"></tbody>
+    </table>
+    <p class="rules"><strong>How to play:</strong> fill the grid so every row, every column, and every 3×2 box contains the digits 1–6 exactly once. Tap a cell, then tap a number. Turn Notes on to pencil in candidates. A day counts toward your streak when you solve at least one puzzle.</p>
+    <button class="cancel" id="statsClose">Close</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+"use strict";
+
+/* ================= engine ================= */
+var N=6, CELLS=36, BW=3, BH=2; // boxes are 3 wide × 2 tall
+
+function rowOf(i){return (i/N)|0;}
+function colOf(i){return i%N;}
+function boxOf(i){var r=rowOf(i),c=colOf(i);return ((r/BH)|0)*2+((c/BW)|0);}
+
+var PEERS=[]; // peer indices per cell
+(function(){
+  for(var i=0;i<CELLS;i++){
+    var s={}, r=rowOf(i), c=colOf(i), b=boxOf(i);
+    for(var j=0;j<CELLS;j++){
+      if(j===i) continue;
+      if(rowOf(j)===r||colOf(j)===c||boxOf(j)===b) s[j]=1;
+    }
+    PEERS.push(Object.keys(s).map(Number));
+  }
+})();
+
+function shuffle(a){
+  for(var i=a.length-1;i>0;i--){
+    var j=(Math.random()*(i+1))|0, t=a[i]; a[i]=a[j]; a[j]=t;
+  }
+  return a;
+}
+
+function canPlace(g,i,v){
+  var p=PEERS[i];
+  for(var k=0;k<p.length;k++) if(g[p[k]]===v) return false;
+  return true;
+}
+
+function genSolution(){
+  var g=new Array(CELLS).fill(0);
+  function fill(i){
+    if(i===CELLS) return true;
+    var cand=shuffle([1,2,3,4,5,6]);
+    for(var k=0;k<6;k++){
+      var v=cand[k];
+      if(canPlace(g,i,v)){
+        g[i]=v;
+        if(fill(i+1)) return true;
+        g[i]=0;
+      }
+    }
+    return false;
+  }
+  fill(0);
+  return g;
+}
+
+function countSolutions(g0,limit){
+  var g=g0.slice(), count=0;
+  function step(){
+    if(count>=limit) return;
+    var bi=-1,best=null;
+    for(var i=0;i<CELLS;i++){
+      if(g[i]===0){
+        var cand=[];
+        for(var v=1;v<=6;v++) if(canPlace(g,i,v)) cand.push(v);
+        if(best===null||cand.length<best.length){bi=i;best=cand;if(best.length<2)break;}
+      }
+    }
+    if(bi===-1){count++;return;}
+    for(var k=0;k<best.length;k++){
+      g[bi]=best[k]; step(); g[bi]=0;
+      if(count>=limit) return;
+    }
+  }
+  step();
+  return count;
+}
+
+var TARGET_GIVENS={easy:18, medium:14, hard:0};
+
+function generate(diff){
+  var sol=genSolution();
+  var puz=sol.slice();
+  var order=shuffle(Array.from({length:CELLS},function(_,i){return i;}));
+  for(var k=0;k<order.length;k++){
+    var i=order[k], keep=puz[i];
+    puz[i]=0;
+    if(countSolutions(puz,2)>1) puz[i]=keep;
+  }
+  var target=TARGET_GIVENS[diff]||0;
+  var givens=puz.filter(Boolean).length;
+  if(givens<target){
+    var empties=shuffle(Array.from({length:CELLS},function(_,i){return i;}).filter(function(i){return !puz[i];}));
+    for(var m=0;m<empties.length && givens<target;m++){
+      puz[empties[m]]=sol[empties[m]];
+      givens++;
+    }
+  }
+  return {puz:puz, sol:sol};
+}
+
+/* ================= state ================= */
+var LS_GAME="ms_game_v1", LS_STATS="ms_stats_v1", LS_SEQ="ms_seq_v1";
+var DIFF_LABEL={easy:"Easy", medium:"Medium", hard:"Hard"};
+
+var game=null;      // {puz, sol, entries, notes, diff, num, elapsed, done}
+var sel=-1;
+var notesMode=false;
+var undoStack=[];
+var tickHandle=null, runningSince=null;
+
+function defaultStats(){
+  return {
+    solvedTotal:0,
+    streak:0, bestStreak:0, lastWinDay:"",
+    d:{easy:{played:0,solved:0,best:0,totalTime:0},
+       medium:{played:0,solved:0,best:0,totalTime:0},
+       hard:{played:0,solved:0,best:0,totalTime:0}}
+  };
+}
+function loadStats(){
+  try{
+    var s=JSON.parse(localStorage.getItem(LS_STATS));
+    if(s&&s.d) return s;
+  }catch(e){}
+  return defaultStats();
+}
+function saveStats(s){ try{localStorage.setItem(LS_STATS,JSON.stringify(s));}catch(e){} }
+
+function saveGame(){
+  if(!game) return;
+  try{ localStorage.setItem(LS_GAME,JSON.stringify(game)); }catch(e){}
+}
+function loadGame(){
+  try{
+    var g=JSON.parse(localStorage.getItem(LS_GAME));
+    if(g&&g.puz&&g.puz.length===CELLS&&g.sol&&g.entries&&g.notes) return g;
+  }catch(e){}
+  return null;
+}
+
+function nextSeq(){
+  var n=parseInt(localStorage.getItem(LS_SEQ)||"0",10)+1;
+  try{localStorage.setItem(LS_SEQ,String(n));}catch(e){}
+  return n;
+}
+
+function todayStr(){
+  var d=new Date();
+  return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+}
+function yesterdayStr(){
+  var d=new Date(); d.setDate(d.getDate()-1);
+  return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+}
+
+/* ================= timer ================= */
+function fmt(ms){
+  var s=Math.floor(ms/1000), m=Math.floor(s/60);
+  return m+":"+String(s%60).padStart(2,"0");
+}
+function elapsedNow(){
+  var e=game?game.elapsed:0;
+  if(runningSince!==null) e+=Date.now()-runningSince;
+  return e;
+}
+function renderTimer(){ $("timer").textContent=fmt(elapsedNow()); }
+function startTimer(){
+  if(runningSince!==null||!game||game.done) return;
+  runningSince=Date.now();
+  tickHandle=setInterval(renderTimer,1000);
+}
+function pauseTimer(){
+  if(runningSince===null) return;
+  if(game) game.elapsed+=Date.now()-runningSince;
+  runningSince=null;
+  clearInterval(tickHandle);
+  saveGame();
+}
+document.addEventListener("visibilitychange",function(){
+  if(document.hidden) pauseTimer(); else startTimer();
+});
+window.addEventListener("pagehide",pauseTimer);
+
+/* ================= DOM ================= */
+function $(id){return document.getElementById(id);}
+var boardEl=$("board"), cellEls=[];
+
+(function buildBoard(){
+  for(var i=0;i<CELLS;i++){
+    var d=document.createElement("div");
+    d.className="cell";
+    if(colOf(i)===BW-1) d.classList.add("box-r");
+    if(rowOf(i)%BH===BH-1 && rowOf(i)!==N-1) d.classList.add("box-b");
+    d.dataset.i=i;
+    d.addEventListener("click",onCellTap);
+    boardEl.appendChild(d);
+    cellEls.push(d);
+  }
+})();
+
+function conflicts(){
+  var vals=new Array(CELLS), bad=new Array(CELLS).fill(false), i;
+  for(i=0;i<CELLS;i++) vals[i]=game.puz[i]||game.entries[i]||0;
+  for(i=0;i<CELLS;i++){
+    if(!vals[i]) continue;
+    var p=PEERS[i];
+    for(var k=0;k<p.length;k++){
+      if(vals[p[k]]===vals[i]){ bad[i]=true; break; }
+    }
+  }
+  return {vals:vals,bad:bad};
+}
+
+function render(){
+  var cf=conflicts();
+  var selVal=sel>=0?cf.vals[sel]:0;
+  for(var i=0;i<CELLS;i++){
+    var el=cellEls[i], given=game.puz[i]!==0, v=cf.vals[i];
+    var cls="cell";
+    if(colOf(i)===BW-1) cls+=" box-r";
+    if(rowOf(i)%BH===BH-1 && rowOf(i)!==N-1) cls+=" box-b";
+    if(given) cls+=" given"; else if(v) cls+=" entry";
+    if(i===sel) cls+=" sel";
+    else if(sel>=0){
+      if(selVal&&v===selVal) cls+=" same";
+      else if(rowOf(i)===rowOf(sel)||colOf(i)===colOf(sel)||boxOf(i)===boxOf(sel)) cls+=" peer";
+    }
+    if(cf.bad[i]&&!given) cls+=" bad";
+    el.className=cls;
+    if(v){
+      el.textContent=v;
+    }else if(game.notes[i].length){
+      el.textContent="";
+      var ng=document.createElement("div");
+      ng.className="notes";
+      for(var n=1;n<=6;n++){
+        var sp=document.createElement("span");
+        sp.textContent=game.notes[i].indexOf(n)>=0?n:"";
+        ng.appendChild(sp);
+      }
+      el.appendChild(ng);
+    }else{
+      el.textContent="";
+    }
+  }
+  // pad counts
+  var counts=[0,0,0,0,0,0,0];
+  for(i=0;i<CELLS;i++) if(cf.vals[i]) counts[cf.vals[i]]++;
+  var padBtns=document.querySelectorAll(".pad button[data-n]");
+  padBtns.forEach(function(b){
+    var n=+b.dataset.n;
+    b.classList.toggle("done",counts[n]>=6);
+  });
+  $("puzNum").textContent=game.num;
+  $("puzDiff").textContent=DIFF_LABEL[game.diff];
+  renderTimer();
+}
+
+/* ================= actions ================= */
+function snapshot(){
+  undoStack.push({e:game.entries.slice(),n:game.notes.map(function(a){return a.slice();})});
+  if(undoStack.length>200) undoStack.shift();
+}
+
+function onCellTap(ev){
+  var i=+ev.currentTarget.dataset.i;
+  sel=(sel===i)?-1:i;
+  render();
+}
+
+function placeNumber(n){
+  if(game.done) return;
+  if(sel<0){ toast("Tap a cell first"); return; }
+  if(game.puz[sel]!==0) return;
+  snapshot();
+  if(notesMode){
+    if(game.entries[sel]!==0){ undoStack.pop(); return; }
+    var idx=game.notes[sel].indexOf(n);
+    if(idx>=0) game.notes[sel].splice(idx,1); else game.notes[sel].push(n);
+  }else{
+    if(game.entries[sel]===n){ game.entries[sel]=0; }
+    else{
+      game.entries[sel]=n;
+      game.notes[sel]=[];
+      // clear this candidate from peer notes
+      PEERS[sel].forEach(function(p){
+        var k=game.notes[p].indexOf(n);
+        if(k>=0) game.notes[p].splice(k,1);
+      });
+    }
+  }
+  afterChange();
+}
+
+function erase(){
+  if(game.done||sel<0||game.puz[sel]!==0) return;
+  if(game.entries[sel]===0&&game.notes[sel].length===0) return;
+  snapshot();
+  game.entries[sel]=0;
+  game.notes[sel]=[];
+  afterChange();
+}
+
+function undo(){
+  if(game.done) return;
+  var s=undoStack.pop();
+  if(!s){ toast("Nothing to undo"); return; }
+  game.entries=s.e;
+  game.notes=s.n;
+  afterChange(true);
+}
+
+function hint(){
+  if(game.done) return;
+  var target=-1;
+  function needsHelp(i){
+    return game.puz[i]===0 && game.entries[i]!==game.sol[i];
+  }
+  if(sel>=0&&needsHelp(sel)) target=sel;
+  else{
+    var cand=[];
+    for(var i=0;i<CELLS;i++) if(needsHelp(i)) cand.push(i);
+    if(cand.length) target=cand[(Math.random()*cand.length)|0];
+  }
+  if(target<0){ toast("Nothing left to hint"); return; }
+  snapshot();
+  game.entries[target]=game.sol[target];
+  game.notes[target]=[];
+  PEERS[target].forEach(function(p){
+    var k=game.notes[p].indexOf(game.sol[target]);
+    if(k>=0) game.notes[p].splice(k,1);
+  });
+  sel=target;
+  afterChange();
+}
+
+function resetBoard(){
+  if(game.done) return;
+  snapshot();
+  game.entries=new Array(CELLS).fill(0);
+  game.notes=game.notes.map(function(){return [];});
+  afterChange(true);
+  toast("Board reset");
+}
+
+function afterChange(skipWin){
+  render();
+  saveGame();
+  if(!skipWin) checkWin();
+  else saveGame();
+}
+
+function checkWin(){
+  var cf=conflicts();
+  for(var i=0;i<CELLS;i++) if(!cf.vals[i]||cf.bad[i]) return;
+  // solved
+  pauseTimer();
+  game.done=true;
+  saveGame();
+  var t=game.elapsed;
+  var st=loadStats();
+  var d=st.d[game.diff];
+  d.solved++; d.totalTime+=t;
+  if(!d.best||t<d.best) d.best=t;
+  st.solvedTotal++;
+  var today=todayStr();
+  if(st.lastWinDay!==today){
+    st.streak=(st.lastWinDay===yesterdayStr())?st.streak+1:1;
+    st.lastWinDay=today;
+    if(st.streak>st.bestStreak) st.bestStreak=st.streak;
+  }
+  saveStats(st);
+  $("winSub").textContent="Puzzle #"+game.num+" · "+DIFF_LABEL[game.diff];
+  $("winTime").textContent=fmt(t);
+  $("winBest").textContent=fmt(d.best);
+  $("winStreak").textContent=st.streak;
+  $("winAgainDiff").textContent=DIFF_LABEL[game.diff].toLowerCase();
+  setTimeout(function(){ show("winOverlay"); },350);
+}
+
+function newGame(diff){
+  pauseTimer();
+  var st=loadStats();
+  st.d[diff].played++;
+  saveStats(st);
+  var p=generate(diff);
+  game={
+    puz:p.puz, sol:p.sol,
+    entries:new Array(CELLS).fill(0),
+    notes:Array.from({length:CELLS},function(){return [];}),
+    diff:diff, num:nextSeq(), elapsed:0, done:false
+  };
+  sel=-1; undoStack=[];
+  notesMode=false; renderNotesBtn();
+  saveGame();
+  render();
+  startTimer();
+}
+
+/* ================= overlays / misc ================= */
+function show(id){ $(id).classList.add("show"); }
+function hide(id){ $(id).classList.remove("show"); }
+
+var toastTimer=null;
+function toast(msg){
+  var t=$("toast");
+  t.textContent=msg;
+  t.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(function(){t.classList.remove("show");},1600);
+}
+
+function renderNotesBtn(){
+  $("notesState").textContent=notesMode?"ON":"OFF";
+  $("notesBtn").classList.toggle("notes-on",notesMode);
+}
+
+function renderStatsSheet(){
+  var st=loadStats();
+  $("stCur").textContent=st.streak;
+  $("stBestStreak").textContent=st.bestStreak;
+  $("stSolved").textContent=st.solvedTotal;
+  var body=$("statsBody"); body.innerHTML="";
+  ["easy","medium","hard"].forEach(function(k){
+    var d=st.d[k];
+    var avg=d.solved?fmt(d.totalTime/d.solved):"–";
+    var tr=document.createElement("tr");
+    tr.innerHTML="<td>"+DIFF_LABEL[k]+"</td><td>"+d.played+"</td><td>"+d.solved+"</td><td>"+(d.best?fmt(d.best):"–")+"</td><td>"+avg+"</td>";
+    body.appendChild(tr);
+  });
+}
+
+/* pad + tools */
+document.querySelectorAll(".pad button[data-n]").forEach(function(b){
+  b.addEventListener("click",function(){placeNumber(+b.dataset.n);});
+});
+$("eraseBtn").addEventListener("click",erase);
+$("undoBtn").addEventListener("click",undo);
+$("hintBtn").addEventListener("click",hint);
+$("notesBtn").addEventListener("click",function(){notesMode=!notesMode;renderNotesBtn();});
+$("resetBtn").addEventListener("click",resetBoard);
+$("newGameBtn").addEventListener("click",function(){show("diffOverlay");});
+$("diffCancel").addEventListener("click",function(){hide("diffOverlay");});
+document.querySelectorAll("#diffOverlay .diff-btn").forEach(function(b){
+  b.addEventListener("click",function(){hide("diffOverlay");newGame(b.dataset.diff);});
+});
+$("winAgain").addEventListener("click",function(){hide("winOverlay");newGame(game.diff);});
+$("winPick").addEventListener("click",function(){hide("winOverlay");show("diffOverlay");});
+$("winClose").addEventListener("click",function(){hide("winOverlay");});
+$("statsBtn").addEventListener("click",function(){renderStatsSheet();show("statsOverlay");});
+$("statsClose").addEventListener("click",function(){hide("statsOverlay");});
+["diffOverlay","winOverlay","statsOverlay"].forEach(function(id){
+  $(id).addEventListener("click",function(e){ if(e.target===this) hide(id); });
+});
+
+/* keyboard (handy on desktop) */
+document.addEventListener("keydown",function(e){
+  if(e.key>="1"&&e.key<="6") placeNumber(+e.key);
+  else if(e.key==="Backspace"||e.key==="Delete") erase();
+  else if(e.key==="z"&&(e.metaKey||e.ctrlKey)) undo();
+  else if(e.key==="n") {notesMode=!notesMode;renderNotesBtn();}
+  else if(e.key.startsWith("Arrow")&&sel>=0){
+    var r=rowOf(sel),c=colOf(sel);
+    if(e.key==="ArrowUp")r=Math.max(0,r-1);
+    if(e.key==="ArrowDown")r=Math.min(5,r+1);
+    if(e.key==="ArrowLeft")c=Math.max(0,c-1);
+    if(e.key==="ArrowRight")c=Math.min(5,c+1);
+    sel=r*N+c; render(); e.preventDefault();
+  }
+});
+
+/* ================= boot ================= */
+var saved=loadGame();
+if(saved&&!saved.done){
+  game=saved;
+  render();
+  startTimer();
+}else{
+  newGame("medium");
+}
+
+if("serviceWorker" in navigator){
+  window.addEventListener("load",function(){
+    navigator.serviceWorker.register("sw.js").catch(function(){});
+  });
+}
+})();
+</script>
+</body>
+</html>
