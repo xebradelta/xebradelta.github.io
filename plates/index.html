@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Plate Chase — The License Plate Game</title>
+<meta name="description" content="The classic road-trip license plate game. Track plates from all 50 states, Canada, Mexico, US territories and more. Works offline.">
+<meta name="theme-color" content="#1d3557">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Plate Chase">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<style>
+  :root{
+    --paper:#f2e8d5;
+    --paper-dark:#e6d9bf;
+    --navy:#1d3557;
+    --navy-deep:#14263f;
+    --red:#b5442d;
+    --hwy-green:#00693e;
+    --hwy-green-dark:#004d2e;
+    --gold:#e0a532;
+    --ink:#2b2418;
+    --plate-cream:#f7efdb;
+    --shadow:0 2px 6px rgba(43,36,24,.18);
+    --sat:env(safe-area-inset-top,0px);
+    --sab:env(safe-area-inset-bottom,0px);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--paper);
+    background-image:radial-gradient(rgba(43,36,24,.04) 1px, transparent 1px);
+    background-size:14px 14px;
+    color:var(--ink);
+    font-family:-apple-system,"Helvetica Neue",Helvetica,Arial,sans-serif;
+    padding-bottom:calc(72px + var(--sab));
+    overscroll-behavior-y:contain;
+  }
+  button{font-family:inherit}
+
+  /* ---------- Header: highway sign ---------- */
+  header{
+    position:sticky;top:0;z-index:30;
+    background:linear-gradient(180deg,var(--hwy-green),var(--hwy-green-dark));
+    color:#fff;
+    padding:calc(10px + var(--sat)) 14px 10px;
+    border-bottom:4px solid var(--gold);
+    box-shadow:0 3px 10px rgba(0,0,0,.25);
+  }
+  .sign-row{display:flex;align-items:center;gap:10px;max-width:640px;margin:0 auto}
+  .sign-box{
+    flex:1;
+    border:2px solid #fff;border-radius:8px;
+    padding:6px 12px;
+  }
+  .sign-box h1{
+    margin:0;font-size:19px;letter-spacing:2.5px;font-weight:800;
+    text-transform:uppercase;font-stretch:condensed;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .sign-box .sub{font-size:11px;letter-spacing:1.5px;opacity:.9;text-transform:uppercase;margin-top:1px}
+  .gear{
+    background:none;border:2px solid rgba(255,255,255,.7);color:#fff;
+    border-radius:8px;width:40px;height:40px;font-size:18px;cursor:pointer;flex:none;
+  }
+  .totalbar{max-width:640px;margin:8px auto 0}
+  .totalbar .track{height:8px;background:rgba(0,0,0,.35);border-radius:4px;overflow:hidden}
+  .totalbar .fill{height:100%;background:var(--gold);border-radius:4px;transition:width .4s ease;width:0}
+  .totalbar .label{font-size:11px;letter-spacing:1px;margin-top:4px;text-transform:uppercase;opacity:.95;text-align:center}
+
+  main{max-width:640px;margin:0 auto;padding:12px}
+
+  /* ---------- Controls ---------- */
+  .controls{display:flex;gap:8px;margin-bottom:12px}
+  .search{
+    flex:1;border:2px solid var(--navy);border-radius:10px;background:var(--plate-cream);
+    padding:9px 12px;font-size:16px;color:var(--ink);min-width:0;
+  }
+  .search:focus{outline:2px solid var(--gold)}
+  .chips{display:flex;gap:6px}
+  .chip{
+    border:2px solid var(--navy);background:var(--plate-cream);color:var(--navy);
+    border-radius:10px;padding:0 10px;font-size:12px;font-weight:700;letter-spacing:.5px;
+    text-transform:uppercase;cursor:pointer;
+  }
+  .chip.on{background:var(--navy);color:var(--plate-cream)}
+
+  /* ---------- Region sections ---------- */
+  .region{margin-bottom:18px}
+  .region-head{
+    position:sticky;top:calc(96px + var(--sat));z-index:10;
+    display:flex;align-items:center;gap:10px;
+    background:var(--navy);color:var(--plate-cream);
+    border-radius:8px;padding:7px 12px;margin-bottom:8px;
+    box-shadow:var(--shadow);
+    border:1px solid var(--navy-deep);
+  }
+  .region-head .rname{font-weight:800;font-size:13px;letter-spacing:1.5px;text-transform:uppercase;flex:1}
+  .region-head .rcount{font-size:12px;font-weight:700;letter-spacing:1px}
+  .region-head .rtrack{width:56px;height:6px;background:rgba(255,255,255,.25);border-radius:3px;overflow:hidden;flex:none}
+  .region-head .rfill{height:100%;background:var(--gold);transition:width .4s}
+  .region.done .region-head{background:var(--hwy-green)}
+
+  .plate-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+
+  /* ---------- Plates ---------- */
+  .plate{
+    position:relative;
+    border:2.5px solid var(--navy);border-radius:10px;
+    background:linear-gradient(180deg,#fbf5e6,var(--plate-cream) 55%,#eee2c6);
+    color:var(--navy);
+    padding:8px 10px 7px;text-align:center;cursor:pointer;
+    box-shadow:var(--shadow), inset 0 0 0 1px rgba(255,255,255,.6);
+    transition:transform .08s ease;
+    overflow:hidden;
+    -webkit-user-select:none;user-select:none;
+  }
+  .plate:active{transform:scale(.96)}
+  .plate .bolt{
+    position:absolute;top:6px;width:6px;height:6px;border-radius:50%;
+    background:radial-gradient(circle at 35% 35%, #d8cbaa, #8a7c5c);
+    box-shadow:inset 0 1px 1px rgba(0,0,0,.35);
+  }
+  .plate .bolt.b1{left:8px}.plate .bolt.b2{right:8px}
+  .plate .pname{
+    display:block;
+    font-size:10px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    margin:0 12px;
+  }
+  .plate .pcode{
+    display:block;
+    font-size:30px;font-weight:900;letter-spacing:2px;line-height:1.15;
+    font-stretch:condensed;
+    text-shadow:0 1px 0 rgba(255,255,255,.75), 0 -1px 0 rgba(0,0,0,.18);
+  }
+  .plate .pdate{display:block;font-size:9.5px;letter-spacing:1px;text-transform:uppercase;opacity:.75;min-height:12px}
+
+  .plate.spotted{
+    background:linear-gradient(180deg,#27466e,var(--navy) 55%,var(--navy-deep));
+    color:var(--plate-cream);
+    border-color:var(--navy-deep);
+  }
+  .plate.spotted .pcode{text-shadow:0 1px 0 rgba(255,255,255,.15), 0 -1px 1px rgba(0,0,0,.5)}
+  .plate.spotted .bolt{background:radial-gradient(circle at 35% 35%, #b8c4d6, #3d5271)}
+  .plate .stamp{
+    display:none;
+    position:absolute;top:50%;left:50%;
+    transform:translate(-50%,-50%) rotate(-14deg);
+    border:2px solid var(--red);color:var(--red);
+    font-size:11px;font-weight:900;letter-spacing:2px;
+    padding:2px 7px;border-radius:4px;pointer-events:none;
+    background:rgba(247,239,219,.12);
+    text-transform:uppercase;
+  }
+  .plate.spotted .stamp{display:block;animation:stamp .3s cubic-bezier(.2,1.6,.4,1)}
+  @keyframes stamp{
+    0%{transform:translate(-50%,-50%) rotate(-14deg) scale(2.4);opacity:0}
+    100%{transform:translate(-50%,-50%) rotate(-14deg) scale(1);opacity:1}
+  }
+
+  /* Region flavors */
+  .region[data-flavor="ca"] .plate:not(.spotted){color:#a01f24;border-color:#a01f24}
+  .region[data-flavor="ca"] .plate.spotted{background:linear-gradient(180deg,#c22a30,#a01f24 55%,#7d1418);border-color:#7d1418}
+  .region[data-flavor="mx"] .plate:not(.spotted){color:#0b6b47;border-color:#0b6b47}
+  .region[data-flavor="mx"] .plate.spotted{background:linear-gradient(180deg,#0f8257,#0b6b47 55%,#07523a);border-color:#07523a}
+  .region[data-flavor="terr"] .plate:not(.spotted){color:#0f5e73;border-color:#0f5e73}
+  .region[data-flavor="terr"] .plate.spotted{background:linear-gradient(180deg,#15748d,#0f5e73 55%,#0a4759);border-color:#0a4759}
+  .region[data-flavor="gov"] .plate:not(.spotted){color:#5b4a91;border-color:#5b4a91}
+  .region[data-flavor="gov"] .plate.spotted{background:linear-gradient(180deg,#6d5aab,#5b4a91 55%,#453672);border-color:#453672}
+
+  .empty-note{
+    text-align:center;font-size:13px;letter-spacing:1px;text-transform:uppercase;
+    opacity:.55;padding:30px 10px;
+  }
+
+  /* ---------- Map tab ---------- */
+  .map-wrap{background:var(--plate-cream);border:2.5px solid var(--navy);border-radius:14px;padding:10px;box-shadow:var(--shadow)}
+  .map-title{
+    text-align:center;font-weight:800;font-size:13px;letter-spacing:2px;
+    text-transform:uppercase;color:var(--navy);margin:4px 0 8px;
+  }
+  svg.usmap{width:100%;height:auto;display:block}
+  .tile rect{
+    fill:#efe4c9;stroke:var(--navy);stroke-width:1.6;rx:5;
+    transition:fill .25s;
+  }
+  .tile text{
+    font-size:17px;font-weight:800;fill:var(--navy);
+    text-anchor:middle;dominant-baseline:central;pointer-events:none;
+    font-family:inherit;letter-spacing:.5px;
+  }
+  .tile.on rect{fill:var(--hwy-green);stroke:var(--hwy-green-dark)}
+  .tile.on text{fill:#fff}
+  .tile{cursor:pointer}
+  .map-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+  .stat-pill{
+    background:var(--plate-cream);border:2px solid var(--navy);border-radius:10px;
+    padding:8px 10px;text-align:center;box-shadow:var(--shadow);
+  }
+  .stat-pill .v{font-size:20px;font-weight:900;color:var(--navy)}
+  .stat-pill .k{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;opacity:.7;margin-top:1px}
+
+  /* ---------- Badges tab ---------- */
+  .badge-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .badge{
+    background:var(--plate-cream);border:2.5px solid var(--navy);border-radius:12px;
+    padding:12px 10px;text-align:center;box-shadow:var(--shadow);position:relative;
+  }
+  .badge .bicon{font-size:32px;line-height:1}
+  .badge .bname{font-weight:800;font-size:13px;letter-spacing:.5px;margin-top:6px;color:var(--navy);text-transform:uppercase}
+  .badge .bdesc{font-size:11px;opacity:.75;margin-top:3px;line-height:1.35}
+  .badge .bdate{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--hwy-green);font-weight:700;margin-top:5px}
+  .badge.locked{opacity:.55;border-style:dashed;filter:grayscale(1)}
+  .badge.locked .bicon{filter:grayscale(1) opacity(.5)}
+  .badge .ribbon{
+    position:absolute;top:-7px;right:-7px;background:var(--gold);color:var(--navy-deep);
+    font-size:10px;font-weight:900;border-radius:50%;width:24px;height:24px;
+    display:flex;align-items:center;justify-content:center;border:2px solid var(--navy);
+  }
+
+  /* ---------- Bottom tab bar ---------- */
+  nav{
+    position:fixed;left:0;right:0;bottom:0;z-index:40;
+    background:var(--navy);
+    border-top:3px solid var(--gold);
+    display:flex;justify-content:space-around;
+    padding:6px 8px calc(6px + var(--sab));
+    box-shadow:0 -3px 10px rgba(0,0,0,.25);
+  }
+  nav button{
+    background:none;border:none;color:rgba(247,239,219,.55);
+    font-size:11px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;
+    padding:6px 14px;cursor:pointer;border-radius:8px;
+    display:flex;flex-direction:column;align-items:center;gap:2px;
+  }
+  nav button .nicon{font-size:20px}
+  nav button.on{color:var(--gold)}
+  nav button .nbadge{
+    position:absolute;transform:translate(16px,-4px);
+    background:var(--red);color:#fff;border-radius:8px;font-size:9px;
+    padding:1px 5px;display:none;
+  }
+  nav button.hasnew .nbadge{display:block}
+
+  /* ---------- Toast ---------- */
+  #toast{
+    position:fixed;top:calc(12px + var(--sat));left:50%;transform:translateX(-50%) translateY(-130%);
+    z-index:100;background:var(--gold);color:var(--navy-deep);
+    border:3px solid var(--navy);border-radius:12px;
+    padding:10px 18px;box-shadow:0 6px 20px rgba(0,0,0,.35);
+    text-align:center;transition:transform .35s cubic-bezier(.2,1.4,.4,1);
+    max-width:88vw;
+  }
+  #toast.show{transform:translateX(-50%) translateY(0)}
+  #toast .t1{font-size:11px;font-weight:900;letter-spacing:2px;text-transform:uppercase}
+  #toast .t2{font-size:15px;font-weight:800;margin-top:2px}
+
+  /* ---------- Settings dialog ---------- */
+  #overlay{
+    position:fixed;inset:0;background:rgba(20,20,20,.55);z-index:60;
+    display:none;align-items:center;justify-content:center;padding:20px;
+  }
+  #overlay.show{display:flex}
+  .dialog{
+    background:var(--paper);border:3px solid var(--navy);border-radius:16px;
+    padding:18px;max-width:420px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,.4);
+    max-height:80vh;overflow-y:auto;
+  }
+  .dialog h2{margin:0 0 4px;font-size:16px;letter-spacing:2px;text-transform:uppercase;color:var(--navy)}
+  .dialog p{font-size:13px;line-height:1.45;margin:8px 0}
+  .dialog .btnrow{display:flex;flex-direction:column;gap:8px;margin-top:14px}
+  .dbtn{
+    border:2px solid var(--navy);border-radius:10px;background:var(--plate-cream);
+    color:var(--navy);padding:10px;font-size:13px;font-weight:800;
+    letter-spacing:1px;text-transform:uppercase;cursor:pointer;
+  }
+  .dbtn.danger{border-color:var(--red);color:var(--red)}
+  .dbtn.primary{background:var(--navy);color:var(--plate-cream)}
+  textarea.io{
+    width:100%;height:90px;border:2px solid var(--navy);border-radius:8px;
+    background:var(--plate-cream);font-size:11px;padding:8px;margin-top:8px;
+    font-family:ui-monospace,Menlo,monospace;display:none;
+  }
+  textarea.io.show{display:block}
+  .tab{display:none}
+  .tab.on{display:block}
+  footer{
+    text-align:center;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;
+    opacity:.45;padding:18px 0 6px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="sign-row">
+    <div class="sign-box">
+      <h1>Plate Chase</h1>
+      <div class="sub">The License Plate Game</div>
+    </div>
+    <button class="gear" id="gearBtn" aria-label="Settings">⚙</button>
+  </div>
+  <div class="totalbar">
+    <div class="track"><div class="fill" id="totalFill"></div></div>
+    <div class="label" id="totalLabel">0 of 0 plates spotted</div>
+  </div>
+</header>
+
+<main>
+  <!-- SPOT TAB -->
+  <div class="tab on" id="tab-spot">
+    <div class="controls">
+      <input class="search" id="searchBox" type="search" placeholder="Search plates…" autocomplete="off">
+      <div class="chips">
+        <button class="chip on" data-filter="all">All</button>
+        <button class="chip" data-filter="todo">To Find</button>
+        <button class="chip" data-filter="done">Got</button>
+      </div>
+    </div>
+    <div id="regions"></div>
+    <div class="empty-note" id="emptyNote" style="display:none">No plates match</div>
+  </div>
+
+  <!-- MAP TAB -->
+  <div class="tab" id="tab-map">
+    <div class="map-wrap">
+      <div class="map-title">United States · Tap to Spot</div>
+      <svg class="usmap" id="usmap" role="img" aria-label="US states map"></svg>
+    </div>
+    <div class="map-stats" id="mapStats"></div>
+  </div>
+
+  <!-- BADGES TAB -->
+  <div class="tab" id="tab-badges">
+    <div class="badge-grid" id="badgeGrid"></div>
+  </div>
+
+  <footer>Plate Chase · Works Offline · Data Stays on Your Phone</footer>
+</main>
+
+<nav>
+  <button id="nav-spot" class="on" data-tab="spot"><span class="nicon">🚗</span>Spot</button>
+  <button id="nav-map" data-tab="map"><span class="nicon">🗺️</span>Map</button>
+  <button id="nav-badges" data-tab="badges"><span class="nicon">🏆</span>Badges<span class="nbadge" id="navNew">NEW</span></button>
+</nav>
+
+<div id="toast"><div class="t1" id="toastT1"></div><div class="t2" id="toastT2"></div></div>
+
+<div id="overlay">
+  <div class="dialog">
+    <h2>Settings</h2>
+    <p>Everything is saved on this phone only. Export a backup before switching devices.</p>
+    <div class="btnrow">
+      <button class="dbtn" id="exportBtn">Export Backup</button>
+      <button class="dbtn" id="importBtn">Import Backup</button>
+      <textarea class="io" id="ioBox" placeholder="Paste backup text here, then tap Import again"></textarea>
+      <button class="dbtn danger" id="resetBtn">Reset Everything</button>
+      <button class="dbtn primary" id="closeBtn">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+
+/* ================= DATA ================= */
+
+var US_STATES = [
+  ["AL","Alabama"],["AK","Alaska"],["AZ","Arizona"],["AR","Arkansas"],["CA","California"],
+  ["CO","Colorado"],["CT","Connecticut"],["DE","Delaware"],["FL","Florida"],["GA","Georgia"],
+  ["HI","Hawaii"],["ID","Idaho"],["IL","Illinois"],["IN","Indiana"],["IA","Iowa"],
+  ["KS","Kansas"],["KY","Kentucky"],["LA","Louisiana"],["ME","Maine"],["MD","Maryland"],
+  ["MA","Massachusetts"],["MI","Michigan"],["MN","Minnesota"],["MS","Mississippi"],["MO","Missouri"],
+  ["MT","Montana"],["NE","Nebraska"],["NV","Nevada"],["NH","New Hampshire"],["NJ","New Jersey"],
+  ["NM","New Mexico"],["NY","New York"],["NC","North Carolina"],["ND","North Dakota"],["OH","Ohio"],
+  ["OK","Oklahoma"],["OR","Oregon"],["PA","Pennsylvania"],["RI","Rhode Island"],["SC","South Carolina"],
+  ["SD","South Dakota"],["TN","Tennessee"],["TX","Texas"],["UT","Utah"],["VT","Vermont"],
+  ["VA","Virginia"],["WA","Washington"],["WV","West Virginia"],["WI","Wisconsin"],["WY","Wyoming"]
+];
+
+var US_TERR = [
+  ["DC","Washington DC"],["PR","Puerto Rico"],["GU","Guam"],
+  ["VI","U.S. Virgin Islands"],["AS","American Samoa"],["MP","N. Mariana Islands"]
+];
+
+var CANADA = [
+  ["AB","Alberta"],["BC","British Columbia"],["MB","Manitoba"],["NB","New Brunswick"],
+  ["NL","Newfoundland & Labrador"],["NS","Nova Scotia"],["NT","Northwest Territories"],
+  ["NU","Nunavut"],["ON","Ontario"],["PE","Prince Edward Island"],["QC","Québec"],
+  ["SK","Saskatchewan"],["YT","Yukon"]
+];
+
+var MEXICO = [
+  ["AGS","Aguascalientes"],["BCN","Baja California"],["BCS","Baja California Sur"],
+  ["CAM","Campeche"],["CHP","Chiapas"],["CHH","Chihuahua"],["CDMX","Ciudad de México"],
+  ["COA","Coahuila"],["COL","Colima"],["DGO","Durango"],["GTO","Guanajuato"],
+  ["GRO","Guerrero"],["HGO","Hidalgo"],["JAL","Jalisco"],["MEX","Estado de México"],
+  ["MIC","Michoacán"],["MOR","Morelos"],["NAY","Nayarit"],["NLE","Nuevo León"],
+  ["OAX","Oaxaca"],["PUE","Puebla"],["QRO","Querétaro"],["ROO","Quintana Roo"],
+  ["SLP","San Luis Potosí"],["SIN","Sinaloa"],["SON","Sonora"],["TAB","Tabasco"],
+  ["TAM","Tamaulipas"],["TLX","Tlaxcala"],["VER","Veracruz"],["YUC","Yucatán"],
+  ["ZAC","Zacatecas"]
+];
+
+var GOV = [
+  ["USG","U.S. Government"],["MIL","U.S. Military"],["DIP","Diplomatic Corps"],["TRB","Tribal Nation"]
+];
+
+var REGIONS = [
+  {id:"us",   name:"US States",           flavor:"us",   items:US_STATES},
+  {id:"terr", name:"DC & US Territories", flavor:"terr", items:US_TERR},
+  {id:"ca",   name:"Canada",              flavor:"ca",   items:CANADA},
+  {id:"mx",   name:"Mexico",              flavor:"mx",   items:MEXICO},
+  {id:"gov",  name:"Special Plates",      flavor:"gov",  items:GOV}
+];
+
+/* Unique key per plate: region prefix + code */
+function keyOf(regionId, code){ return regionId + ":" + code; }
+
+var ALL_KEYS = [];
+REGIONS.forEach(function(r){ r.items.forEach(function(it){ ALL_KEYS.push(keyOf(r.id, it[0])); }); });
+
+/* US tile-map grid: [code, col, row] (1-indexed, 11 cols x 7 rows) */
+var GRID = [
+  ["AK",1,1],["ME",11,1],
+  ["WA",1,2],["ID",2,2],["MT",3,2],["ND",4,2],["MN",5,2],["WI",6,2],["MI",7,2],["NY",9,2],["VT",10,2],["NH",11,2],
+  ["OR",1,3],["NV",2,3],["WY",3,3],["SD",4,3],["IA",5,3],["IL",6,3],["IN",7,3],["OH",8,3],["PA",9,3],["NJ",10,3],["MA",11,3],
+  ["CA",1,4],["UT",2,4],["CO",3,4],["NE",4,4],["MO",5,4],["KY",6,4],["WV",7,4],["VA",8,4],["MD",9,4],["CT",10,4],["RI",11,4],
+  ["AZ",2,5],["NM",3,5],["KS",4,5],["AR",5,5],["TN",6,5],["NC",7,5],["SC",8,5],["DE",9,5],["DC",10,5],
+  ["OK",4,6],["LA",5,6],["MS",6,6],["AL",7,6],["GA",8,6],
+  ["HI",1,7],["TX",4,7],["FL",9,7]
+];
+
+/* ================= BADGES ================= */
+
+function spotCount(){ return Object.keys(state.spotted).length; }
+function hasAll(regionId, codes){
+  return codes.every(function(c){ return !!state.spotted[keyOf(regionId,c)]; });
+}
+function regionCount(regionId){
+  var r = REGIONS.filter(function(x){return x.id===regionId;})[0];
+  return r.items.filter(function(it){ return !!state.spotted[keyOf(regionId,it[0])]; }).length;
+}
+var LOWER48 = US_STATES.map(function(s){return s[0];}).filter(function(c){return c!=="AK"&&c!=="HI";});
+
+var BADGES = [
+  {id:"first",   icon:"🚗", name:"First Catch",       desc:"Spot your very first plate",              test:function(){return spotCount()>=1;}},
+  {id:"ten",     icon:"🛣️", name:"Cruisin'",          desc:"Spot 10 plates",                          test:function(){return spotCount()>=10;}},
+  {id:"quarter", icon:"⛽", name:"Road Warrior",       desc:"Spot 25 plates",                          test:function(){return spotCount()>=25;}},
+  {id:"fifty",   icon:"🧭", name:"Half Century",       desc:"Spot 50 plates in total",                 test:function(){return spotCount()>=50;}},
+  {id:"west",    icon:"🌊", name:"West Coast Cruiser", desc:"California, Oregon & Washington",         test:function(){return hasAll("us",["CA","OR","WA"]);}},
+  {id:"corners", icon:"🏜️", name:"Four Corners",      desc:"Arizona, Colorado, New Mexico & Utah",    test:function(){return hasAll("us",["AZ","CO","NM","UT"]);}},
+  {id:"neweng",  icon:"🦞", name:"New England",        desc:"CT, MA, ME, NH, RI & VT",                 test:function(){return hasAll("us",["CT","MA","ME","NH","RI","VT"]);}},
+  {id:"gulf",    icon:"🦐", name:"Gulf Coast",         desc:"TX, LA, MS, AL & FL",                     test:function(){return hasAll("us",["TX","LA","MS","AL","FL"]);}},
+  {id:"lakes",   icon:"⚓", name:"Great Lakes",        desc:"IL, IN, MI, MN, NY, OH, PA & WI",         test:function(){return hasAll("us",["IL","IN","MI","MN","NY","OH","PA","WI"]);}},
+  {id:"faraway", icon:"🌺", name:"Far & Away",         desc:"Alaska & Hawaii — the tough ones",        test:function(){return hasAll("us",["AK","HI"]);}},
+  {id:"lower48", icon:"🗺️", name:"Lower 48",          desc:"Every contiguous state",                  test:function(){return hasAll("us",LOWER48);}},
+  {id:"club50",  icon:"🏆", name:"50 States Club",     desc:"All fifty United States",                 test:function(){return regionCount("us")===50;}},
+  {id:"islands", icon:"🏝️", name:"Island Hopper",     desc:"DC & every US territory",                 test:function(){return regionCount("terr")===US_TERR.length;}},
+  {id:"intl",    icon:"🌎", name:"International",      desc:"First plate from outside the US",         test:function(){return regionCount("ca")+regionCount("mx")>=1;}},
+  {id:"bc",      icon:"🏔️", name:"Beautiful BC",      desc:"Spot British Columbia",                   test:function(){return !!state.spotted[keyOf("ca","BC")];}},
+  {id:"canada",  icon:"🍁", name:"O Canada",           desc:"All 13 provinces & territories",          test:function(){return regionCount("ca")===CANADA.length;}},
+  {id:"mexico",  icon:"🌵", name:"¡Viva México!",      desc:"All 32 Mexican states",                   test:function(){return regionCount("mx")===MEXICO.length;}},
+  {id:"gman",    icon:"🏛️", name:"G-Man",             desc:"Spot a special/government plate",         test:function(){return regionCount("gov")>=1;}},
+  {id:"complete",icon:"👑", name:"The Completionist",  desc:"Every single plate in the game",          test:function(){return spotCount()===ALL_KEYS.length;}}
+];
+
+/* ================= STATE ================= */
+
+var STORE_KEY = "platechase-v1";
+var state = load();
+
+function load(){
+  try{
+    var raw = localStorage.getItem(STORE_KEY);
+    if(raw){
+      var s = JSON.parse(raw);
+      if(s && typeof s==="object"){
+        return { spotted: s.spotted||{}, badges: s.badges||{}, badgesNew: !!s.badgesNew };
+      }
+    }
+  }catch(e){}
+  return { spotted:{}, badges:{}, badgesNew:false };
+}
+function save(){
+  try{ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }catch(e){}
+}
+
+/* ================= HELPERS ================= */
+
+function $(id){ return document.getElementById(id); }
+function fmtDate(ts){
+  try{
+    return new Date(ts).toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"});
+  }catch(e){ return ""; }
+}
+
+var toastQueue = [], toastBusy = false;
+function toast(t1, t2){
+  toastQueue.push([t1,t2]);
+  if(!toastBusy) nextToast();
+}
+function nextToast(){
+  var item = toastQueue.shift();
+  if(!item){ toastBusy=false; return; }
+  toastBusy = true;
+  $("toastT1").textContent = item[0];
+  $("toastT2").textContent = item[1];
+  var el = $("toast");
+  el.classList.add("show");
+  setTimeout(function(){
+    el.classList.remove("show");
+    setTimeout(nextToast, 380);
+  }, 2400);
+}
+
+/* ================= TOGGLE + BADGE CHECK ================= */
+
+function toggle(key, name){
+  if(state.spotted[key]){
+    delete state.spotted[key];
+  }else{
+    state.spotted[key] = Date.now();
+    if(navigator.vibrate){ try{ navigator.vibrate(12); }catch(e){} }
+    checkBadges(name);
+  }
+  save();
+  renderAll();
+}
+
+function checkBadges(plateName){
+  var newly = [];
+  BADGES.forEach(function(b){
+    if(!state.badges[b.id] && b.test()){
+      state.badges[b.id] = Date.now();
+      newly.push(b);
+    }
+  });
+  if(newly.length){
+    state.badgesNew = true;
+    newly.forEach(function(b){ toast("Badge Unlocked " + b.icon, b.name); });
+  }
+}
+
+/* ================= RENDER: SPOT LIST ================= */
+
+var searchTerm = "", filterMode = "all";
+
+function buildRegions(){
+  var host = $("regions");
+  host.innerHTML = "";
+  REGIONS.forEach(function(r){
+    var sec = document.createElement("section");
+    sec.className = "region";
+    sec.dataset.flavor = r.flavor;
+    sec.dataset.region = r.id;
+    sec.innerHTML =
+      '<div class="region-head">'+
+        '<span class="rname">'+r.name+'</span>'+
+        '<span class="rtrack"><span class="rfill"></span></span>'+
+        '<span class="rcount"></span>'+
+      '</div>'+
+      '<div class="plate-grid"></div>';
+    var grid = sec.querySelector(".plate-grid");
+    r.items.forEach(function(it){
+      var code = it[0], name = it[1];
+      var key = keyOf(r.id, code);
+      var b = document.createElement("button");
+      b.className = "plate";
+      b.dataset.key = key;
+      b.dataset.search = (code+" "+name).toLowerCase();
+      b.innerHTML =
+        '<span class="bolt b1"></span><span class="bolt b2"></span>'+
+        '<span class="pname">'+name+'</span>'+
+        '<span class="pcode">'+code+'</span>'+
+        '<span class="pdate"></span>'+
+        '<span class="stamp">Spotted</span>';
+      b.addEventListener("click", function(){ toggle(key, name); });
+      grid.appendChild(b);
+    });
+    host.appendChild(sec);
+  });
+}
+
+function renderSpotList(){
+  var anyVisible = false;
+  document.querySelectorAll(".region").forEach(function(sec){
+    var rid = sec.dataset.region;
+    var region = REGIONS.filter(function(x){return x.id===rid;})[0];
+    var got = 0, visible = 0;
+    sec.querySelectorAll(".plate").forEach(function(p){
+      var key = p.dataset.key;
+      var ts = state.spotted[key];
+      p.classList.toggle("spotted", !!ts);
+      p.querySelector(".pdate").textContent = ts ? fmtDate(ts) : "· · · · ·";
+      if(ts) got++;
+      var matchesSearch = !searchTerm || p.dataset.search.indexOf(searchTerm) !== -1;
+      var matchesFilter = filterMode==="all" || (filterMode==="done" && ts) || (filterMode==="todo" && !ts);
+      var show = matchesSearch && matchesFilter;
+      p.style.display = show ? "" : "none";
+      if(show) visible++;
+    });
+    sec.querySelector(".rcount").textContent = got + "/" + region.items.length;
+    sec.querySelector(".rfill").style.width = (got/region.items.length*100) + "%";
+    sec.classList.toggle("done", got===region.items.length);
+    sec.style.display = visible ? "" : "none";
+    if(visible) anyVisible = true;
+  });
+  $("emptyNote").style.display = anyVisible ? "none" : "";
+}
+
+/* ================= RENDER: MAP ================= */
+
+var TILE = 46, STEP = 50, PAD = 4;
+
+function buildMap(){
+  var svg = $("usmap");
+  var cols = 11, rows = 7;
+  svg.setAttribute("viewBox","0 0 "+(PAD*2+cols*STEP-(STEP-TILE))+" "+(PAD*2+rows*STEP-(STEP-TILE)));
+  var NS = "http://www.w3.org/2000/svg";
+  GRID.forEach(function(g){
+    var code=g[0], col=g[1], row=g[2];
+    var key = code==="DC" ? keyOf("terr","DC") : keyOf("us",code);
+    var gr = document.createElementNS(NS,"g");
+    gr.setAttribute("class","tile");
+    gr.dataset.key = key;
+    var x = PAD+(col-1)*STEP, y = PAD+(row-1)*STEP;
+    var rect = document.createElementNS(NS,"rect");
+    rect.setAttribute("x",x); rect.setAttribute("y",y);
+    rect.setAttribute("width",TILE); rect.setAttribute("height",TILE);
+    rect.setAttribute("rx",6);
+    var txt = document.createElementNS(NS,"text");
+    txt.setAttribute("x",x+TILE/2); txt.setAttribute("y",y+TILE/2+1);
+    txt.textContent = code;
+    gr.appendChild(rect); gr.appendChild(txt);
+    gr.addEventListener("click", function(){
+      var name = code==="DC" ? "Washington DC" : US_STATES.filter(function(s){return s[0]===code;})[0][1];
+      toggle(key, name);
+    });
+    svg.appendChild(gr);
+  });
+}
+
+function renderMap(){
+  document.querySelectorAll("#usmap .tile").forEach(function(t){
+    t.classList.toggle("on", !!state.spotted[t.dataset.key]);
+  });
+  var stats = [
+    ["us","US States",50],
+    ["terr","DC & Territories",US_TERR.length],
+    ["ca","Canada",CANADA.length],
+    ["mx","Mexico",MEXICO.length]
+  ];
+  $("mapStats").innerHTML = stats.map(function(s){
+    return '<div class="stat-pill"><div class="v">'+regionCount(s[0])+' / '+s[2]+'</div><div class="k">'+s[1]+'</div></div>';
+  }).join("");
+}
+
+/* ================= RENDER: BADGES ================= */
+
+function renderBadges(){
+  var host = $("badgeGrid");
+  host.innerHTML = "";
+  BADGES.forEach(function(b){
+    var ts = state.badges[b.id];
+    var div = document.createElement("div");
+    div.className = "badge" + (ts ? "" : " locked");
+    div.innerHTML =
+      '<div class="bicon">'+b.icon+'</div>'+
+      '<div class="bname">'+b.name+'</div>'+
+      '<div class="bdesc">'+b.desc+'</div>'+
+      (ts ? '<div class="bdate">'+fmtDate(ts)+'</div><div class="ribbon">★</div>' : '<div class="bdate" style="color:#999">Locked</div>');
+    host.appendChild(div);
+  });
+}
+
+/* ================= RENDER: HEADER + NAV ================= */
+
+function renderHeader(){
+  var n = spotCount(), total = ALL_KEYS.length;
+  $("totalFill").style.width = (n/total*100) + "%";
+  $("totalLabel").textContent = n + " of " + total + " plates spotted";
+  $("nav-badges").classList.toggle("hasnew", !!state.badgesNew);
+}
+
+function renderAll(){
+  renderSpotList();
+  renderMap();
+  renderBadges();
+  renderHeader();
+}
+
+/* ================= TABS ================= */
+
+document.querySelectorAll("nav button").forEach(function(btn){
+  btn.addEventListener("click", function(){
+    var tab = btn.dataset.tab;
+    document.querySelectorAll("nav button").forEach(function(b){ b.classList.toggle("on", b===btn); });
+    document.querySelectorAll(".tab").forEach(function(t){ t.classList.toggle("on", t.id==="tab-"+tab); });
+    if(tab==="badges" && state.badgesNew){
+      state.badgesNew = false; save(); renderHeader();
+    }
+    window.scrollTo(0,0);
+  });
+});
+
+/* ================= SEARCH + FILTER ================= */
+
+$("searchBox").addEventListener("input", function(e){
+  searchTerm = e.target.value.trim().toLowerCase();
+  renderSpotList();
+});
+document.querySelectorAll(".chip").forEach(function(c){
+  c.addEventListener("click", function(){
+    filterMode = c.dataset.filter;
+    document.querySelectorAll(".chip").forEach(function(x){ x.classList.toggle("on", x===c); });
+    renderSpotList();
+  });
+});
+
+/* ================= SETTINGS ================= */
+
+$("gearBtn").addEventListener("click", function(){ $("overlay").classList.add("show"); });
+$("closeBtn").addEventListener("click", function(){ $("overlay").classList.remove("show"); });
+$("overlay").addEventListener("click", function(e){ if(e.target===$("overlay")) $("overlay").classList.remove("show"); });
+
+$("resetBtn").addEventListener("click", function(){
+  if(confirm("Reset everything? All spotted plates and badges will be erased.")){
+    state = { spotted:{}, badges:{}, badgesNew:false };
+    save(); renderAll();
+    $("overlay").classList.remove("show");
+    toast("Fresh Start 🚙","All plates reset");
+  }
+});
+
+$("exportBtn").addEventListener("click", function(){
+  var box = $("ioBox");
+  box.classList.add("show");
+  box.value = JSON.stringify(state);
+  box.select();
+  try{ document.execCommand("copy"); toast("Backup Ready 📋","Copied — save it somewhere safe"); }
+  catch(e){ toast("Backup Ready","Copy the text below"); }
+});
+
+$("importBtn").addEventListener("click", function(){
+  var box = $("ioBox");
+  if(!box.classList.contains("show") || !box.value.trim()){
+    box.classList.add("show"); box.value = ""; box.focus();
+    toast("Import","Paste your backup, then tap Import again");
+    return;
+  }
+  try{
+    var s = JSON.parse(box.value.trim());
+    if(!s || typeof s.spotted!=="object") throw new Error("bad");
+    state = { spotted:s.spotted||{}, badges:s.badges||{}, badgesNew:false };
+    save(); renderAll();
+    $("overlay").classList.remove("show");
+    box.classList.remove("show");
+    toast("Imported ✓", spotCount()+" plates restored");
+  }catch(e){
+    toast("Import Failed","That doesn't look like a Plate Chase backup");
+  }
+});
+
+/* ================= INIT ================= */
+
+buildRegions();
+buildMap();
+renderAll();
+
+if("serviceWorker" in navigator){
+  window.addEventListener("load", function(){
+    navigator.serviceWorker.register("sw.js").catch(function(){});
+  });
+}
+</script>
+</body>
+</html>
