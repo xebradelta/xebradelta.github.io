@@ -64,12 +64,6 @@
     box-shadow: 0 1px 3px rgba(0,0,0,.08);
   }
   #board { display: block; width: 100%; height: auto; touch-action: none; }
-  #board.shake { animation: shake .3s; }
-  @keyframes shake {
-    0%,100% { transform: translateX(0); }
-    25% { transform: translateX(-5px); }
-    75% { transform: translateX(5px); }
-  }
 
   .theme-line {
     text-align: center; color: var(--muted);
@@ -134,6 +128,15 @@
     margin-top: 14px; background: none; border: none; color: var(--muted);
     font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit;
   }
+  .hintlist { display: flex; flex-direction: column; gap: 10px; }
+  .hintopt {
+    border: 2px solid var(--line); background: #faf9f6; border-radius: 14px;
+    padding: 12px 14px; cursor: pointer; font-family: inherit; text-align: left;
+  }
+  .hintopt:active:not(:disabled) { transform: scale(.97); }
+  .hintopt:disabled { opacity: .4; cursor: default; }
+  .hintopt b { display: block; font-size: 16px; }
+  .hintopt span { color: var(--muted); font-size: 13px; }
   .stat-grid { display: flex; justify-content: center; gap: 26px; margin: 14px 0 18px; }
   .stat b { display: block; font-size: 26px; font-variant-numeric: tabular-nums; }
   .stat span { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
@@ -168,8 +171,10 @@
 
   <details class="howto">
     <summary>How to play</summary>
-    <p>Find each listed word in the grid. Press a letter and drag through neighboring squares (up, down, left, right) to spell the word from first letter to last — the path can bend as much as it likes.</p>
-    <p>Every open square is used by exactly one word, and together the words fill the whole board. Dark squares are not used. If a placed word boxes you in, use <b>Undo</b> to remove it and try another route.</p>
+    <p>Hidden in the grid are words matching the theme — one word per row of blank tiles below, shortest first. Press a letter and drag through neighboring squares (up, down, left, right) to spell a word from first letter to last. When your highlighted path spells one of the hidden words, it locks in and the word is revealed below.</p>
+    <p>Your highlighted path stays on the board between drags: press its end to keep extending it, press a highlighted square to cut the path back to there, or press elsewhere to start over.</p>
+    <p>Every open square is used by exactly one word, and together the words fill the whole board. Dark squares are not used. If a placed word boxes you in, use <b>Undo</b> to remove it.</p>
+    <p><b>Hint</b> offers three kinds of help: clear your current highlighted path, mark the starting square of a hidden word on the board, or reveal one letter of a hidden word in the list below.</p>
     <p>Unlike the daily version, you can play as many boards as you want — tap <b>＋</b> for a new puzzle, or <b>↺</b> to restart the current one.</p>
   </details>
 
@@ -188,6 +193,19 @@
       <button class="sizebtn" data-size="random"><b>Random</b><span>Surprise me</span></button>
     </div>
     <button class="cancel" id="newCancel">Cancel</button>
+  </div>
+</div>
+
+<div class="modal-back" id="hintModal">
+  <div class="modal">
+    <h2>Hint</h2>
+    <p class="sub">Pick the kind of help you want</p>
+    <div class="hintlist">
+      <button class="hintopt" id="hintClear"><b>Clear my selection</b><span>Remove the highlighted path you're working on</span></button>
+      <button class="hintopt" id="hintStart"><b>Show a start point</b><span>Mark the first letter of a hidden word on the board</span></button>
+      <button class="hintopt" id="hintLetter"><b>Reveal a letter</b><span>Fill in one letter of a hidden word below</span></button>
+    </div>
+    <button class="cancel" id="hintCancel">Cancel</button>
   </div>
 </div>
 
@@ -381,7 +399,7 @@ var PALETTE = [
 var INK = "#23252c";
 
 /* ============ state ============ */
-var state = null;   // { puzzle, placed:[{wi, cells}], elapsed, hintsUsed, hint:{wi,count}|null, done }
+var state = null;   // { puzzle, placed:[{wi, cells}], elapsed, hintsUsed, startHints:[{wi,cell}], revealed:{wi:n}, trace:[...], done }
 var trace = [];
 var tracing = false;
 var timerId = null;
@@ -391,12 +409,21 @@ var boardSvg = $("board");
 var CELL = 100;
 
 function saveState() {
-  try { localStorage.setItem("wend.game", JSON.stringify(state)); } catch (e) {}
+  try {
+    state.trace = trace;
+    localStorage.setItem("wend.game", JSON.stringify(state));
+  } catch (e) {}
 }
 function loadState() {
   try {
     var s = JSON.parse(localStorage.getItem("wend.game"));
-    if (s && s.puzzle && s.puzzle.words) return s;
+    if (s && s.puzzle && s.puzzle.words) {
+      s.startHints = s.startHints || [];
+      s.revealed = s.revealed || {};
+      s.trace = s.trace || [];
+      delete s.hint;
+      return s;
+    }
   } catch (e) {}
   return null;
 }
@@ -415,7 +442,7 @@ function newGame(sizeKey) {
   var seed = Math.floor(Math.random() * 2147483647);
   var puzzle = generatePuzzle(sizeKey, seed);
   if (!puzzle) { puzzle = generatePuzzle(sizeKey, seed + 1); }
-  state = { puzzle: puzzle, placed: [], elapsed: 0, hintsUsed: 0, hint: null, done: false };
+  state = { puzzle: puzzle, placed: [], elapsed: 0, hintsUsed: 0, startHints: [], revealed: {}, done: false };
   trace = [];
   saveState();
   renderAll();
@@ -425,7 +452,8 @@ function newGame(sizeKey) {
 function restartPuzzle() {
   if (!state) return;
   state.placed = [];
-  state.hint = null;
+  state.startHints = [];
+  state.revealed = {};
   state.done = false;
   state.elapsed = 0;
   state.hintsUsed = 0;
@@ -489,14 +517,15 @@ function renderBoard() {
     }
   }
 
-  // hint trail
-  if (state.hint && !state.done) {
-    var hp = p.paths[state.hint.wi].slice(0, state.hint.count);
-    if (hp.length > 1) {
-      out.push('<polyline points="' + snakePoints(hp) + '" fill="none" stroke="#9a98a4" stroke-width="26" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2 40" opacity="0.9"/>');
-    }
-    var hc = cellCenter(hp[0]);
-    out.push('<circle cx="' + hc.x + '" cy="' + hc.y + '" r="40" fill="none" stroke="#9a98a4" stroke-width="7" stroke-dasharray="10 12"><animate attributeName="r" values="34;42;34" dur="1.6s" repeatCount="indefinite"/></circle>');
+  // start-point hint rings (persist until their word is found)
+  if (!state.done) {
+    var solvedNow = {};
+    state.placed.forEach(function (pl) { solvedNow[pl.wi] = true; });
+    state.startHints.forEach(function (h) {
+      if (solvedNow[h.wi]) return;
+      var hc = cellCenter(h.cell);
+      out.push('<circle cx="' + hc.x + '" cy="' + hc.y + '" r="40" fill="none" stroke="#9a98a4" stroke-width="7" stroke-dasharray="10 12"><animate attributeName="r" values="34;42;34" dur="1.6s" repeatCount="indefinite"/></circle>');
+    });
   }
 
   // placed word snakes
@@ -537,14 +566,22 @@ function renderBoard() {
   boardSvg.innerHTML = out.join("");
 }
 
+function displayOrder() {
+  var words = state.puzzle.words;
+  return words.map(function (w, wi) { return wi; }).sort(function (a, b) {
+    return words[a].length - words[b].length || a - b;
+  });
+}
 function renderWords() {
   var p = state.puzzle;
   var solved = {};
   state.placed.forEach(function (pl) { solved[pl.wi] = true; });
-  var html = p.words.map(function (w, wi) {
+  var html = displayOrder().map(function (wi) {
+    var w = p.words[wi];
     var col = PALETTE[wi % PALETTE.length];
-    var tiles = w.split("").map(function (ch) {
-      return '<span class="tile"' + (solved[wi] ? ' style="background:' + col.main + '"' : "") + ">" + esc(ch) + "</span>";
+    var shown = solved[wi] ? w.length : (state.revealed[wi] || 0);
+    var tiles = w.split("").map(function (ch, i) {
+      return '<span class="tile"' + (solved[wi] ? ' style="background:' + col.main + '"' : "") + ">" + (i < shown ? esc(ch) : "") + "</span>";
     }).join("");
     return '<div class="wordrow' + (solved[wi] ? " solved" : "") + '"><div class="tiles">' + tiles + '</div><span class="check">✓</span></div>';
   }).join("");
@@ -585,9 +622,16 @@ function adjacent(a, b) {
 boardSvg.addEventListener("pointerdown", function (ev) {
   if (!state || state.done) return;
   var i = eventCell(ev);
-  if (!cellIsOpen(i)) return;
+  var idx = trace.indexOf(i);
+  if (idx >= 0) {
+    // press on the head: extend from that end; press mid-path: cut back to there
+    if (idx === 0 && trace.length > 1) trace.reverse();
+    else if (idx < trace.length - 1) trace = trace.slice(0, idx + 1);
+  } else {
+    if (!cellIsOpen(i)) return;
+    trace = [i];
+  }
   tracing = true;
-  trace = [i];
   try { boardSvg.setPointerCapture(ev.pointerId); } catch (e) {}
   renderBoard();
   ev.preventDefault();
@@ -637,17 +681,15 @@ function endTrace() {
     }
     if (hit >= 0) {
       state.placed.push({ wi: hit, cells: cells });
-      if (state.hint && state.hint.wi === hit) state.hint = null;
       trace = [];
       checkWin();
       saveState();
       renderAll();
       return;
     }
-    var card = boardSvg;
-    card.classList.remove("shake"); void card.offsetWidth; card.classList.add("shake");
   }
-  trace = [];
+  // no match: keep the partial path highlighted so it can be extended later
+  saveState();
   renderBoard();
 }
 boardSvg.addEventListener("pointerup", endTrace);
@@ -660,20 +702,51 @@ $("undoBtn").addEventListener("click", function () {
   saveState();
   renderAll();
 });
+function unsolvedInOrder() {
+  var solved = {};
+  state.placed.forEach(function (pl) { solved[pl.wi] = true; });
+  return displayOrder().filter(function (wi) { return !solved[wi]; });
+}
+function nextStartHint() {
+  var hinted = {};
+  state.startHints.forEach(function (h) { hinted[h.wi] = true; });
+  var open = unsolvedInOrder().filter(function (wi) { return !hinted[wi]; });
+  return open.length ? open[0] : -1;
+}
+function nextReveal() {
+  var open = unsolvedInOrder().filter(function (wi) {
+    return (state.revealed[wi] || 0) < state.puzzle.words[wi].length;
+  });
+  return open.length ? open[0] : -1;
+}
 $("hintBtn").addEventListener("click", function () {
   if (state.done) return;
-  var solvedWi = {};
-  state.placed.forEach(function (pl) { solvedWi[pl.wi] = true; });
-  var target = -1;
-  for (var wi = 0; wi < state.puzzle.words.length; wi++) {
-    if (!solvedWi[wi]) { target = wi; break; }
-  }
-  if (target < 0) return;
-  if (state.hint && state.hint.wi === target) {
-    state.hint.count = Math.min(state.hint.count + 1, state.puzzle.paths[target].length);
-  } else {
-    state.hint = { wi: target, count: 1 };
-  }
+  $("hintClear").disabled = trace.length === 0;
+  $("hintStart").disabled = nextStartHint() < 0;
+  $("hintLetter").disabled = nextReveal() < 0;
+  $("hintModal").classList.add("open");
+});
+$("hintCancel").addEventListener("click", function () { $("hintModal").classList.remove("open"); });
+$("hintClear").addEventListener("click", function () {
+  $("hintModal").classList.remove("open");
+  trace = [];
+  saveState();
+  renderBoard();
+});
+$("hintStart").addEventListener("click", function () {
+  $("hintModal").classList.remove("open");
+  var wi = nextStartHint();
+  if (wi < 0) return;
+  state.startHints.push({ wi: wi, cell: state.puzzle.paths[wi][0] });
+  state.hintsUsed++;
+  saveState();
+  renderAll();
+});
+$("hintLetter").addEventListener("click", function () {
+  $("hintModal").classList.remove("open");
+  var wi = nextReveal();
+  if (wi < 0) return;
+  state.revealed[wi] = (state.revealed[wi] || 0) + 1;
   state.hintsUsed++;
   saveState();
   renderAll();
@@ -725,7 +798,7 @@ document.querySelectorAll(".sizebtn").forEach(function (b) {
 var saved = loadState();
 if (saved) {
   state = saved;
-  trace = [];
+  trace = state.done ? [] : (saved.trace || []);
   renderAll();
   startTimer();
   if (state.done) $("resultsBtn").style.display = "block";
