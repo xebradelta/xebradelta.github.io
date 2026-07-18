@@ -1,5 +1,5 @@
 /* Wend - service worker */
-var CACHE = "wend-v1";
+var CACHE = "wend-v2";
 var ASSETS = ["./","./index.html","./manifest.json","./icon-192.png","./icon-512.png","./icon-maskable-512.png","./apple-touch-icon.png"];
 
 self.addEventListener("install", function(e){
