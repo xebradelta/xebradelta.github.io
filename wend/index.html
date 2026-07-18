@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Wend — Unlimited Edition</title>
+<meta name="description" content="Unlimited Wend-style word path puzzles. Trace themed words through the grid. Play as much as you want, offline.">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#f4f2ee">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Wend">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<style>
+  :root {
+    --bg: #f4f2ee;
+    --card: #ffffff;
+    --ink: #23252c;
+    --muted: #8a8894;
+    --line: #e3e1db;
+    --accent: #e94f8a;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+  }
+  .wrap { max-width: 560px; margin: 0 auto; padding: 10px 14px 28px; }
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 6px 2px 10px;
+  }
+  .timer {
+    font-variant-numeric: tabular-nums;
+    font-weight: 700; font-size: 20px;
+    display: flex; align-items: center; gap: 6px;
+    min-width: 74px;
+  }
+  .timer svg { width: 20px; height: 20px; }
+  h1 { font-size: 22px; margin: 0; letter-spacing: -0.02em; font-weight: 800; }
+  h1 .inf { color: var(--accent); }
+  .hbtns { display: flex; gap: 8px; min-width: 74px; justify-content: flex-end; }
+  .iconbtn {
+    border: none; background: var(--card); color: var(--ink);
+    width: 38px; height: 38px; border-radius: 12px;
+    font-size: 18px; cursor: pointer;
+    box-shadow: 0 1px 2px rgba(0,0,0,.07);
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .iconbtn:active { transform: scale(.94); }
+
+  #boardCard {
+    background: var(--card);
+    border-radius: 18px;
+    padding: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.08);
+  }
+  #board { display: block; width: 100%; height: auto; touch-action: none; }
+  #board.shake { animation: shake .3s; }
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+  }
+
+  .theme-line {
+    text-align: center; color: var(--muted);
+    font-size: 13px; font-weight: 600; margin: 10px 0 6px;
+    text-transform: uppercase; letter-spacing: .08em;
+  }
+  #words { display: flex; flex-direction: column; gap: 7px; margin: 6px 0 14px; }
+  .wordrow { display: flex; align-items: center; gap: 8px; }
+  .tiles { display: flex; gap: 3px; }
+  .tile {
+    width: 30px; height: 30px; border-radius: 7px;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 15px;
+    background: #e7e5df; color: var(--ink);
+    transition: background .25s;
+  }
+  @media (max-width: 420px) {
+    .tile { width: 26px; height: 26px; font-size: 13px; border-radius: 6px; }
+  }
+  .wordrow .check { font-size: 18px; font-weight: 800; color: #1a9b56; opacity: 0; transition: opacity .25s; }
+  .wordrow.solved .check { opacity: 1; }
+
+  .btnrow { display: flex; gap: 12px; margin: 4px 0 14px; }
+  .bigbtn {
+    flex: 1; padding: 13px 0; border: none; border-radius: 999px;
+    background: #e7e5df; color: var(--ink);
+    font-size: 16px; font-weight: 700; cursor: pointer;
+  }
+  .bigbtn:disabled { color: #b5b3ae; }
+  .bigbtn:active:not(:disabled) { transform: scale(.97); }
+  .bigbtn.dark { background: var(--ink); color: #fff; }
+
+  details.howto {
+    background: var(--card); border-radius: 14px; padding: 14px 16px;
+    box-shadow: 0 1px 2px rgba(0,0,0,.06); margin-bottom: 14px;
+  }
+  details.howto summary { font-weight: 700; cursor: pointer; font-size: 16px; }
+  details.howto p { color: #55535e; font-size: 14px; line-height: 1.5; }
+
+  .modal-back {
+    position: fixed; inset: 0; background: rgba(30,30,38,.45);
+    display: none; align-items: center; justify-content: center; z-index: 50;
+    padding: 20px;
+  }
+  .modal-back.open { display: flex; }
+  .modal {
+    background: var(--card); border-radius: 20px; padding: 22px;
+    width: 100%; max-width: 380px; text-align: center;
+    box-shadow: 0 10px 40px rgba(0,0,0,.25);
+  }
+  .modal h2 { margin: 0 0 4px; font-size: 22px; }
+  .modal .sub { color: var(--muted); font-size: 14px; margin: 0 0 16px; }
+  .sizegrid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .sizebtn {
+    border: 2px solid var(--line); background: #faf9f6; border-radius: 14px;
+    padding: 14px 6px; cursor: pointer; font-family: inherit;
+  }
+  .sizebtn:active { transform: scale(.96); }
+  .sizebtn b { display: block; font-size: 17px; }
+  .sizebtn span { color: var(--muted); font-size: 13px; }
+  .modal .cancel {
+    margin-top: 14px; background: none; border: none; color: var(--muted);
+    font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit;
+  }
+  .stat-grid { display: flex; justify-content: center; gap: 26px; margin: 14px 0 18px; }
+  .stat b { display: block; font-size: 26px; font-variant-numeric: tabular-nums; }
+  .stat span { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
+  .newbest { color: #1a9b56; font-weight: 800; margin: 0 0 8px; }
+  .modal .bigbtn { width: 100%; margin-top: 4px; }
+  .footnote { text-align: center; color: var(--muted); font-size: 12px; margin-top: 10px; line-height: 1.5; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="timer">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5"/><path d="M9 2h6"/></svg>
+      <span id="clock">0:00</span>
+    </div>
+    <h1>Wend <span class="inf">∞</span></h1>
+    <div class="hbtns">
+      <button class="iconbtn" id="restartBtn" title="Restart this puzzle" aria-label="Restart">↺</button>
+      <button class="iconbtn" id="newBtn" title="New game" aria-label="New game">＋</button>
+    </div>
+  </header>
+
+  <div id="boardCard"><svg id="board" xmlns="http://www.w3.org/2000/svg"></svg></div>
+
+  <div class="theme-line" id="themeLine"></div>
+  <div id="words"></div>
+
+  <div class="btnrow">
+    <button class="bigbtn" id="undoBtn">Undo</button>
+    <button class="bigbtn" id="hintBtn">Hint</button>
+  </div>
+
+  <details class="howto">
+    <summary>How to play</summary>
+    <p>Find each listed word in the grid. Press a letter and drag through neighboring squares (up, down, left, right) to spell the word from first letter to last — the path can bend as much as it likes.</p>
+    <p>Every open square is used by exactly one word, and together the words fill the whole board. Dark squares are not used. If a placed word boxes you in, use <b>Undo</b> to remove it and try another route.</p>
+    <p>Unlike the daily version, you can play as many boards as you want — tap <b>＋</b> for a new puzzle, or <b>↺</b> to restart the current one.</p>
+  </details>
+
+  <button class="bigbtn dark" id="resultsBtn" style="display:none; width:100%;">See results</button>
+  <p class="footnote">To install on iPhone: open in Safari → Share → <b>Add to Home Screen</b>. Works offline once installed.</p>
+</div>
+
+<div class="modal-back" id="newModal">
+  <div class="modal">
+    <h2>New game</h2>
+    <p class="sub">Pick a board size</p>
+    <div class="sizegrid">
+      <button class="sizebtn" data-size="small"><b>Small</b><span>6 × 6</span></button>
+      <button class="sizebtn" data-size="medium"><b>Medium</b><span>7 × 7</span></button>
+      <button class="sizebtn" data-size="large"><b>Large</b><span>8 × 8</span></button>
+      <button class="sizebtn" data-size="random"><b>Random</b><span>Surprise me</span></button>
+    </div>
+    <button class="cancel" id="newCancel">Cancel</button>
+  </div>
+</div>
+
+<div class="modal-back" id="resultsModal">
+  <div class="modal">
+    <h2 id="resTitle">Solved! 🎉</h2>
+    <p class="sub" id="resTheme"></p>
+    <p class="newbest" id="resBest" style="display:none">New best time!</p>
+    <div class="stat-grid">
+      <div class="stat"><b id="resTime">0:00</b><span>Time</span></div>
+      <div class="stat"><b id="resHints">0</b><span>Hints</span></div>
+      <div class="stat"><b id="resSolved">0</b><span>Solved total</span></div>
+    </div>
+    <button class="bigbtn dark" id="resNew">Play again</button>
+    <button class="cancel" id="resClose">Close</button>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* ============ word list & themes ============ */
+var WORDS = ["XEROX","XYLOPHONE","EXTRA","EXACT","EXAMS","TOXIC","TOXIN","SIXTY","SIXTH","MIXER","MIXED","BOXER","BOXES","FOXES","TAXES","TAXIS","EXILE","EXIST","EXPEL","LATEX","INDEX","ANNEX","PROXY","EPOXY","DETOX","REDOX","RELAX","BORAX","HELIX","PHLOX","UNBOX","EXALT","EXERT","EXTOL","EXURB","AXIOM","AXLES","OXIDE","LARYNX","MAILBOX","FLEXIBLE","EXAMPLE","EXPLAIN","EXPLORE","EXPRESS","EXTREME","EXHIBIT","EXHAUST","EXCITED","EXPAND","EXPORT","EXPERT","EXOTIC","EXODUS","OXYGEN","LUXURY","GALAXY","CLIMAX","SYNTAX","VORTEX","VERTEX","SUFFIX","PREFIX","MATRIX","INFLUX","THORAX","SMILAX","EXCUSE","EXHALE","TEXTURE","TEXTBOOK","MAXIMUM","MIXTURE","FIXTURE","SIXTEEN","TAXICAB","BOXCARS","FOXTROT","EXACTLY","EXCERPT","EXPENSE","EXPLODE","OXIDIZE","COMPLEX","CONTEXT","PARADOX","PHOENIX","APPENDIX","EXPANSION","EXCELLENT","EXCHANGE","EXERCISE","EXISTENCE","EXPANSIVE","EXPEDITION","EXPLOSION","EXTENSION","SAXOPHONE","UNORTHODOX","EXPLICIT","FLAXSEED","RELAXING","TAXATION","TOXICITY","EXAMINER","EXPORTER","MAXIMIZE","EXPECTED","OXIDIZED","ZEBRA","ZESTY","ZONAL","ZONED","ZOOMS","CRAZY","DIZZY","FUZZY","JAZZY","FIZZY","PIZZA","PLAZA","BLAZE","GLAZE","GRAZE","CRAZE","AMAZE","MAIZE","SEIZE","PRIZE","OZONE","RAZOR","HAZEL","DOZEN","BLITZ","WALTZ","TOPAZ","QUARTZ","ZIPPER","ZENITH","ZODIAC","ZOMBIE","ZEALOT","SNEEZE","BREEZE","FREEZE","FRENZY","PUZZLE","NOZZLE","MUZZLE","SIZZLE","DAZZLE","GUZZLE","NUZZLE","AMAZED","PRIZED","BRONZE","GAUZE","BAZAAR","WIZARD","LIZARD","BLIZZARD","BUZZARDS","HORIZON","AMAZING","BAPTIZE","CAPSIZE","GAZELLE","GAZEBOS","TRAPEZE","SQUEEZE","PRETZEL","DRIZZLE","GRIZZLY","SWIZZLE","ZUCCHINI","ZEPPELIN","ZIRCONIA","ZOOKEEPER","ORGANIZE","CIVILIZE","IDOLIZE","ITEMIZE","OXIDIZER","MAGAZINE","APPETIZER","BULLDOZER","AUTHORIZE","RECOGNIZE","CITIZEN","DENIZEN","AZALEA","PIZZERIA","ZIGZAGGED","MOZZARELLA","HAZELNUT","HAZARDS","LOZENGE","STARGAZER","JUDGE","JUICE","JOLLY","JELLY","JEWEL","JOKER","JOINT","JOUST","JUMBO","JUMPS","JAPAN","JEANS","JETTY","JIFFY","JAUNT","JADED","JIHAD","BANJO","MAJOR","ENJOY","RAJAH","DOJOS","JACKET","JAGUAR","JALOPY","JANGLE","JARGON","JERSEY","JESTER","JETLAG","JIGSAW","JINGLE","JOCKEY","JOGGER","JOVIAL","JOYFUL","JUNGLE","JUNIOR","JUSTLY","OBJECT","INJURY","MOJITO","PAJAMA","ADJUST","ABJECT","EJECTS","JOURNEY","JOUSTING","JAVELIN","JANITOR","JEALOUS","JEWELRY","JUKEBOX","JUGGLER","JUSTICE","JASMINE","JACKPOT","JOYRIDE","ADJOURN","DEJECTED","ADJACENT","JUBILANT","JUDGMENT","JUNCTION","JEOPARDY","MISJUDGE","OBJECTIVE","ADJUSTING","JELLYFISH","JAILBREAK","QUICK","QUIET","QUILT","QUOTA","QUOTE","QUEEN","QUEST","QUERY","QUELL","QUACK","QUAIL","QUAKE","QUALM","QUART","QUASH","QUIRK","QUITE","EQUAL","EQUIP","PIQUE","SQUAD","SQUAT","QUENCH","QUIVER","QUARRY","QUAINT","QUEASY","QUOTED","SEQUEL","SEQUIN","UNIQUE","OPAQUE","MOSQUE","PLAQUE","LIQUID","LIQUOR","EQUITY","SQUARE","SQUISH","SQUINT","SQUIRM","ACQUIRE","ANTIQUE","BOUQUET","CONQUER","INQUIRE","QUALIFY","QUARREL","QUARTET","QUIETLY","REQUEST","REQUIRE","SQUEAKY","MARQUEE","LACQUER","QUOTIENT","QUAGMIRE","QUESTION","SQUIRREL","QUANTITY","ETIQUETTE","MOSQUITO","EQUALIZE","ADEQUATE","ELOQUENT","FREQUENT","QUARTERLY","TURQUOISE","EARTHQUAKE","TOURNIQUET","KNACK","KNEAD","KNEEL","KNIFE","KNOCK","KNOLL","KNOWN","KOALA","KAYAK","KIOSK","KARMA","KEBAB","KETCH","KHAKI","BAKER","TOKEN","SKUNK","SKATE","SKIRT","SMOKE","SPOKE","STAKE","SHAKE","SHARK","STORK","KETTLE","KERNEL","KIDNAP","KIMONO","KINDLE","KITTEN","KNIGHT","MONKEY","DONKEY","TURKEY","JOCKEYS","BASKET","MARKET","ROCKET","POCKET","TICKET","JACKAL","KARAOKE","KEROSENE","KEYBOARD","KILOWATT","KINDNESS","KINGDOM","KITCHEN","KNAPSACK","KNUCKLE","LOCKSMITH","MILKSHAKE","NECKLACE","PUMPKIN","SKELETON","SKYLINE","SNORKEL","SPARKLE","TWINKLE","VIVID","VALVE","VAULT","VENOM","VERSE","VIGOR","VILLA","VINYL","VIPER","VIRUS","VISIT","VOCAL","VODKA","VOGUE","VOICE","VOTER","VOWEL","VYING","CIVIC","CIVIL","NAVAL","NAVEL","OLIVE","RIVAL","RIVER","SAVVY","SEVEN","VELVET","VACUUM","VANDAL","VAPORS","VECTOR","VELCRO","VENDOR","VERIFY","VESSEL","VICTOR","VIOLET","VIOLIN","VIRTUE","VISION","VOLUME","VOYAGE","VULGAR","REVIVE","SURVIVE","VACCINE","VAGRANT","VALIANT","VANILLA","VARNISH","VENTURE","VERDICT","VERSION","VETERAN","VIBRANT","VICTORY","VILLAGE","VINEGAR","VINTAGE","VIRTUAL","VISIBLE","VITAMIN","VOLCANO","VULTURE","VELOCITY","VIGILANT","VIOLINIST","AVIATOR","OVERVIEW","WAFER","WAGON","WAIST","WALTZED","WATCH","WATER","WEARY","WEDGE","WHALE","WHEAT","WHEEL","WHIRL","WHISK","WIDOW","WINCH","WITTY","WOKEN","WOMAN","WORLD","WORTH","WOVEN","WRATH","WRECK","WRIST","WRITE","WRONG","WROTE","WACKY","WHARF","WIDTH","WALNUT","WALRUS","WANDER","WARMTH","WEALTH","WEASEL","WICKED","WIGWAM","WILLOW","WINDOW","WINTER","WISDOM","WIZARDRY","WOBBLE","WOMBAT","WONDER","WRENCH","WHISPER","WHISTLE","WILDCAT","WINDMILL","WISHBONE","WISTFUL","WITNESS","WARRIOR","WEATHER","WELCOME","WESTERN","WETLAND","WHIRLPOOL","YACHT","YEARN","YEAST","YIELD","YODEL","YOUNG","YOUTH","YUMMY","YOKEL","YUCCA","MYRRH","LYRIC","NYMPH","STYLE","CYCLE","HYENA","YELLOW","YOGURT","YONDER","YEARLY","CRYPTIC","MYSTERY","RHYTHM","SYSTEM","SYMBOL","SYRUPY","CANYON","CRAYON","COYOTE","LAWYER","VOYAGER","YOUNGSTER","YESTERDAY","GYMNAST","PYRAMID","TYPHOON","LULLABY","ODYSSEY","SYMPHONY","MYSTIQUE","APPLE","ABOUT","ABOVE","ACTOR","ADMIT","ADOPT","AGENT","AGREE","ALARM","ALBUM","ALERT","ALIEN","ALLOW","ALONE","AMBER","ANGEL","ANGLE","ANKLE","ARENA","ARGUE","AROMA","ARROW","ASSET","ATLAS","AUDIO","AVOID","BADGE","BAGEL","BASIL","BEACH","BEARD","BEGIN","BENCH","BERRY","BIRCH","BISON","BLADE","BLEND","BLOOM","BOARD","BONUS","BOOTH","BOUND","BRAID","BRAIN","BRAND","BREAD","BRICK","BRIDE","BROOK","BROOM","BROWN","BRUSH","BUDGE","BUNCH","CABIN","CABLE","CAMEL","CANDY","CARGO","CATCH","CEDAR","CHAIR","CHALK","CHARM","CHEEK","CHESS","CHILL","CHIME","CHORD","CIDER","CLAMP","CLASH","CLEAN","CLERK","CLIFF","CLOCK","CLOTH","CLOUD","COACH","COAST","COBRA","COCOA","COMET","CORAL","COUCH","COUGH","COUNT","COURT","CRAFT","CRANE","CREAM","CREEK","CRISP","CROWD","CROWN","CRUMB","CURVE","DAIRY","DAISY","DANCE","DELTA","DEPTH","DIARY","DIGIT","DINER","DITCH","DODGE","DONOR","DOUGH","DRAFT","DRAIN","DRAMA","DREAM","DRESS","DRIFT","DRILL","DRONE","EAGLE","EARTH","ELBOW","EMBER","FABLE","FAIRY","FEAST","FENCE","FERRY","FIBER","FIELD","FLAME","FLASH","FLEET","FLOUR","FOCUS","FORGE","FRAME","FRESH","FROST","FRUIT","GLOBE","GLORY","GRAIN","GRAPE","GRASS","GREEN","GUARD","GUEST","GUIDE","HABIT","HAPPY","HEART","HEDGE","HONEY","HORSE","HOTEL","HOUSE","HUMOR","IGLOO","IMAGE","IVORY","LEMON","LIGHT","LUNCH","MANGO","MAPLE","MARCH","MEDAL","MERCY","METAL","MIRTH","MONTH","MOOSE","MOTOR","MOUNT","MOUSE","MUSIC","NORTH","NURSE","OCEAN","OLIVES","ONION","OPERA","ORBIT","OTTER","PAINT","PANDA","PASTA","PATCH","PEACE","PEACH","PEARL","PENNY","PHONE","PIANO","PILOT","PLANT","PLATE","POINT","PORCH","POUCH","PRIDE","PRINT","PROUD","PULSE","PUPIL","RADIO","RAINY","RANCH","RIDGE","ROAST","ROBIN","ROUND","ROYAL","SALAD","SCALE","SCENE","SCOUT","SHADE","SHEEP","SHELF","SHINE","SHORE","SIGHT","SLEEP","SMILE","SOLAR","SOUND","SOUTH","SPACE","SPARK","SPICE","SPOON","SPORT","STAGE","STAIR","STAMP","STEAM","STEEL","STONE","STORM","STORY","SUGAR","SUNNY","SWEET","TABLE","TEACH","TEETH","THEME","TIGER","TOAST","TORCH","TOWEL","TOWER","TRACK","TRAIL","TRAIN","TREAT","TREND","TRIBE","TRUNK","TRUST","TRUTH","TULIP","VAPOR","WHEATEN","ANCHOR","ANIMAL","AUTUMN","BALLET","BAMBOO","BANNER","BARREL","BEACON","BEAUTY","BOTTLE","BOUNCE","BRANCH","BREATH","BRIDGE","BRIGHT","BUBBLE","BUCKET","BUTTER","BUTTON","CACTUS","CAMERA","CANDLE","CANVAS","CARBON","CARPET","CASTLE","CELLAR","CHEESE","CHERRY","CIRCLE","CIRCUS","COFFEE","COPPER","COTTON","CRADLE","CRAYONS","CRYSTAL","DAHLIA","DINNER","DOODLE","DOUBLE","DRAGON","EMBERS","EMPIRE","ENGINE","FALCON","FAMILY","FEATHER","FIDDLE","FINGER","FLOWER","FOREST","FRIEND","GARDEN","GINGER","GOBLET","GOLDEN","GUITAR","HAMMER","HARBOR","HEAVEN","HONEST","HUMBLE","ISLAND","JOSTLE","LADDER","LAGOON","LANTERN","LEGEND","LETTER","LITTLE","LUMBER","MAGNET","MANTLE","MARBLE","MEADOW","MELLOW","MEMBER","MIRROR","MITTEN","MODERN","MOMENT","MOTHER","MUFFIN","MUSEUM","NATURE","NEEDLE","NUGGET","NUMBER","ORANGE","ORCHID","PADDLE","PALACE","PARADE","PEBBLE","PEPPER","PICNIC","PIGEON","PILLOW","PIRATE","PLANET","POETRY","POLLEN","POSTER","POTATO","PUDDLE","PURPLE","RABBIT","RACCOON","RIBBON","RUSTIC","SADDLE","SALMON","SEASON","SHADOW","SILVER","SIMPLE","SINGER","SPIDER","SPIRIT","SPRING","STREAM","STREET","SUMMER","SUNSET","TEMPLE","TENDER","THRONE","TIMBER","TISSUE","TOFFEE","TOMATO","TUNNEL","TURNIP","TURTLE","VALLEY","MAMMOTH","BALLOON","BLANKET","BLOSSOM","CABBAGE","CAPTAIN","CARAVAN","CHANNEL","CHAPTER","CHARIOT","CHIMNEY","COMPASS","CONCERT","COTTAGE","COUNTRY","CRACKLE","CRUMBLE","CULTURE","CURRENT","CUSHION","DIAMOND","DOLPHIN","DRAUGHT","FORTUNE","FREEDOM","GRANITE","HALIBUT","HAMMOCK","HARVEST","HISTORY","HOLIDAY","LANTERNS","LIBRARY","MACHINE","MEASURE","MINERAL","MONSOON","MORNING","OCTOPUS","PADDOCK","PANCAKE","PARSLEY","PATTERN","PENGUIN","PICTURE","POPCORN","PRAIRIE","PROMISE","PUMPKINS","RAINBOW","SCARLET","SPARROW","THUNDER","TOBOGGAN","TRUMPET","VILLAGER","WEEKEND","BLUEBELL","CINNAMON","DAFFODIL","ELEPHANT","EVERGREEN","FESTIVAL","FLAMINGO","FOOTBALL","FOUNTAIN","HEDGEHOG","LAVENDER","MERINGUE","MOUNTAIN","NARWHAL","PORRIDGE","REINDEER","SHOULDER","SUNSHINE","TREASURE","UMBRELLA","BUTTERFLY","CHOCOLATE","CRANBERRY","DANDELION","FIREWORKS","LIGHTHOUSE","STRAWBERRY","WATERFALL","WATERMELON","ADVENTURE","AFTERNOON","BLUEBERRY","BUMBLEBEE","CARPENTER","CATHEDRAL","CHAMPION","DISCOVERY","BAKING","CODING","DIVING","EATING","FADING","GIVING","HIKING","JOKING","LIVING","MAKING","RACING","RIDING","SAVING","TAKING","VOTING","WAVING","BOWLING","CAMPING","COOKING","DANCING","DRAWING","FARMING","FISHING","HELPING","HUNTING","JUMPING","LANDING","MEETING","OPENING","PAINTING","READING","RUNNING","SAILING","SINGING","SKATING","WALKING","WINNING","WRITING","BUILDING","CHARMING","CLIMBING","DREAMING","LAUGHING","LEARNING","PADDLING","SLEEPING","SPARKLING","SWIMMING","TRAVELING","WANDERING","BUTLER","DANCER","FARMER","GLIDER","HELPER","HUNTER","LEADER","PLAYER","READER","RUNNER","TEACHER","BUILDER","CLIMBER","CRUISER","DREAMER","DRUMMER","EXPLORER","PAINTER","PLUMBER","RANCHER","SETTLER","SOLDIER","SPEAKER","TODDLER","TRACKER","TRAVELER","WHISKER","BALANCER"];
+
+function buildThemes(words) {
+  var defs = [];
+  ["X","Z","J","Q","K","V","W","Y"].forEach(function (L) {
+    defs.push({ name: "Words with " + L, test: function (w) { return w.indexOf(L) >= 0; } });
+  });
+  ["S","B","C","P","T","M","A","F","G","H","D","R"].forEach(function (L) {
+    defs.push({ name: "Starts with " + L, test: function (w) { return w[0] === L; } });
+  });
+  defs.push({ name: "Double letters", test: function (w) { return /(.)\1/.test(w); } });
+  defs.push({ name: "Ends in -ING", test: function (w) { return w.slice(-3) === "ING"; } });
+  defs.push({ name: "Ends in -ER", test: function (w) { return w.slice(-2) === "ER"; } });
+  var out = [];
+  defs.forEach(function (t) {
+    var byLen = {}, total = 0;
+    words.forEach(function (w) {
+      if (w.length >= 5 && w.length <= 10 && t.test(w)) {
+        (byLen[w.length] = byLen[w.length] || []).push(w);
+        total++;
+      }
+    });
+    var lens = Object.keys(byLen).filter(function (l) { return byLen[l].length >= 2; });
+    if (total >= 14 && lens.length >= 4) out.push({ name: t.name, byLen: byLen });
+  });
+  return out;
+}
+var THEMES = buildThemes(WORDS);
+
+/* ============ puzzle generator ============ */
+var SIZES = {
+  small:  { cols: 6, rows: 6 },
+  medium: { cols: 7, rows: 7 },
+  large:  { cols: 8, rows: 8 }
+};
+
+function mulberry32(seed) {
+  return function () {
+    seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
+    var t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function shuffle(a, rnd) {
+  for (var i = a.length - 1; i > 0; i--) {
+    var j = Math.floor(rnd() * (i + 1));
+    var tmp = a[i]; a[i] = a[j]; a[j] = tmp;
+  }
+  return a;
+}
+
+function generatePuzzle(sizeKey, seed) {
+  var rnd = mulberry32(seed);
+  var cols = SIZES[sizeKey].cols, rows = SIZES[sizeKey].rows;
+  var N = cols * rows;
+  var maxBlocked = Math.round(N * 0.2);
+  var minWord = 5, maxWord = 10;
+
+  function nb(i) {
+    var r = Math.floor(i / cols), c = i % cols, out = [];
+    if (c > 0) out.push(i - 1);
+    if (c < cols - 1) out.push(i + 1);
+    if (r > 0) out.push(i - cols);
+    if (r < rows - 1) out.push(i + cols);
+    return out;
+  }
+
+  for (var attempt = 0; attempt < 400; attempt++) {
+    var theme = THEMES[Math.floor(rnd() * THEMES.length)];
+    var avail = {};
+    for (var l in theme.byLen) avail[l] = theme.byLen[l].length;
+
+    var free = {}, freeCount = N;
+    for (var i = 0; i < N; i++) free[i] = true;
+    var blocked = [], paths = [], ok = true;
+
+    var freeDeg = function (i) {
+      return nb(i).filter(function (x) { return free[x]; }).length;
+    };
+
+    while (freeCount > 0) {
+      var cells = [];
+      for (var k in free) cells.push(+k);
+      shuffle(cells, rnd);
+      var start = null, bestDeg = 99;
+      cells.forEach(function (c) {
+        var d = freeDeg(c);
+        if (d < bestDeg) { bestDeg = d; start = c; }
+      });
+      var lens = [];
+      for (var L = minWord; L <= maxWord; L++) {
+        if (!(avail[L] > 0)) continue;
+        if (L > freeCount) continue;
+        var rem = freeCount - L;
+        if (rem === 0 || rem >= minWord || rem <= maxBlocked - blocked.length) lens.push(L);
+      }
+      var path = null;
+      if (lens.length) {
+        shuffle(lens, rnd);
+        if (rnd() < 0.6) lens.sort(function (a, b) { return b - a; });
+        for (var li = 0; li < Math.min(3, lens.length); li++) {
+          path = carve(start, lens[li], free, nb, rnd);
+          if (path) { avail[path.length]--; break; }
+        }
+      }
+      if (path) {
+        paths.push(path);
+        path.forEach(function (c) { delete free[c]; freeCount--; });
+      } else if (blocked.length < maxBlocked) {
+        blocked.push(start); delete free[start]; freeCount--;
+      } else { ok = false; break; }
+    }
+    if (!ok || paths.length < 3 || paths.length > 8) continue;
+
+    var used = {}, words = [], fail = false;
+    for (var pi = 0; pi < paths.length; pi++) {
+      var pool = theme.byLen[paths[pi].length].filter(function (w) { return !used[w]; });
+      if (!pool.length) { fail = true; break; }
+      var w = pool[Math.floor(rnd() * pool.length)];
+      used[w] = true; words.push(w);
+    }
+    if (fail) continue;
+
+    var letters = new Array(N).fill(null);
+    paths.forEach(function (p, wi) {
+      p.forEach(function (cell, ci) { letters[cell] = words[wi][ci]; });
+    });
+    return { sizeKey: sizeKey, cols: cols, rows: rows, theme: theme.name,
+             words: words, paths: paths, letters: letters, blocked: blocked };
+  }
+  return null;
+}
+
+function carve(start, len, free, nb, rnd) {
+  var nodes = 0, path = [start], inPath = {};
+  inPath[start] = true;
+  function freeOpen(c) { return free[c] && !inPath[c]; }
+  function dfs() {
+    if (path.length === len) return true;
+    if (++nodes > 800) return false;
+    var cur = path[path.length - 1];
+    var opts = nb(cur).filter(freeOpen);
+    shuffle(opts, rnd);
+    opts.sort(function (a, b) {
+      return nb(a).filter(freeOpen).length - nb(b).filter(freeOpen).length;
+    });
+    for (var i = 0; i < opts.length; i++) {
+      var c = opts[i];
+      path.push(c); inPath[c] = true;
+      if (dfs()) return true;
+      path.pop(); delete inPath[c];
+    }
+    return false;
+  }
+  return dfs() ? path : null;
+}
+
+/* ============ palette ============ */
+var PALETTE = [
+  { main: "#ec5f92", light: "#f9cfdd" },
+  { main: "#26b7cd", light: "#c5edf3" },
+  { main: "#f5921f", light: "#fbdfb6" },
+  { main: "#a9b823", light: "#e6ecae" },
+  { main: "#7d82e3", light: "#d8daf8" },
+  { main: "#42bb74", light: "#cdedda" },
+  { main: "#dd6a51", light: "#f7d6ce" },
+  { main: "#b98cd9", light: "#ecdff6" }
+];
+var INK = "#23252c";
+
+/* ============ state ============ */
+var state = null;   // { puzzle, placed:[{wi, cells}], elapsed, hintsUsed, hint:{wi,count}|null, done }
+var trace = [];
+var tracing = false;
+var timerId = null;
+
+var $ = function (id) { return document.getElementById(id); };
+var boardSvg = $("board");
+var CELL = 100;
+
+function saveState() {
+  try { localStorage.setItem("wend.game", JSON.stringify(state)); } catch (e) {}
+}
+function loadState() {
+  try {
+    var s = JSON.parse(localStorage.getItem("wend.game"));
+    if (s && s.puzzle && s.puzzle.words) return s;
+  } catch (e) {}
+  return null;
+}
+function loadStats() {
+  try { return JSON.parse(localStorage.getItem("wend.stats")) || {}; } catch (e) { return {}; }
+}
+function saveStats(st) {
+  try { localStorage.setItem("wend.stats", JSON.stringify(st)); } catch (e) {}
+}
+
+function newGame(sizeKey) {
+  if (sizeKey === "random") {
+    var keys = Object.keys(SIZES);
+    sizeKey = keys[Math.floor(Math.random() * keys.length)];
+  }
+  var seed = Math.floor(Math.random() * 2147483647);
+  var puzzle = generatePuzzle(sizeKey, seed);
+  if (!puzzle) { puzzle = generatePuzzle(sizeKey, seed + 1); }
+  state = { puzzle: puzzle, placed: [], elapsed: 0, hintsUsed: 0, hint: null, done: false };
+  trace = [];
+  saveState();
+  renderAll();
+  startTimer();
+}
+
+function restartPuzzle() {
+  if (!state) return;
+  state.placed = [];
+  state.hint = null;
+  state.done = false;
+  state.elapsed = 0;
+  state.hintsUsed = 0;
+  trace = [];
+  saveState();
+  renderAll();
+  startTimer();
+}
+
+/* ============ timer ============ */
+function fmt(sec) {
+  var m = Math.floor(sec / 60), s = sec % 60;
+  return m + ":" + (s < 10 ? "0" : "") + s;
+}
+function startTimer() {
+  stopTimer();
+  if (state.done) { $("clock").textContent = fmt(state.elapsed); return; }
+  timerId = setInterval(function () {
+    state.elapsed++;
+    $("clock").textContent = fmt(state.elapsed);
+    if (state.elapsed % 5 === 0) saveState();
+  }, 1000);
+  $("clock").textContent = fmt(state.elapsed);
+}
+function stopTimer() { if (timerId) { clearInterval(timerId); timerId = null; } }
+document.addEventListener("visibilitychange", function () {
+  if (document.hidden) { stopTimer(); saveState(); }
+  else if (state && !state.done) startTimer();
+});
+
+/* ============ rendering ============ */
+function cellCenter(i) {
+  var p = state.puzzle;
+  return { x: (i % p.cols) * CELL + CELL / 2, y: Math.floor(i / p.cols) * CELL + CELL / 2 };
+}
+
+function snakePoints(cells) {
+  return cells.map(function (i) {
+    var c = cellCenter(i); return c.x + "," + c.y;
+  }).join(" ");
+}
+
+function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;"); }
+
+function renderBoard() {
+  var p = state.puzzle;
+  var W = p.cols * CELL, H = p.rows * CELL;
+  boardSvg.setAttribute("viewBox", "-6 -6 " + (W + 12) + " " + (H + 12));
+  var out = [];
+
+  // board frame + open cells
+  out.push('<rect x="-5" y="-5" width="' + (W + 10) + '" height="' + (H + 10) + '" rx="22" fill="#f0eee9" stroke="#3d3f47" stroke-width="7"/>');
+  var blockedSet = {};
+  p.blocked.forEach(function (b) { blockedSet[b] = true; });
+  for (var i = 0; i < p.cols * p.rows; i++) {
+    var x = (i % p.cols) * CELL, y = Math.floor(i / p.cols) * CELL;
+    if (blockedSet[i]) {
+      out.push('<rect x="' + (x + 4) + '" y="' + (y + 4) + '" width="' + (CELL - 8) + '" height="' + (CELL - 8) + '" rx="10" fill="#b3b2b6" stroke="#3d3f47" stroke-width="5"/>');
+    } else {
+      out.push('<rect x="' + (x + 3) + '" y="' + (y + 3) + '" width="' + (CELL - 6) + '" height="' + (CELL - 6) + '" rx="10" fill="#fbfaf7"/>');
+    }
+  }
+
+  // hint trail
+  if (state.hint && !state.done) {
+    var hp = p.paths[state.hint.wi].slice(0, state.hint.count);
+    if (hp.length > 1) {
+      out.push('<polyline points="' + snakePoints(hp) + '" fill="none" stroke="#9a98a4" stroke-width="26" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2 40" opacity="0.9"/>');
+    }
+    var hc = cellCenter(hp[0]);
+    out.push('<circle cx="' + hc.x + '" cy="' + hc.y + '" r="40" fill="none" stroke="#9a98a4" stroke-width="7" stroke-dasharray="10 12"><animate attributeName="r" values="34;42;34" dur="1.6s" repeatCount="indefinite"/></circle>');
+  }
+
+  // placed word snakes
+  state.placed.forEach(function (pl) {
+    var col = PALETTE[pl.wi % PALETTE.length];
+    var pts = snakePoints(pl.cells);
+    out.push('<polyline points="' + pts + '" fill="none" stroke="' + col.light + '" stroke-width="92" stroke-linecap="round" stroke-linejoin="round"/>');
+    out.push('<polyline points="' + pts + '" fill="none" stroke="' + col.main + '" stroke-width="62" stroke-linecap="round" stroke-linejoin="round"/>');
+  });
+
+  // active trace
+  if (trace.length) {
+    out.push('<polyline points="' + snakePoints(trace) + '" fill="none" stroke="#cbc9d4" stroke-width="66" stroke-linecap="round" stroke-linejoin="round" opacity="0.95"/>');
+  }
+
+  // letters
+  for (var j = 0; j < p.letters.length; j++) {
+    if (!p.letters[j]) continue;
+    var c = cellCenter(j);
+    out.push('<text x="' + c.x + '" y="' + (c.y + 2) + '" text-anchor="middle" dominant-baseline="central" font-size="46" font-weight="700" fill="' + INK + '" font-family="inherit">' + esc(p.letters[j]) + "</text>");
+  }
+
+  // direction chevrons + start markers for placed words
+  state.placed.forEach(function (pl) {
+    var col = PALETTE[pl.wi % PALETTE.length];
+    for (var s = 0; s < pl.cells.length - 1; s++) {
+      var a = cellCenter(pl.cells[s]), b = cellCenter(pl.cells[s + 1]);
+      var mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+      var ang = Math.atan2(b.y - a.y, b.x - a.x) * 180 / Math.PI;
+      out.push('<path d="M -6 -9 L 6 0 L -6 9" fill="none" stroke="' + INK + '" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" transform="translate(' + mx + " " + my + ") rotate(" + ang + ')"/>');
+    }
+    var st = cellCenter(pl.cells[0]);
+    out.push('<g transform="translate(' + (st.x - 27) + " " + (st.y + 27) + ')">' +
+      '<circle r="21" fill="#ffffff" stroke="' + col.main + '" stroke-width="4"/>' +
+      '<path d="M -8 0 L -2 7 L 9 -6" fill="none" stroke="#1a9b56" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/></g>');
+  });
+
+  boardSvg.innerHTML = out.join("");
+}
+
+function renderWords() {
+  var p = state.puzzle;
+  var solved = {};
+  state.placed.forEach(function (pl) { solved[pl.wi] = true; });
+  var html = p.words.map(function (w, wi) {
+    var col = PALETTE[wi % PALETTE.length];
+    var tiles = w.split("").map(function (ch) {
+      return '<span class="tile"' + (solved[wi] ? ' style="background:' + col.main + '"' : "") + ">" + esc(ch) + "</span>";
+    }).join("");
+    return '<div class="wordrow' + (solved[wi] ? " solved" : "") + '"><div class="tiles">' + tiles + '</div><span class="check">✓</span></div>';
+  }).join("");
+  $("words").innerHTML = html;
+  $("themeLine").textContent = "Theme: " + p.theme;
+  $("undoBtn").disabled = state.placed.length === 0 || state.done;
+  $("hintBtn").disabled = state.done;
+  $("resultsBtn").style.display = state.done ? "block" : "none";
+}
+
+function renderAll() { renderBoard(); renderWords(); }
+
+/* ============ input ============ */
+function eventCell(ev) {
+  var p = state.puzzle;
+  var rect = boardSvg.getBoundingClientRect();
+  var vb = boardSvg.viewBox.baseVal;
+  var x = (ev.clientX - rect.left) / rect.width * vb.width + vb.x;
+  var y = (ev.clientY - rect.top) / rect.height * vb.height + vb.y;
+  var c = Math.floor(x / CELL), r = Math.floor(y / CELL);
+  if (c < 0 || r < 0 || c >= p.cols || r >= p.rows) return -1;
+  return r * p.cols + c;
+}
+function cellIsOpen(i) {
+  if (i < 0 || !state.puzzle.letters[i]) return false;
+  for (var k = 0; k < state.placed.length; k++) {
+    if (state.placed[k].cells.indexOf(i) >= 0) return false;
+  }
+  return true;
+}
+function adjacent(a, b) {
+  var cols = state.puzzle.cols;
+  var dr = Math.abs(Math.floor(a / cols) - Math.floor(b / cols));
+  var dc = Math.abs((a % cols) - (b % cols));
+  return dr + dc === 1;
+}
+
+boardSvg.addEventListener("pointerdown", function (ev) {
+  if (!state || state.done) return;
+  var i = eventCell(ev);
+  if (!cellIsOpen(i)) return;
+  tracing = true;
+  trace = [i];
+  try { boardSvg.setPointerCapture(ev.pointerId); } catch (e) {}
+  renderBoard();
+  ev.preventDefault();
+});
+boardSvg.addEventListener("pointermove", function (ev) {
+  if (!tracing) return;
+  var i = eventCell(ev);
+  if (i < 0) return;
+  var last = trace[trace.length - 1];
+  if (i === last) return;
+  if (trace.length > 1 && i === trace[trace.length - 2]) {
+    trace.pop(); renderBoard(); return;
+  }
+  if (trace.indexOf(i) >= 0 || !cellIsOpen(i)) return;
+  if (adjacent(i, last)) {
+    trace.push(i); renderBoard(); return;
+  }
+  // bridge straight-line fast drags
+  var cols = state.puzzle.cols;
+  var r1 = Math.floor(last / cols), c1 = last % cols;
+  var r2 = Math.floor(i / cols), c2 = i % cols;
+  if (r1 === r2 || c1 === c2) {
+    var step = r1 === r2 ? (c2 > c1 ? 1 : -1) : (r2 > r1 ? cols : -cols);
+    var bridge = [], cur = last;
+    while (cur !== i) {
+      cur += step;
+      if (!cellIsOpen(cur) || trace.indexOf(cur) >= 0) { bridge = null; break; }
+      bridge.push(cur);
+    }
+    if (bridge) { trace = trace.concat(bridge); renderBoard(); }
+  }
+});
+function endTrace() {
+  if (!tracing) return;
+  tracing = false;
+  if (trace.length >= 2) {
+    var spelled = trace.map(function (i) { return state.puzzle.letters[i]; }).join("");
+    var rev = spelled.split("").reverse().join("");
+    var solvedWi = {};
+    state.placed.forEach(function (pl) { solvedWi[pl.wi] = true; });
+    var hit = -1, cells = null;
+    for (var wi = 0; wi < state.puzzle.words.length; wi++) {
+      if (solvedWi[wi]) continue;
+      var w = state.puzzle.words[wi];
+      if (w === spelled) { hit = wi; cells = trace.slice(); break; }
+      if (w === rev) { hit = wi; cells = trace.slice().reverse(); break; }
+    }
+    if (hit >= 0) {
+      state.placed.push({ wi: hit, cells: cells });
+      if (state.hint && state.hint.wi === hit) state.hint = null;
+      trace = [];
+      checkWin();
+      saveState();
+      renderAll();
+      return;
+    }
+    var card = boardSvg;
+    card.classList.remove("shake"); void card.offsetWidth; card.classList.add("shake");
+  }
+  trace = [];
+  renderBoard();
+}
+boardSvg.addEventListener("pointerup", endTrace);
+boardSvg.addEventListener("pointercancel", endTrace);
+
+/* ============ hint / undo / win ============ */
+$("undoBtn").addEventListener("click", function () {
+  if (!state.placed.length || state.done) return;
+  state.placed.pop();
+  saveState();
+  renderAll();
+});
+$("hintBtn").addEventListener("click", function () {
+  if (state.done) return;
+  var solvedWi = {};
+  state.placed.forEach(function (pl) { solvedWi[pl.wi] = true; });
+  var target = -1;
+  for (var wi = 0; wi < state.puzzle.words.length; wi++) {
+    if (!solvedWi[wi]) { target = wi; break; }
+  }
+  if (target < 0) return;
+  if (state.hint && state.hint.wi === target) {
+    state.hint.count = Math.min(state.hint.count + 1, state.puzzle.paths[target].length);
+  } else {
+    state.hint = { wi: target, count: 1 };
+  }
+  state.hintsUsed++;
+  saveState();
+  renderAll();
+});
+
+function checkWin() {
+  if (state.placed.length !== state.puzzle.words.length) return;
+  state.done = true;
+  stopTimer();
+  var st = loadStats();
+  st.solved = (st.solved || 0) + 1;
+  st.best = st.best || {};
+  var key = state.puzzle.sizeKey;
+  var isBest = !st.best[key] || state.elapsed < st.best[key];
+  if (isBest) st.best[key] = state.elapsed;
+  saveStats(st);
+  showResults(isBest);
+}
+
+function showResults(isBest) {
+  var st = loadStats();
+  $("resTime").textContent = fmt(state.elapsed);
+  $("resHints").textContent = state.hintsUsed;
+  $("resSolved").textContent = st.solved || 0;
+  $("resTheme").textContent = state.puzzle.theme + " · " + state.puzzle.cols + "×" + state.puzzle.rows +
+    " · best " + fmt((st.best && st.best[state.puzzle.sizeKey]) || state.elapsed);
+  $("resBest").style.display = isBest ? "block" : "none";
+  $("resultsModal").classList.add("open");
+}
+
+/* ============ modals & buttons ============ */
+$("newBtn").addEventListener("click", function () { $("newModal").classList.add("open"); });
+$("newCancel").addEventListener("click", function () { $("newModal").classList.remove("open"); });
+$("restartBtn").addEventListener("click", restartPuzzle);
+$("resultsBtn").addEventListener("click", function () { showResults(false); });
+$("resClose").addEventListener("click", function () { $("resultsModal").classList.remove("open"); });
+$("resNew").addEventListener("click", function () {
+  $("resultsModal").classList.remove("open");
+  $("newModal").classList.add("open");
+});
+document.querySelectorAll(".sizebtn").forEach(function (b) {
+  b.addEventListener("click", function () {
+    $("newModal").classList.remove("open");
+    newGame(b.getAttribute("data-size"));
+  });
+});
+
+/* ============ boot ============ */
+var saved = loadState();
+if (saved) {
+  state = saved;
+  trace = [];
+  renderAll();
+  startTimer();
+  if (state.done) $("resultsBtn").style.display = "block";
+} else {
+  newGame("medium");
+}
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", function () {
+    navigator.serviceWorker.register("sw.js").catch(function () {});
+  });
+}
+</script>
+</body>
+</html>
