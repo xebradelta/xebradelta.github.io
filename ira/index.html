@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>IRA Growth Projector</title>
+<meta name="description" content="Project the future value of a custodial IRA — contributions, phases, Roth vs Traditional, inflation, and side-by-side scenarios. Runs entirely on your device; nothing is saved or sent.">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#f4f2ee">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="IRA">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<style>
+  :root {
+    --bg: #f4f2ee;
+    --card: #ffffff;
+    --ink: #23252c;
+    --muted: #8a8894;
+    --line: #e3e1db;
+    --accent: #0b6b45;
+    --series-a: #2a78d6;
+    --series-b: #eb6834;
+    --grid: #e1e0d9;
+    --axis: #c3c2b7;
+    --warn-bg: #fdf3e3;
+    --warn-ink: #8a5a10;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    line-height: 1.45;
+  }
+  .wrap { max-width: 680px; margin: 0 auto; padding: 12px 14px 40px; }
+  header { padding: 8px 2px 4px; }
+  h1 { font-size: 24px; margin: 0; letter-spacing: -0.02em; font-weight: 800; }
+  h1 .accent { color: var(--accent); }
+  .tagline { color: var(--muted); font-size: 13px; margin: 2px 0 0; }
+
+  .privacy {
+    display: flex; gap: 8px; align-items: flex-start;
+    background: #e9f3ee; border-radius: 12px;
+    padding: 10px 12px; margin: 12px 0;
+    font-size: 13px; color: #14513a;
+  }
+  .privacy svg { flex: none; width: 16px; height: 16px; margin-top: 1px; }
+
+  .card {
+    background: var(--card); border-radius: 16px;
+    padding: 16px; margin: 12px 0;
+    box-shadow: 0 1px 3px rgba(0,0,0,.07);
+  }
+  .card h2 {
+    font-size: 15px; margin: 0 0 12px; font-weight: 700;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+  .dot.a { background: var(--series-a); }
+  .dot.b { background: var(--series-b); }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .field { display: flex; flex-direction: column; gap: 4px; }
+  .field label { font-size: 12px; font-weight: 600; color: var(--muted); }
+  .inputbox {
+    display: flex; align-items: center;
+    border: 1px solid var(--line); border-radius: 10px;
+    background: #fafaf8; padding: 0 10px; height: 42px;
+  }
+  .inputbox:focus-within { border-color: var(--accent); }
+  .inputbox .affix { color: var(--muted); font-size: 14px; font-weight: 600; }
+  .inputbox input, .inputbox select {
+    border: none; background: transparent; outline: none;
+    font-size: 16px; font-weight: 600; color: var(--ink);
+    width: 100%; min-width: 0; padding: 0 4px;
+    font-family: inherit;
+  }
+  .inputbox select { appearance: none; -webkit-appearance: none; padding-right: 14px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%238a8894' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 2px center; }
+
+  .seg { display: flex; background: #eceae5; border-radius: 10px; padding: 3px; }
+  .seg button {
+    flex: 1; border: none; border-radius: 8px; padding: 9px 0;
+    font-size: 14px; font-weight: 700; color: var(--muted);
+    background: transparent; cursor: pointer; font-family: inherit;
+  }
+  .seg button.on { background: #fff; color: var(--ink); box-shadow: 0 1px 2px rgba(0,0,0,.10); }
+
+  .phase {
+    border: 1px solid var(--line); border-radius: 12px;
+    padding: 10px; margin: 8px 0; position: relative;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+  }
+  .phase .field label { font-size: 11px; }
+  .phase .rm {
+    position: absolute; top: -9px; right: -7px;
+    width: 24px; height: 24px; border-radius: 50%;
+    border: none; background: var(--ink); color: #fff;
+    font-size: 13px; line-height: 1; cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0,0,0,.2);
+  }
+  .addphase {
+    width: 100%; margin-top: 6px; padding: 10px;
+    border: 1px dashed var(--axis); border-radius: 10px;
+    background: transparent; color: var(--accent);
+    font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit;
+  }
+
+  .comparebar {
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--card); border-radius: 16px;
+    padding: 12px 16px; margin: 12px 0;
+    box-shadow: 0 1px 3px rgba(0,0,0,.07);
+    font-size: 14px; font-weight: 700;
+  }
+  .switch { position: relative; width: 46px; height: 27px; flex: none; }
+  .switch input { opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; position: absolute; z-index: 1; }
+  .switch .knob {
+    position: absolute; inset: 0; border-radius: 999px; background: #d8d6d0;
+    transition: background .18s;
+  }
+  .switch .knob::after {
+    content: ""; position: absolute; top: 3px; left: 3px;
+    width: 21px; height: 21px; border-radius: 50%; background: #fff;
+    box-shadow: 0 1px 2px rgba(0,0,0,.25); transition: transform .18s;
+  }
+  .switch input:checked + .knob { background: var(--accent); }
+  .switch input:checked + .knob::after { transform: translateX(19px); }
+
+  .warnbox {
+    background: var(--warn-bg); color: var(--warn-ink);
+    border-radius: 12px; padding: 10px 12px; margin: 12px 0;
+    font-size: 13px; display: none;
+  }
+  .warnbox.show { display: block; }
+  .warnbox strong { font-weight: 800; }
+
+  .results { display: grid; grid-template-columns: 1fr; gap: 12px; }
+  .results.two { grid-template-columns: 1fr 1fr; }
+  @media (max-width: 480px) { .results.two { grid-template-columns: 1fr; } }
+  .tile {
+    background: var(--card); border-radius: 16px; padding: 14px 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.07);
+  }
+  .tile .who {
+    display: flex; align-items: center; gap: 7px;
+    font-size: 12px; font-weight: 700; color: var(--muted);
+    text-transform: uppercase; letter-spacing: .06em;
+  }
+  .tile .big { font-size: 30px; font-weight: 800; letter-spacing: -0.02em; margin: 2px 0 0; }
+  .tile .sub { font-size: 12px; color: var(--muted); margin-top: 1px; }
+  .tile .rows { margin-top: 10px; border-top: 1px solid var(--line); padding-top: 8px;
+    display: flex; flex-direction: column; gap: 4px; }
+  .tile .r { display: flex; justify-content: space-between; font-size: 13px; }
+  .tile .r .k { color: var(--muted); }
+  .tile .r .v { font-weight: 700; font-variant-numeric: tabular-nums; }
+
+  #chartCard { position: relative; }
+  .legend { display: flex; gap: 16px; font-size: 13px; margin-bottom: 6px; }
+  .legend .item { display: flex; align-items: center; gap: 6px; color: #55535e; font-weight: 600; }
+  .legend .chip { width: 14px; height: 4px; border-radius: 2px; }
+  #chart { display: block; width: 100%; height: 280px; touch-action: pan-y; }
+  #tip {
+    position: absolute; pointer-events: none; display: none;
+    background: #fff; border: 1px solid var(--line); border-radius: 10px;
+    padding: 7px 10px; font-size: 12px; box-shadow: 0 4px 14px rgba(0,0,0,.12);
+    white-space: nowrap; z-index: 5;
+  }
+  #tip .tage { font-weight: 800; margin-bottom: 2px; }
+  #tip .trow { display: flex; align-items: center; gap: 6px; }
+  #tip .trow .chip { width: 10px; height: 10px; border-radius: 3px; }
+  #tip .trow .tv { font-weight: 700; font-variant-numeric: tabular-nums; margin-left: auto; padding-left: 10px; }
+
+  details.tablewrap, details.notes {
+    background: var(--card); border-radius: 16px; padding: 14px 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.07); margin: 12px 0;
+  }
+  details summary { font-weight: 700; cursor: pointer; font-size: 15px; }
+  .scroller { overflow-x: auto; margin-top: 10px; }
+  table.years { border-collapse: collapse; width: 100%; font-size: 13px; }
+  table.years th, table.years td {
+    padding: 5px 8px; text-align: right; white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+  table.years th { color: var(--muted); font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .04em;
+    border-bottom: 1px solid var(--line); position: sticky; top: 0; background: var(--card); }
+  table.years td:first-child, table.years th:first-child { text-align: left; }
+  table.years tr:nth-child(even) td { background: #fafaf8; }
+  table.years td.hl { font-weight: 700; }
+  th.ca { color: var(--series-a); }
+  th.cb { color: var(--series-b); }
+
+  details.notes p { font-size: 13px; color: #55535e; margin: 8px 0 0; }
+  footer { text-align: center; color: var(--muted); font-size: 12px; margin-top: 20px; }
+  footer a { color: var(--muted); }
+  .err { color: #b3261e; font-size: 13px; font-weight: 600; margin: 8px 0; display: none; }
+  .err.show { display: block; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>IRA <span class="accent">Growth</span> Projector</h1>
+    <p class="tagline">Project a custodial IRA for a young person — play with the numbers, see the future.</p>
+  </header>
+
+  <div class="privacy">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+    <div><strong>Private by design.</strong> Everything runs on this device. No names, no birthdates, no accounts — nothing is saved or sent anywhere. Close the page and it's gone.</div>
+  </div>
+
+  <div class="card">
+    <h2>Timeline &amp; assumptions</h2>
+    <div class="grid2">
+      <div class="field">
+        <label for="ageNow">Current age</label>
+        <div class="inputbox"><input id="ageNow" type="number" inputmode="numeric" min="0" max="99" step="1" value="8"></div>
+      </div>
+      <div class="field">
+        <label for="ageEnd">Project to age</label>
+        <div class="inputbox"><input id="ageEnd" type="number" inputmode="numeric" min="1" max="100" step="1" value="65"></div>
+      </div>
+      <div class="field">
+        <label for="inflation">Inflation (yearly)</label>
+        <div class="inputbox"><input id="inflation" type="number" inputmode="decimal" min="0" max="15" step="0.1" value="2.5"><span class="affix">%</span></div>
+      </div>
+      <div class="field">
+        <label for="realToggle">Show values in</label>
+        <div class="seg" id="dollarSeg">
+          <button type="button" data-v="nominal" class="on">Future $</button>
+          <button type="button" data-v="real">Today's $</button>
+        </div>
+      </div>
+    </div>
+    <div class="err" id="ageErr">“Project to age” must be greater than current age.</div>
+  </div>
+
+  <div id="scenarios"></div>
+
+  <div class="comparebar">
+    <span>Compare a second scenario</span>
+    <span class="switch"><input type="checkbox" id="compareToggle"><span class="knob"></span></span>
+  </div>
+
+  <div class="warnbox" id="limitWarn"></div>
+
+  <div class="results" id="results"></div>
+
+  <div class="card" id="chartCard">
+    <h2>Projected balance by age</h2>
+    <div class="legend" id="legend"></div>
+    <canvas id="chart"></canvas>
+    <div id="tip"></div>
+  </div>
+
+  <details class="tablewrap">
+    <summary>Year-by-year table</summary>
+    <div class="scroller"><table class="years" id="yearTable"></table></div>
+  </details>
+
+  <details class="notes">
+    <summary>Assumptions &amp; fine print</summary>
+    <p><strong>How it computes.</strong> Growth compounds monthly at the annual rate you set; contributions are spread evenly across the year (frequency mainly changes the annual total: weekly ×52, monthly ×12, quarterly ×4, yearly ×1). “Today's dollars” discounts every future value by your inflation rate.</p>
+    <p><strong>IRA contribution limit.</strong> For 2026 the IRA limit is $7,500 per year. It adjusts upward over time, so a projection that exceeds it in later years may be fine — but this tool warns you when a scenario contributes above it, since projections that assume over-limit contributions can mislead.</p>
+    <p><strong>Minors need earned income.</strong> A young person can only contribute (or have contributed on their behalf) up to what they actually earned that year — allowance doesn't count, but wages, self-employment, and odd-job income generally do.</p>
+    <p><strong>Custodial accounts hand over.</strong> A custodial IRA transfers to the young person's own control at the age of majority — 18 to 21 depending on the state (marked on the chart at 18).</p>
+    <p><strong>Roth vs Traditional.</strong> Roth: contributions are after-tax, qualified withdrawals after 59½ are tax-free — the headline number is what they'd keep. Traditional: contributions may be deductible, withdrawals are taxed as income — the after-tax figure uses the withdrawal tax rate you set, which is only a guess about the far future.</p>
+    <p><strong>This is an educational estimate, not advice.</strong> Real returns vary year to year; taxes, limits, and laws change. Talk to a professional before making decisions.</p>
+  </details>
+
+  <footer><a href="/">← xebradelta.github.io</a></footer>
+</div>
+
+<script>
+"use strict";
+
+/* ---------- state (in memory only — never persisted) ---------- */
+const FREQ = { weekly: 52, monthly: 12, quarterly: 4, yearly: 1 };
+const LIMIT = 7500; // 2026 IRA contribution limit
+const COLORS = { A: "#2a78d6", B: "#eb6834" };
+
+function defaultScenario() {
+  return {
+    type: "roth",
+    taxRate: 22,
+    start: 0,
+    ret: 7,
+    phases: [{ amount: 150, freq: "monthly", from: 8, to: 18 }],
+  };
+}
+const state = {
+  ageNow: 8,
+  ageEnd: 65,
+  inflation: 2.5,
+  dollars: "nominal",
+  compare: false,
+  A: defaultScenario(),
+  B: null,
+};
+
+/* ---------- projection engine ---------- */
+function project(sc, ageNow, ageEnd) {
+  const months = Math.round((ageEnd - ageNow) * 12);
+  const mRate = Math.pow(1 + sc.ret / 100, 1 / 12) - 1;
+  let bal = sc.start;
+  let totalContrib = sc.start;
+  const points = [{ age: ageNow, bal }]; // one point per month
+  const years = [];
+  let yContrib = 0, yStartBal = bal;
+  for (let m = 1; m <= months; m++) {
+    const age = ageNow + (m - 1) / 12; // age during this month
+    let c = 0;
+    for (const p of sc.phases) {
+      if (age >= p.from - 1e-9 && age < p.to - 1e-9) c += (p.amount * FREQ[p.freq]) / 12;
+    }
+    bal = (bal + c) * (1 + mRate);
+    totalContrib += c;
+    yContrib += c;
+    points.push({ age: ageNow + m / 12, bal });
+    if (m % 12 === 0 || m === months) {
+      years.push({
+        age: Math.round((ageNow + m / 12) * 10) / 10,
+        contrib: yContrib,
+        growth: bal - yStartBal - yContrib,
+        bal,
+      });
+      yContrib = 0; yStartBal = bal;
+    }
+  }
+  return { points, years, final: bal, totalContrib, totalGrowth: bal - totalContrib };
+}
+
+function annualContribAtAge(sc, age) {
+  let t = 0;
+  for (const p of sc.phases) if (age >= p.from - 1e-9 && age < p.to - 1e-9) t += p.amount * FREQ[p.freq];
+  return t;
+}
+
+function deflator(age) {
+  return Math.pow(1 + state.inflation / 100, age - state.ageNow);
+}
+function display(v, age) {
+  return state.dollars === "real" ? v / deflator(age) : v;
+}
+
+/* ---------- formatting ---------- */
+const usd = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+function fmt(v) { return usd.format(Math.round(v)); }
+function fmtCompact(v) {
+  if (Math.abs(v) >= 1e6) return "$" + (v / 1e6).toFixed(v >= 1e7 ? 0 : 1) + "M";
+  if (Math.abs(v) >= 1e3) return "$" + Math.round(v / 1e3) + "k";
+  return "$" + Math.round(v);
+}
+
+/* ---------- scenario input cards ---------- */
+const scenariosEl = document.getElementById("scenarios");
+
+function scenarioCard(key) {
+  const sc = state[key];
+  const card = document.createElement("div");
+  card.className = "card";
+  card.innerHTML = `
+    <h2><span class="dot ${key.toLowerCase()}"></span>Scenario ${key}</h2>
+    <div class="grid2">
+      <div class="field" style="grid-column:1/-1">
+        <label>Account type</label>
+        <div class="seg" data-role="type">
+          <button type="button" data-v="roth">Roth IRA</button>
+          <button type="button" data-v="trad">Traditional IRA</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>Starting balance</label>
+        <div class="inputbox"><span class="affix">$</span><input data-role="start" type="number" inputmode="decimal" min="0" step="50"></div>
+      </div>
+      <div class="field">
+        <label>Annual return</label>
+        <div class="inputbox"><input data-role="ret" type="number" inputmode="decimal" min="-20" max="30" step="0.1"><span class="affix">%</span></div>
+      </div>
+      <div class="field" data-role="taxwrap" style="grid-column:1/-1; display:none">
+        <label>Est. tax rate at withdrawal (Traditional)</label>
+        <div class="inputbox"><input data-role="tax" type="number" inputmode="decimal" min="0" max="60" step="1"><span class="affix">%</span></div>
+      </div>
+    </div>
+    <div class="field" style="margin-top:12px">
+      <label>Contributions</label>
+      <div data-role="phases"></div>
+      <button type="button" class="addphase" data-role="add">+ Add a contribution phase</button>
+    </div>`;
+
+  const typeSeg = card.querySelector('[data-role="type"]');
+  function syncType() {
+    typeSeg.querySelectorAll("button").forEach(b => b.classList.toggle("on", b.dataset.v === sc.type));
+    card.querySelector('[data-role="taxwrap"]').style.display = sc.type === "trad" ? "" : "none";
+  }
+  typeSeg.addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b) return;
+    sc.type = b.dataset.v; syncType(); recalc();
+  });
+
+  const startIn = card.querySelector('[data-role="start"]');
+  const retIn = card.querySelector('[data-role="ret"]');
+  const taxIn = card.querySelector('[data-role="tax"]');
+  startIn.value = sc.start; retIn.value = sc.ret; taxIn.value = sc.taxRate;
+  startIn.addEventListener("input", () => { sc.start = num(startIn, 0); recalc(); });
+  retIn.addEventListener("input", () => { sc.ret = num(retIn, 7); recalc(); });
+  taxIn.addEventListener("input", () => { sc.taxRate = num(taxIn, 22); recalc(); });
+
+  const phasesEl = card.querySelector('[data-role="phases"]');
+  function renderPhases() {
+    phasesEl.innerHTML = "";
+    sc.phases.forEach((p, i) => {
+      const ph = document.createElement("div");
+      ph.className = "phase";
+      ph.innerHTML = `
+        <div class="field"><label>Amount</label>
+          <div class="inputbox"><span class="affix">$</span><input data-p="amount" type="number" inputmode="decimal" min="0" step="10" value="${p.amount}"></div></div>
+        <div class="field"><label>Frequency</label>
+          <div class="inputbox"><select data-p="freq">
+            <option value="weekly">Weekly</option><option value="monthly">Monthly</option>
+            <option value="quarterly">Quarterly</option><option value="yearly">Yearly</option>
+          </select></div></div>
+        <div class="field"><label>From age</label>
+          <div class="inputbox"><input data-p="from" type="number" inputmode="numeric" min="0" max="100" step="1" value="${p.from}"></div></div>
+        <div class="field"><label>Until age</label>
+          <div class="inputbox"><input data-p="to" type="number" inputmode="numeric" min="0" max="100" step="1" value="${p.to}"></div></div>`;
+      ph.querySelector('[data-p="freq"]').value = p.freq;
+      ph.addEventListener("input", e => {
+        const el = e.target, k = el.dataset.p;
+        if (k === "freq") p.freq = el.value;
+        else p[k] = num(el, p[k]);
+        recalc();
+      });
+      if (sc.phases.length > 1) {
+        const rm = document.createElement("button");
+        rm.type = "button"; rm.className = "rm"; rm.textContent = "×";
+        rm.setAttribute("aria-label", "Remove phase");
+        rm.addEventListener("click", () => { sc.phases.splice(i, 1); renderPhases(); recalc(); });
+        ph.appendChild(rm);
+      }
+      phasesEl.appendChild(ph);
+    });
+  }
+  card.querySelector('[data-role="add"]').addEventListener("click", () => {
+    const last = sc.phases[sc.phases.length - 1];
+    sc.phases.push({ amount: last ? last.amount : 100, freq: last ? last.freq : "monthly",
+      from: last ? last.to : state.ageNow, to: state.ageEnd });
+    renderPhases(); recalc();
+  });
+
+  syncType(); renderPhases();
+  return card;
+}
+
+function num(el, fallback) {
+  const v = parseFloat(el.value);
+  return Number.isFinite(v) ? v : fallback;
+}
+
+function renderScenarioCards() {
+  scenariosEl.innerHTML = "";
+  scenariosEl.appendChild(scenarioCard("A"));
+  if (state.compare) scenariosEl.appendChild(scenarioCard("B"));
+}
+
+/* ---------- shared inputs ---------- */
+const ageNowIn = document.getElementById("ageNow");
+const ageEndIn = document.getElementById("ageEnd");
+const inflIn = document.getElementById("inflation");
+ageNowIn.addEventListener("input", () => { state.ageNow = num(ageNowIn, 8); recalc(); });
+ageEndIn.addEventListener("input", () => { state.ageEnd = num(ageEndIn, 65); recalc(); });
+inflIn.addEventListener("input", () => { state.inflation = num(inflIn, 2.5); recalc(); });
+
+const dollarSeg = document.getElementById("dollarSeg");
+dollarSeg.addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  state.dollars = b.dataset.v;
+  dollarSeg.querySelectorAll("button").forEach(x => x.classList.toggle("on", x === b));
+  recalc();
+});
+
+document.getElementById("compareToggle").addEventListener("change", e => {
+  state.compare = e.target.checked;
+  if (state.compare && !state.B) {
+    state.B = JSON.parse(JSON.stringify(state.A)); // start B as a copy of A to tweak
+  }
+  renderScenarioCards(); recalc();
+});
+
+/* ---------- results ---------- */
+const resultsEl = document.getElementById("results");
+const limitWarnEl = document.getElementById("limitWarn");
+
+function tileHTML(key, sc, proj) {
+  const label = state.dollars === "real" ? "in today's dollars" : "in future dollars";
+  const finalDisp = display(proj.final, state.ageEnd);
+  let taxNote = "";
+  let extraRow = "";
+  if (sc.type === "trad") {
+    const afterTax = finalDisp * (1 - sc.taxRate / 100);
+    extraRow = `<div class="r"><span class="k">Est. after ${sc.taxRate}% tax</span><span class="v">${fmt(afterTax)}</span></div>`;
+    taxNote = "pre-tax · Traditional";
+  } else {
+    taxNote = "tax-free after 59½ · Roth";
+  }
+  let milestone = "";
+  if (state.ageEnd > 59.5 && state.ageNow < 59.5) {
+    const pt = proj.points.reduce((best, p) => Math.abs(p.age - 59.5) < Math.abs(best.age - 59.5) ? p : best);
+    milestone = `<div class="r"><span class="k">At 59½ (penalty-free)</span><span class="v">${fmt(display(pt.bal, 59.5))}</span></div>`;
+  }
+  return `<div class="tile">
+    <div class="who"><span class="dot ${key.toLowerCase()}"></span>Scenario ${key} · age ${state.ageEnd}</div>
+    <div class="big">${fmt(finalDisp)}</div>
+    <div class="sub">${label} · ${taxNote}</div>
+    <div class="rows">
+      <div class="r"><span class="k">Total put in</span><span class="v">${fmt(display(proj.totalContrib, state.ageEnd))}</span></div>
+      <div class="r"><span class="k">Growth earned</span><span class="v">${fmt(display(proj.totalGrowth, state.ageEnd))}</span></div>
+      ${extraRow}${milestone}
+    </div>
+  </div>`;
+}
+
+function limitWarnings(projs) {
+  const msgs = [];
+  for (const [key, sc] of projs) {
+    const over = [];
+    for (let a = Math.floor(state.ageNow); a < state.ageEnd; a++) {
+      if (annualContribAtAge(sc, a + 0.5) > LIMIT) over.push(a);
+    }
+    if (over.length) {
+      const range = over.length > 1 ? `ages ${over[0]}–${over[over.length - 1]}` : `age ${over[0]}`;
+      msgs.push(`<strong>Scenario ${key}</strong> contributes more than the $${LIMIT.toLocaleString()} annual IRA limit (2026) at ${range}.`);
+    }
+  }
+  if (msgs.length) {
+    limitWarnEl.innerHTML = "⚠️ " + msgs.join(" ") +
+      " Limits rise over time, but over-limit assumptions inflate the projection. Also remember: a minor's contributions can't exceed their earned income for the year.";
+    limitWarnEl.classList.add("show");
+  } else {
+    limitWarnEl.classList.remove("show");
+  }
+}
+
+/* ---------- year table ---------- */
+function renderTable(pA, pB) {
+  const t = document.getElementById("yearTable");
+  let head = `<tr><th>Age</th><th class="ca">Put in</th><th class="ca">Growth</th><th class="ca">Balance</th>`;
+  if (pB) head += `<th class="cb">Put in</th><th class="cb">Growth</th><th class="cb">Balance</th>`;
+  head += `</tr>`;
+  let rows = "";
+  const n = Math.max(pA.years.length, pB ? pB.years.length : 0);
+  for (let i = 0; i < n; i++) {
+    const ya = pA.years[i], yb = pB ? pB.years[i] : null;
+    const age = ya ? ya.age : yb.age;
+    rows += `<tr><td>${age}</td>`;
+    rows += ya
+      ? `<td>${fmt(display(ya.contrib, age))}</td><td>${fmt(display(ya.growth, age))}</td><td class="hl">${fmt(display(ya.bal, age))}</td>`
+      : `<td></td><td></td><td></td>`;
+    if (pB) rows += yb
+      ? `<td>${fmt(display(yb.contrib, age))}</td><td>${fmt(display(yb.growth, age))}</td><td class="hl">${fmt(display(yb.bal, age))}</td>`
+      : `<td></td><td></td><td></td>`;
+    rows += `</tr>`;
+  }
+  t.innerHTML = head + rows;
+}
+
+/* ---------- chart ---------- */
+const canvas = document.getElementById("chart");
+const ctx = canvas.getContext("2d");
+const tipEl = document.getElementById("tip");
+let chartData = null; // { series: [{key,color,points}], xMin,xMax,yMax, plot:{l,t,w,h} }
+
+function niceTicks(max, count) {
+  const raw = max / count;
+  const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  const norm = raw / mag;
+  const step = (norm <= 1 ? 1 : norm <= 2 ? 2 : norm <= 5 ? 5 : 10) * mag;
+  const ticks = [];
+  for (let v = 0; v <= max + 1e-9; v += step) ticks.push(v);
+  if (ticks[ticks.length - 1] < max) ticks.push(ticks[ticks.length - 1] + step);
+  return ticks;
+}
+
+function drawChart(series) {
+  const dpr = window.devicePixelRatio || 1;
+  const w = canvas.clientWidth, h = canvas.clientHeight || 280;
+  canvas.width = w * dpr; canvas.height = h * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, w, h);
+  if (!series.length) { chartData = null; return; }
+
+  const xMin = state.ageNow, xMax = state.ageEnd;
+  let yMax = 0;
+  for (const s of series) for (const p of s.points) yMax = Math.max(yMax, p.v);
+  if (yMax <= 0) yMax = 1000;
+  const yTicks = niceTicks(yMax * 1.05, 4);
+  yMax = yTicks[yTicks.length - 1];
+
+  const padL = 8, padR = 14, padT = 8, padB = 22;
+  // measure y labels for left gutter
+  ctx.font = "11px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  let gutter = 0;
+  for (const t of yTicks) gutter = Math.max(gutter, ctx.measureText(fmtCompact(t)).width);
+  const l = padL + gutter + 8, t0 = padT, pw = w - l - padR, ph = h - t0 - padB;
+  const X = age => l + ((age - xMin) / (xMax - xMin)) * pw;
+  const Y = v => t0 + ph - (v / yMax) * ph;
+
+  // gridlines + y labels
+  ctx.textAlign = "right"; ctx.textBaseline = "middle";
+  for (const tv of yTicks) {
+    ctx.strokeStyle = tv === 0 ? "#c3c2b7" : "#e1e0d9";
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(l, Y(tv) + 0.5); ctx.lineTo(l + pw, Y(tv) + 0.5); ctx.stroke();
+    ctx.fillStyle = "#898781";
+    ctx.fillText(fmtCompact(tv), l - 6, Y(tv));
+  }
+  // x ticks: every 5 or 10 years
+  const span = xMax - xMin;
+  const xStep = span > 40 ? 10 : span > 16 ? 5 : span > 8 ? 2 : 1;
+  ctx.textAlign = "center"; ctx.textBaseline = "top";
+  for (let a = Math.ceil(xMin / xStep) * xStep; a <= xMax + 1e-9; a += xStep) {
+    ctx.fillStyle = "#898781";
+    ctx.fillText(String(a), X(a), t0 + ph + 6);
+  }
+
+  // milestones: age of majority (18) and 59½
+  for (const m of [{ age: 18, label: "18" }, { age: 59.5, label: "59½" }]) {
+    if (m.age > xMin + 0.5 && m.age < xMax - 0.5) {
+      ctx.save();
+      ctx.strokeStyle = "#c3c2b7"; ctx.lineWidth = 1; ctx.setLineDash([3, 4]);
+      ctx.beginPath(); ctx.moveTo(X(m.age) + 0.5, t0 + 4); ctx.lineTo(X(m.age) + 0.5, t0 + ph); ctx.stroke();
+      ctx.restore();
+      ctx.fillStyle = "#898781"; ctx.textAlign = "center"; ctx.textBaseline = "bottom";
+      ctx.fillText(m.label, X(m.age), t0 + 4 + 9);
+    }
+  }
+
+  // series lines
+  for (const s of series) {
+    ctx.strokeStyle = s.color; ctx.lineWidth = 2;
+    ctx.lineJoin = "round"; ctx.lineCap = "round";
+    ctx.beginPath();
+    s.points.forEach((p, i) => { const x = X(p.age), y = Y(p.v); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); });
+    ctx.stroke();
+  }
+  // direct end labels when comparing (identity not by color alone)
+  if (series.length > 1) {
+    ctx.font = "700 11px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+    ctx.textAlign = "right"; ctx.textBaseline = "bottom";
+    const used = [];
+    for (const s of series) {
+      const last = s.points[s.points.length - 1];
+      let y = Y(last.v) - 4;
+      while (used.some(u => Math.abs(u - y) < 12)) y -= 12;
+      used.push(y);
+      ctx.fillStyle = "#52514e";
+      ctx.fillText(s.key + " " + fmtCompact(last.v), l + pw - 2, y);
+    }
+  }
+
+  chartData = { series, xMin, xMax, yMax, plot: { l, t: t0, w: pw, h: ph }, X, Y, w, h };
+}
+
+function hover(clientX, clientY) {
+  if (!chartData) return;
+  const rect = canvas.getBoundingClientRect();
+  const x = clientX - rect.left;
+  const { plot, series, X, Y } = chartData;
+  if (x < plot.l - 8 || x > plot.l + plot.w + 8) { unhover(); return; }
+  const age = chartData.xMin + ((Math.min(Math.max(x, plot.l), plot.l + plot.w) - plot.l) / plot.w) * (chartData.xMax - chartData.xMin);
+
+  drawChart(series); // redraw base
+  const dpr = window.devicePixelRatio || 1;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  // crosshair
+  ctx.strokeStyle = "#c3c2b7"; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(X(age) + 0.5, plot.t); ctx.lineTo(X(age) + 0.5, plot.t + plot.h); ctx.stroke();
+
+  let html = `<div class="tage">Age ${(Math.round(age * 2) / 2).toLocaleString()}</div>`;
+  for (const s of series) {
+    const p = s.points.reduce((b, q) => Math.abs(q.age - age) < Math.abs(b.age - age) ? q : b);
+    ctx.beginPath(); ctx.arc(X(p.age), Y(p.v), 4.5, 0, Math.PI * 2);
+    ctx.fillStyle = s.color; ctx.fill();
+    ctx.lineWidth = 2; ctx.strokeStyle = "#fff"; ctx.stroke();
+    html += `<div class="trow"><span class="chip" style="background:${s.color}"></span>${series.length > 1 ? "Scenario " + s.key : "Balance"}<span class="tv">${fmt(p.v)}</span></div>`;
+  }
+  tipEl.innerHTML = html;
+  tipEl.style.display = "block";
+  const card = document.getElementById("chartCard");
+  const cardRect = card.getBoundingClientRect();
+  let tx = clientX - cardRect.left + 14;
+  const ty = clientY - cardRect.top - 10;
+  if (tx + tipEl.offsetWidth > cardRect.width - 8) tx = clientX - cardRect.left - tipEl.offsetWidth - 14;
+  tipEl.style.left = tx + "px";
+  tipEl.style.top = Math.max(4, ty) + "px";
+}
+function unhover() {
+  tipEl.style.display = "none";
+  if (chartData) drawChart(chartData.series);
+}
+canvas.addEventListener("pointermove", e => hover(e.clientX, e.clientY));
+canvas.addEventListener("pointerdown", e => hover(e.clientX, e.clientY));
+canvas.addEventListener("pointerleave", unhover);
+window.addEventListener("resize", () => { if (chartData) drawChart(chartData.series); });
+
+/* ---------- legend ---------- */
+function renderLegend(series) {
+  const el = document.getElementById("legend");
+  if (series.length < 2) { el.innerHTML = ""; return; }
+  el.innerHTML = series.map(s =>
+    `<span class="item"><span class="chip" style="background:${s.color}"></span>Scenario ${s.key}</span>`).join("");
+}
+
+/* ---------- main recompute ---------- */
+function recalc() {
+  const bad = !(state.ageEnd > state.ageNow);
+  document.getElementById("ageErr").classList.toggle("show", bad);
+  if (bad) return;
+
+  const projs = [["A", state.A]];
+  if (state.compare && state.B) projs.push(["B", state.B]);
+
+  const computed = projs.map(([key, sc]) => [key, sc, project(sc, state.ageNow, state.ageEnd)]);
+
+  limitWarnings(projs);
+
+  resultsEl.className = "results" + (computed.length > 1 ? " two" : "");
+  resultsEl.innerHTML = computed.map(([key, sc, p]) => tileHTML(key, sc, p)).join("");
+
+  const series = computed.map(([key, , p]) => ({
+    key,
+    color: COLORS[key],
+    points: p.points.map(pt => ({ age: pt.age, v: display(pt.bal, pt.age) })),
+  }));
+  renderLegend(series);
+  drawChart(series);
+
+  renderTable(computed[0][2], computed.length > 1 ? computed[1][2] : null);
+}
+
+renderScenarioCards();
+recalc();
+
+/* ---------- PWA ---------- */
+if ("serviceWorker" in navigator && location.protocol === "https:") {
+  navigator.serviceWorker.register("sw.js");
+}
+</script>
+</body>
+</html>
