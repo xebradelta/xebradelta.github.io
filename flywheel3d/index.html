@@ -1,0 +1,1394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+<title>FLYWHEEL 3D</title>
+<meta name="description" content="The tire-launching diesel engine goes 3D. Crank it, aim with a tilt of your phone, and put a tire through a stack of crates on the far side of the field." />
+<meta name="theme-color" content="#1d3a2f" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%;overflow:hidden;background:#1d3a2f;touch-action:none;overscroll-behavior:none;
+    font-family:ui-rounded,'SF Pro Rounded',system-ui,-apple-system,'Segoe UI',sans-serif;
+    -webkit-user-select:none;user-select:none}
+  canvas{position:fixed;inset:0;width:100%;height:100%;display:block}
+  #h{z-index:5}
+  .btn{pointer-events:auto;background:rgba(20,40,32,.78);color:#f3e9d2;border:1px solid rgba(243,233,210,.35);
+    border-radius:12px;padding:8px 12px;font-size:14px;font-weight:600;cursor:pointer;backdrop-filter:blur(4px);font-family:inherit}
+  .btn:active{transform:scale(.96)}
+  .btn.on{background:#2e6b4f;border-color:#8fe388}
+  #topbar{position:fixed;top:calc(env(safe-area-inset-top,0px) + 8px);right:8px;display:flex;gap:8px;z-index:20;pointer-events:none}
+  #chip{position:fixed;top:calc(env(safe-area-inset-top,0px) + 8px);left:8px;z-index:20;pointer-events:none;
+    background:rgba(20,40,32,.78);color:#f3e9d2;border:1px solid rgba(243,233,210,.3);border-radius:12px;
+    padding:6px 10px;font-size:11px;font-weight:600;max-width:46vw;line-height:1.4}
+  #chip b{color:#ffd98a}
+  .panel{position:fixed;inset:0;z-index:40;display:none;align-items:center;justify-content:center;
+    background:rgba(12,24,19,.72);backdrop-filter:blur(3px)}
+  .panel.open{display:flex}
+  .card-box{background:#f3e9d2;color:#2c2418;border-radius:18px;width:min(480px,92vw);max-height:84vh;
+    overflow-y:auto;padding:20px;box-shadow:0 24px 60px rgba(0,0,0,.5)}
+  .card-box h2{font-size:20px;letter-spacing:.06em;margin-bottom:4px}
+  .card-box .sub{font-size:12.5px;color:#6b5d43;margin-bottom:14px}
+  .row-list{display:flex;flex-direction:column;gap:8px;margin-bottom:16px}
+  .sel-row{display:flex;align-items:center;gap:10px;border:2px solid #d9cba6;border-radius:12px;padding:10px 12px;cursor:pointer;background:#faf4e4}
+  .sel-row.on{border-color:#2e6b4f;background:#e7f0e5}
+  .sel-row.lock{opacity:.5;cursor:default}
+  .sel-row .nm{font-weight:700;font-size:14.5px}
+  .sel-row .st{font-size:11.5px;color:#6b5d43}
+  .sel-row .tick{margin-left:auto;font-size:15px;color:#2e6b4f;font-weight:800}
+  .sect{font-size:11px;letter-spacing:.14em;font-weight:800;color:#8a7752;margin:14px 0 6px}
+  .close-x{float:right;border:0;background:#d9cba6;border-radius:10px;width:32px;height:32px;font-size:16px;font-weight:800;cursor:pointer;color:#2c2418;font-family:inherit}
+  #result{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 16px);transform:translateX(-50%) translateY(140%);
+    transition:transform .45s cubic-bezier(.2,1.4,.4,1);z-index:30;width:min(420px,92vw);
+    background:#f3e9d2;color:#2c2418;border-radius:18px;padding:16px 18px;box-shadow:0 18px 50px rgba(0,0,0,.5)}
+  #result.show{transform:translateX(-50%) translateY(0)}
+  #result .outcome{font-size:12px;letter-spacing:.16em;font-weight:800;color:#8a7752}
+  #result .big{font-size:22px;font-weight:800;margin:2px 0 8px;line-height:1.15}
+  #result .stats{display:flex;gap:10px;margin-bottom:10px}
+  #result .stat{flex:1;background:#faf4e4;border-radius:10px;padding:8px;text-align:center}
+  #result .stat b{display:block;font-size:19px}
+  #result .stat span{font-size:10px;color:#8a7752;letter-spacing:.06em;font-weight:700}
+  #result .nb{color:#b8860b;font-size:11px;font-weight:800}
+  #result .actions{display:flex;gap:8px}
+  #result .actions button{flex:1;border:0;border-radius:12px;padding:12px;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit}
+  #nextBtn{background:#2e6b4f;color:#fff}
+  #garBtn2{background:#d9cba6;color:#2c2418}
+  #toasts{position:fixed;top:calc(env(safe-area-inset-top,0px) + 54px);left:50%;transform:translateX(-50%);z-index:50;
+    display:flex;flex-direction:column;gap:6px;pointer-events:none;width:max-content;max-width:90vw}
+  .toast{background:#c9a227;color:#241d0d;font-weight:800;font-size:13px;border-radius:10px;padding:9px 14px;
+    box-shadow:0 8px 24px rgba(0,0,0,.4);animation:tpop .35s cubic-bezier(.2,1.5,.4,1);text-align:center}
+  @keyframes tpop{from{transform:scale(.6);opacity:0}}
+  #hint{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 18px);transform:translateX(-50%);z-index:15;
+    background:rgba(20,40,32,.82);color:#f3e9d2;border-radius:14px;padding:10px 16px;font-size:13.5px;font-weight:600;
+    pointer-events:none;text-align:center;line-height:1.45;max-width:88vw;transition:opacity .4s}
+  #hint.hide{opacity:0}
+  #nogl{display:none;position:fixed;inset:0;z-index:60;color:#f3e9d2;background:#1d3a2f;
+    align-items:center;justify-content:center;text-align:center;padding:30px;font-size:15px;line-height:1.6}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<canvas id="h"></canvas>
+<div id="nogl">This one needs WebGL, and your browser is not offering any.<br/>The 2D workshop at <b>/flywheel</b> still loves you.</div>
+
+<div id="chip"></div>
+<div id="topbar">
+  <button class="btn" id="garageBtn">⚙︎ Garage</button>
+  <button class="btn" id="tiltBtn">📐 Tilt</button>
+  <button class="btn" id="muteBtn">🔊</button>
+</div>
+
+<div id="hint"></div>
+
+<div class="panel" id="garagePanel"><div class="card-box">
+  <button class="close-x" data-close="garagePanel">✕</button>
+  <h2>GARAGE</h2>
+  <div class="sub" id="garSub"></div>
+  <div class="sect">ENGINE</div><div class="row-list" id="engineList"></div>
+  <div class="sect">TIRE</div><div class="row-list" id="tireList"></div>
+  <div class="sect">LAUNCH ARM</div><div class="row-list" id="armList"></div>
+</div></div>
+
+<div id="result">
+  <div class="outcome" id="resOutcome"></div>
+  <div class="big" id="resTitle"></div>
+  <div class="stats">
+    <div class="stat"><b id="resT">0</b><span>TARGET</span></div>
+    <div class="stat"><b id="resC">0</b><span>CRATES</span></div>
+    <div class="stat"><b id="resD">0</b><span>DIST&nbsp;m</span></div>
+    <div class="stat"><b id="resS">0</b><span>PTS <em id="nbS" class="nb"></em></span></div>
+  </div>
+  <div class="actions">
+    <button id="garBtn2">Garage</button>
+    <button id="nextBtn">Next tire</button>
+  </div>
+</div>
+
+<div id="toasts"></div>
+
+<script>
+'use strict';
+/* ================================================================
+   FLYWHEEL 3D — the tire-launching diesel engine gets a third
+   axis.  Aim across the field; targets, crates, consequences.
+   ================================================================ */
+const TAU = Math.PI*2, GRAV = 9.81, RHO = 1.2, D2R = Math.PI/180;
+const clamp = (v,a,b)=>v<a?a:v>b?b:v;
+const lerp  = (a,b,t)=>a+(b-a)*t;
+const rand  = (a,b)=>a+Math.random()*(b-a);
+
+/* ---------------- data (shared lineage with /flywheel) ---------------- */
+const TIERS = [
+ {name:'The Faithful 5HP', m:45,  r:0.32, idle:420, rated:650, redline:800,  burst:1000, torque:55,  unlock:0,  how:'Start'},
+ {name:'Workshop 10HP',    m:60,  r:0.40, idle:450, rated:700, redline:900,  burst:1150, torque:95,  unlock:10, how:'10 tires'},
+ {name:'The Twin',         m:120, r:0.42, idle:450, rated:720, redline:950,  burst:1200, torque:170, unlock:25, how:'25 tires'},
+ {name:'Mill Engine',      m:110, r:0.55, idle:400, rated:640, redline:900,  burst:1120, torque:230, unlock:50, how:'50 tires'},
+ {name:'The Monster',      m:180, r:0.75, idle:380, rated:600, redline:1000, burst:1250, torque:380, unlock:90, how:'90 tires'},
+];
+const TIRES = [
+ {name:'Scooter',      m:3,  r:0.20, S:0.10, grip:1.0,  unlock:0,  note:'Highest ceiling, wildest curve'},
+ {name:'Motorcycle',   m:6,  r:0.28, S:0.08, grip:1.0,  unlock:5,  note:'All-rounder'},
+ {name:'Car',          m:11, r:0.32, S:0.05, grip:1.05, unlock:0,  note:'Predictable, good for targets'},
+ {name:'Truck',        m:28, r:0.45, S:0.03, grip:1.1,  unlock:20, note:'Low, heavy, breaks things'},
+ {name:'Tractor',      m:55, r:0.70, S:0.02, grip:1.15, unlock:45, note:'Barely flies, enormous impact'},
+ {name:'Bald Retread', m:4,  r:0.30, S:0.14, grip:0.55, unlock:15, note:'Unpredictable. High risk.', wild:true},
+ {name:'Wheelbarrow',  m:2,  r:0.15, S:0.12, grip:0.9,  unlock:35, note:'Goes forever, hits nothing'},
+];
+const ARMS = [
+ {name:'Bare rim',       mult:1.0, unlock:0,  note:'Honest physics. Near ring only.'},
+ {name:'Short arm',      mult:1.5, unlock:8,  note:'Hinged plank. Lever tip runs 1.5×.'},
+ {name:'Field arm',      mult:2.0, unlock:20, note:'Proper linkage. 2× rim speed.'},
+ {name:'The Long Lever', mult:2.6, unlock:40, note:'An irresponsible amount of arm.'},
+];
+const TARGETS = [
+ {x:55,  z:12,  name:'Near ring'},
+ {x:105, z:-16, name:'Mid ring'},
+ {x:165, z:26,  name:'Far ring'},
+];
+const CS = 1.3;                       /* crate size, m */
+const STRUCTS = [
+ {x:70,  z:-14, kind:'pyramid'},
+ {x:115, z:20,  kind:'wall'},
+ {x:150, z:-2,  kind:'tower'},
+];
+const TOWER3 = {x:85, z:-35, r:3.2, y0:9, y1:14};
+const CHAI3  = {x:30, z:26, w:4, d:3, top:2.6};
+const TIRES_PER_ROUND = 5;
+
+/* ---------------- save ---------------- */
+const SKEY='flywheel3d-v1';
+let save;
+try { save = JSON.parse(localStorage.getItem(SKEY)) || null; } catch(e){ save = null; }
+save = Object.assign({launches:0,bestRound:0,bestLaunch:0,tier:0,tire:2,arm:0,muted:false},save||{});
+const persist = ()=>{ try{ localStorage.setItem(SKEY, JSON.stringify(save)); }catch(e){} };
+save.tier = clamp(save.tier,0,TIERS.length-1); if (TIERS[save.tier].unlock>save.launches) save.tier=0;
+save.tire = clamp(save.tire,0,TIRES.length-1); if (TIRES[save.tire].unlock>save.launches) save.tire=2;
+save.arm  = clamp(save.arm ,0,ARMS.length-1);  if (ARMS[save.arm].unlock>save.launches)  save.arm=0;
+
+const dayKey = ()=>{ const d=new Date(); return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); };
+function hashStr(s){ let h=2166136261; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619); } return (h>>>0); }
+const windBX = ((hashStr('wx'+dayKey())%1000)/1000 - 0.5) * 6;   /* head/tail -3..3 */
+const windBZ = ((hashStr('wz'+dayKey())%1000)/1000 - 0.5) * 8;   /* cross -4..4 */
+
+/* ---------------- vec / mat ---------------- */
+const v3 = (x,y,z)=>[x,y,z];
+const vAdd=(a,b)=>[a[0]+b[0],a[1]+b[1],a[2]+b[2]];
+const vSub=(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]];
+const vScl=(a,s)=>[a[0]*s,a[1]*s,a[2]*s];
+const vDot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
+const vCross=(a,b)=>[a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1]*b[0]];
+const vLen=a=>Math.hypot(a[0],a[1],a[2]);
+const vNorm=a=>{const l=vLen(a)||1e-9; return [a[0]/l,a[1]/l,a[2]/l];};
+const vLerp=(a,b,t)=>[lerp(a[0],b[0],t),lerp(a[1],b[1],t),lerp(a[2],b[2],t)];
+
+function m4Id(){return [1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1];}
+function m4Mul(a,b){
+  const o=new Array(16);
+  for(let c=0;c<4;c++)for(let r=0;r<4;r++){
+    o[c*4+r]=a[r]*b[c*4]+a[4+r]*b[c*4+1]+a[8+r]*b[c*4+2]+a[12+r]*b[c*4+3];
+  }
+  return o;
+}
+const mm=(...ms)=>ms.reduce(m4Mul);
+const m4T=(x,y,z)=>[1,0,0,0, 0,1,0,0, 0,0,1,0, x,y,z,1];
+const m4S=(x,y,z)=>[x,0,0,0, 0,y,0,0, 0,0,z,0, 0,0,0,1];
+function m4RX(a){const c=Math.cos(a),s=Math.sin(a);return[1,0,0,0, 0,c,s,0, 0,-s,c,0, 0,0,0,1];}
+function m4RY(a){const c=Math.cos(a),s=Math.sin(a);return[c,0,-s,0, 0,1,0,0, s,0,c,0, 0,0,0,1];}
+function m4RZ(a){const c=Math.cos(a),s=Math.sin(a);return[c,s,0,0, -s,c,0,0, 0,0,1,0, 0,0,0,1];}
+function m4Persp(fov,asp,n,f){
+  const t=1/Math.tan(fov/2), d=1/(n-f);
+  return [t/asp,0,0,0, 0,t,0,0, 0,0,(n+f)*d,-1, 0,0,2*n*f*d,0];
+}
+function m4LookAt(e,c,u){
+  const z=vNorm(vSub(e,c)), x=vNorm(vCross(u,z)), y=vCross(z,x);
+  return [x[0],y[0],z[0],0, x[1],y[1],z[1],0, x[2],y[2],z[2],0, -vDot(x,e),-vDot(y,e),-vDot(z,e),1];
+}
+
+/* ---------------- canvases / GL ---------------- */
+const cv = document.getElementById('c');
+const hc = document.getElementById('h'), hx = hc.getContext('2d');
+let W=0,H=0,DPR=1;
+let gl=null;
+try { gl = cv.getContext('webgl',{antialias:true}) || cv.getContext('experimental-webgl'); } catch(e){}
+if (!gl){ document.getElementById('nogl').style.display='flex'; }
+function resize(){
+  DPR = Math.min(2, window.devicePixelRatio||1);
+  W = window.innerWidth; H = window.innerHeight;
+  cv.width=W*DPR; cv.height=H*DPR;
+  hc.width=W*DPR; hc.height=H*DPR;
+  hx.setTransform(DPR,0,0,DPR,0,0);
+  if (gl) gl.viewport(0,0,cv.width,cv.height);
+}
+window.addEventListener('resize', resize); resize();
+
+/* ---------------- shader ---------------- */
+const SKYC = [0.62,0.82,0.84];
+let prog=null, loc={};
+function glInit(){
+  const vs = `
+    attribute vec3 a_pos; attribute vec3 a_nrm; attribute vec3 a_col;
+    uniform mat4 u_proj,u_view,u_model; uniform vec3 u_tint;
+    varying vec3 v_col; varying float v_fog;
+    void main(){
+      vec4 wp = u_model*vec4(a_pos,1.0);
+      gl_Position = u_proj*u_view*wp;
+      vec3 wn = normalize(mat3(u_model[0].xyz,u_model[1].xyz,u_model[2].xyz)*a_nrm);
+      float li = 0.60 + 0.40*max(0.0, dot(wn, normalize(vec3(0.45,0.8,0.3))));
+      v_col = a_col*u_tint*li;
+      float d = length((u_view*wp).xyz);
+      v_fog = clamp(1.0-exp(-d*0.0016),0.0,1.0);
+    }`;
+  const fs = `
+    precision mediump float;
+    uniform vec3 u_fog; uniform float u_alpha;
+    varying vec3 v_col; varying float v_fog;
+    void main(){ gl_FragColor = vec4(mix(v_col,u_fog,v_fog), u_alpha); }`;
+  function sh(t,src){ const s=gl.createShader(t); gl.shaderSource(s,src); gl.compileShader(s);
+    if(!gl.getShaderParameter(s,gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s)); return s; }
+  prog = gl.createProgram();
+  gl.attachShader(prog, sh(gl.VERTEX_SHADER,vs));
+  gl.attachShader(prog, sh(gl.FRAGMENT_SHADER,fs));
+  gl.linkProgram(prog);
+  if(!gl.getProgramParameter(prog,gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(prog));
+  gl.useProgram(prog);
+  for (const n of ['u_proj','u_view','u_model','u_tint','u_fog','u_alpha']) loc[n]=gl.getUniformLocation(prog,n);
+  for (const n of ['a_pos','a_nrm','a_col']) loc[n]=gl.getAttribLocation(prog,n);
+  gl.enable(gl.DEPTH_TEST);
+  gl.disable(gl.CULL_FACE);
+  gl.uniform3fv(loc.u_fog, SKYC);
+  gl.clearColor(SKYC[0],SKYC[1],SKYC[2],1);
+}
+
+/* ---------------- mesh building ---------------- */
+function newB(){ return {p:[],n:[],c:[]}; }
+function pushV(B,p,n,c){ B.p.push(p[0],p[1],p[2]); B.n.push(n[0],n[1],n[2]); B.c.push(c[0],c[1],c[2]); }
+function quad(B,a,b,c,d,n,col){ pushV(B,a,n,col);pushV(B,b,n,col);pushV(B,c,n,col); pushV(B,a,n,col);pushV(B,c,n,col);pushV(B,d,n,col); }
+function addBox(B,cx,cy,cz,sx,sy,sz,col,yaw){
+  const hx=sx/2,hy=sy/2,hz=sz/2, co=Math.cos(yaw||0), si=Math.sin(yaw||0);
+  const P=(x,y,z)=>[cx + x*co - z*si, cy+y, cz + x*si + z*co];
+  const N=(x,y,z)=>[x*co - z*si, y, x*si + z*co];
+  quad(B,P(-hx,-hy, hz),P( hx,-hy, hz),P( hx, hy, hz),P(-hx, hy, hz),N(0,0,1),col);
+  quad(B,P( hx,-hy,-hz),P(-hx,-hy,-hz),P(-hx, hy,-hz),P( hx, hy,-hz),N(0,0,-1),col);
+  quad(B,P( hx,-hy, hz),P( hx,-hy,-hz),P( hx, hy,-hz),P( hx, hy, hz),N(1,0,0),col);
+  quad(B,P(-hx,-hy,-hz),P(-hx,-hy, hz),P(-hx, hy, hz),P(-hx, hy,-hz),N(-1,0,0),col);
+  quad(B,P(-hx, hy, hz),P( hx, hy, hz),P( hx, hy,-hz),P(-hx, hy,-hz),N(0,1,0),col);
+  quad(B,P(-hx,-hy,-hz),P( hx,-hy,-hz),P( hx,-hy, hz),P(-hx,-hy, hz),N(0,-1,0),col);
+}
+/* cylinder along `axis` ('y'|'z'|'x'); r2 = top radius (cone if 0) */
+function addCyl(B,cx,cy,cz,r,h,seg,col,axis,capCol,r2){
+  if (r2===undefined) r2=r;
+  const sw = axis==='z' ? (x,y,z)=>[x,z,y] : axis==='x' ? (x,y,z)=>[y,x,z] : (x,y,z)=>[x,y,z];
+  const C=(p)=>{const q=sw(p[0],p[1],p[2]); return [cx+q[0],cy+q[1],cz+q[2]];};
+  const NN=(p)=>{const q=sw(p[0],p[1],p[2]); return q;};
+  const cc = capCol||col;
+  for(let i=0;i<seg;i++){
+    const a0=i/seg*TAU, a1=(i+1)/seg*TAU;
+    const c0=Math.cos(a0),s0=Math.sin(a0),c1=Math.cos(a1),s1=Math.sin(a1);
+    const nm=[Math.cos((a0+a1)/2),0,Math.sin((a0+a1)/2)];
+    quad(B, C([c0*r,-h/2,s0*r]), C([c1*r,-h/2,s1*r]), C([c1*r2,h/2,s1*r2]), C([c0*r2,h/2,s0*r2]), NN(nm), col);
+    if (r>0){ pushV(B,C([0,-h/2,0]),NN([0,-1,0]),cc); pushV(B,C([c1*r,-h/2,s1*r]),NN([0,-1,0]),cc); pushV(B,C([c0*r,-h/2,s0*r]),NN([0,-1,0]),cc); }
+    if (r2>0){ pushV(B,C([0,h/2,0]),NN([0,1,0]),cc); pushV(B,C([c0*r2,h/2,s0*r2]),NN([0,1,0]),cc); pushV(B,C([c1*r2,h/2,s1*r2]),NN([0,1,0]),cc); }
+  }
+}
+function addRing(B,cx,cz,y,r0,r1,seg,col){
+  for(let i=0;i<seg;i++){
+    const a0=i/seg*TAU, a1=(i+1)/seg*TAU;
+    const c0=Math.cos(a0),s0=Math.sin(a0),c1=Math.cos(a1),s1=Math.sin(a1);
+    quad(B,[cx+c0*r0,y,cz+s0*r0],[cx+c1*r0,y,cz+s1*r0],[cx+c1*r1,y,cz+s1*r1],[cx+c0*r1,y,cz+s0*r1],[0,1,0],col);
+  }
+}
+function bake(B){
+  const mk = a=>{const b=gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER,b); gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(a),gl.STATIC_DRAW); return b;};
+  return {vp:mk(B.p), vn:mk(B.n), vc:mk(B.c), n:B.p.length/3};
+}
+function drawMesh(mesh, model, tint, alpha){
+  gl.uniformMatrix4fv(loc.u_model,false,model);
+  gl.uniform3fv(loc.u_tint, tint||[1,1,1]);
+  gl.uniform1f(loc.u_alpha, alpha===undefined?1:alpha);
+  gl.bindBuffer(gl.ARRAY_BUFFER,mesh.vp); gl.vertexAttribPointer(loc.a_pos,3,gl.FLOAT,false,0,0); gl.enableVertexAttribArray(loc.a_pos);
+  gl.bindBuffer(gl.ARRAY_BUFFER,mesh.vn); gl.vertexAttribPointer(loc.a_nrm,3,gl.FLOAT,false,0,0); gl.enableVertexAttribArray(loc.a_nrm);
+  gl.bindBuffer(gl.ARRAY_BUFFER,mesh.vc); gl.vertexAttribPointer(loc.a_col,3,gl.FLOAT,false,0,0); gl.enableVertexAttribArray(loc.a_col);
+  gl.drawArrays(gl.TRIANGLES,0,mesh.n);
+}
+
+/* ---------------- world colors ---------------- */
+const GRASS=[0.50,0.68,0.43], DIRT=[0.72,0.60,0.42], WOOD=[0.62,0.44,0.26], WOOD2=[0.52,0.36,0.20];
+const RED=[0.80,0.25,0.20], CREAM=[0.95,0.91,0.78], GOLD=[0.92,0.75,0.25];
+const METAL=[0.18,0.35,0.28], STEEL=[0.55,0.58,0.60], RUBBER=[0.16,0.16,0.17];
+
+/* ---------------- static scene ---------------- */
+let sceneMesh=null;
+let meshes={};                    /* dynamic unit meshes */
+function buildScene(){
+  const B=newB();
+  /* ground */
+  quad(B,[-700,0,-700],[900,0,-700],[900,0,700],[-700,0,700],[0,1,0],GRASS);
+  let sd = hashStr('patches');
+  const prand=()=>{ sd = (sd*1103515245+12345)>>>0; return sd/4294967296; };
+  for(let i=0;i<70;i++){
+    const px=prand()*420-60, pz=prand()*260-130, s=4+prand()*16;
+    const sh2=0.92+prand()*0.16, col=[GRASS[0]*sh2,GRASS[1]*sh2,GRASS[2]*sh2];
+    addBox(B,px,0.012+prand()*0.01,pz,s,0.01,s*(0.5+prand()),col,prand()*3);
+  }
+  addRing(B,0,0,0.02,0,11,20,DIRT);                       /* dirt apron */
+  /* target rings + tall flag markers (visible from the shop) */
+  for (const t of TARGETS){
+    addRing(B,t.x,t.z,0.03,0,12,26,RED);
+    addRing(B,t.x,t.z,0.045,0,8,24,CREAM);
+    addRing(B,t.x,t.z,0.06,0,4,20,RED);
+    addRing(B,t.x,t.z,0.075,0,1.3,14,GOLD);
+    for(let j=0;j<6;j++) addCyl(B,t.x,0.6+j*1.2,t.z, 0.14,1.2,6, j%2?CREAM:RED);
+    addBox(B,t.x+1.1,6.8,t.z, 2.2,1.1,0.08, RED);
+  }
+  /* hills */
+  for(let i=0;i<16;i++){
+    const a=i/16*TAU + 0.15;
+    const d=390+((i*61)%90), hx2=Math.cos(a)*d+80, hz2=Math.sin(a)*d;
+    const hh=25+((i*37)%45);
+    addCyl(B,hx2,hh/2,hz2,hh*1.3,hh,7,[0.42+((i%3)*0.05),0.58,0.42],'y',null,hh*0.35);
+  }
+  /* trees */
+  for(let i=0;i<14;i++){
+    const tx=prand()*300-30, tz=(prand()<0.5?-1:1)*(45+prand()*90);
+    addCyl(B,tx,1.2,tz,0.35,2.4,6,WOOD2);
+    addCyl(B,tx,3.6,tz,2.2,3.6,7,[0.30,0.48,0.30],'y',null,0.3);
+    addCyl(B,tx,5.6,tz,1.5,2.4,7,[0.34,0.53,0.33],'y',null,0.2);
+  }
+  /* clouds */
+  for(let i=0;i<6;i++){
+    const cx2=prand()*400-60, cz2=prand()*240-120, cy2=60+prand()*40;
+    addBox(B,cx2,cy2,cz2,18+prand()*22,2.5,8+prand()*8,[0.97,0.97,0.99],prand());
+  }
+  /* shed (behind the engine, out of the shop camera's face) */
+  addBox(B,-16,1.7,-8, 7,3.4,6, [0.72,0.55,0.38]);
+  addBox(B,-16,3.7,-8, 8,0.7,7, [0.45,0.30,0.22], 0);
+  /* chai stall */
+  addBox(B,CHAI3.x,1.0,CHAI3.z, CHAI3.w,2.0,CHAI3.d, [0.78,0.62,0.40]);
+  addBox(B,CHAI3.x,CHAI3.top,CHAI3.z, CHAI3.w+1.2,0.25,CHAI3.d+1.2, RED, 0.06);
+  addBox(B,CHAI3.x-1.4,0.5,CHAI3.z+2.1, 0.9,1,0.9, WOOD);
+  /* water tower */
+  for (const [lx,lz] of [[-2,-2],[2,-2],[-2,2],[2,2]])
+    addBox(B,TOWER3.x+lx*0.8,TOWER3.y0/2,TOWER3.z+lz*0.8, 0.5,TOWER3.y0,0.5, STEEL);
+  addCyl(B,TOWER3.x,(TOWER3.y0+TOWER3.y1)/2,TOWER3.z, TOWER3.r,(TOWER3.y1-TOWER3.y0),10,[0.62,0.66,0.70],'y',[0.5,0.54,0.58]);
+  addCyl(B,TOWER3.x,TOWER3.y1+0.8,TOWER3.z, TOWER3.r*1.05,1.6,10,[0.48,0.52,0.56],'y',null,0.3);
+  sceneMesh = bake(B);
+}
+function buildUnitMeshes(){
+  let B;
+  /* crate */
+  B=newB();
+  addBox(B,0,0,0,1,1,1,WOOD);
+  addBox(B,0,0,0,1.02,0.14,1.02,WOOD2);
+  addBox(B,0,0.44,0,1.02,0.1,1.02,WOOD2);
+  meshes.crate=bake(B);
+  /* tire: faceted cylinder along z, light stripe for spin readability */
+  B=newB();
+  for(let i=0;i<10;i++){
+    const a0=i/10*TAU,a1=(i+1)/10*TAU;
+    const col = i===0?[0.55,0.55,0.5]:RUBBER;
+    const c0=Math.cos(a0),s0=Math.sin(a0),c1=Math.cos(a1),s1=Math.sin(a1);
+    const nm=[Math.cos((a0+a1)/2),Math.sin((a0+a1)/2),0];
+    quad(B,[c0,s0,-0.35],[c1,s1,-0.35],[c1,s1,0.35],[c0,s0,0.35],nm,col);
+    /* side walls */
+    quad(B,[c0*0.45,s0*0.45,0.35],[c1*0.45,s1*0.45,0.35],[c1,s1,0.35],[c0,s0,0.35],[0,0,1],col===RUBBER?[0.2,0.2,0.21]:col);
+    quad(B,[c1*0.45,s1*0.45,-0.35],[c0*0.45,s0*0.45,-0.35],[c0,s0,-0.35],[c1,s1,-0.35],[0,0,-1],col===RUBBER?[0.2,0.2,0.21]:col);
+  }
+  addCyl(B,0,0,0,0.45,0.5,8,[0.75,0.72,0.65],'z');
+  meshes.tire=bake(B);
+  /* flywheel: unit radius, thickness in z; spokes; crank stub */
+  B=newB();
+  addCyl(B,0,0,0.0,1,0.22,14,METAL,'z',[0.22,0.42,0.34]);
+  addCyl(B,0,0,0.0,0.16,0.34,8,[0.14,0.28,0.22],'z');
+  for(let i=0;i<4;i++){
+    const a=i/4*TAU;
+    addBox(B,Math.cos(a)*0.5,Math.sin(a)*0.5,0, 0.12,0.9,0.1, [0.25,0.45,0.36], 0);
+  }
+  addBox(B,0.34,0,0.28, 0.1,0.1,0.34, STEEL);
+  addBox(B,0.34,0,0.48, 0.3,0.1,0.1, [0.7,0.2,0.15]);
+  meshes.flywheel=bake(B);
+  /* engine body */
+  B=newB();
+  addBox(B,0,0.55,0, 2.4,0.7,1.3, [0.35,0.30,0.24]);           /* skid */
+  addBox(B,-0.3,1.35,-0.1, 1.4,1.3,1.0, METAL);                /* block */
+  addCyl(B,-0.3,2.3,-0.1, 0.28,0.8,8, [0.2,0.38,0.3]);         /* head */
+  addCyl(B,-0.55,3.0,-0.1, 0.09,1.2,6, [0.3,0.3,0.3]);         /* exhaust */
+  addCyl(B,-0.55,3.65,-0.1, 0.22,0.24,6, [0.35,0.35,0.35]);
+  meshes.engine=bake(B);
+  /* launch arm plank (unit: length 1 along +y from origin) */
+  B=newB();
+  addBox(B,0,0.5,0, 0.13,1,0.07, WOOD);
+  addBox(B,0,0.98,0, 0.2,0.1,0.12, STEEL);
+  meshes.arm=bake(B);
+  /* goat */
+  B=newB();
+  addBox(B,0,0.62,0, 0.9,0.5,0.4, [0.88,0.86,0.80]);
+  addBox(B,0.5,0.95,0, 0.32,0.34,0.3, [0.85,0.82,0.75]);
+  addBox(B,0.62,1.16,0, 0.1,0.18,0.26, [0.4,0.35,0.3]);
+  for (const [lx,lz] of [[-0.3,-0.12],[-0.3,0.12],[0.3,-0.12],[0.3,0.12]])
+    addBox(B,lx,0.2,lz, 0.1,0.44,0.1, [0.75,0.72,0.66]);
+  meshes.goat=bake(B);
+  /* mechanic */
+  B=newB();
+  addBox(B,0,0.45,0, 0.34,0.9,0.26, [0.25,0.35,0.55]);
+  addBox(B,0,1.06,0, 0.26,0.26,0.24, [0.85,0.65,0.5]);
+  addCyl(B,0,1.26,0, 0.2,0.1,6, [0.55,0.4,0.2],'y',null,0.16);
+  meshes.mech=bake(B);
+  /* generic chunk / particle box */
+  B=newB(); addBox(B,0,0,0,1,1,1,[1,1,1]); meshes.cube=bake(B);
+  /* flat shadow disc */
+  B=newB(); addRing(B,0,0,0,0,1,10,[0,0,0]); meshes.disc=bake(B);
+}
+
+/* ---------------- audio ---------------- */
+const AU = {ctx:null, master:null, noiseBuf:null, nextFire:0, whine:null, whineG:null, squealG:null};
+function auInit(){
+  if (AU.ctx) return;
+  const C = window.AudioContext||window.webkitAudioContext; if(!C) return;
+  AU.ctx = new C();
+  AU.master = AU.ctx.createGain(); AU.master.gain.value = save.muted?0:0.9; AU.master.connect(AU.ctx.destination);
+  const len = AU.ctx.sampleRate*1.5, buf = AU.ctx.createBuffer(1,len,AU.ctx.sampleRate), d = buf.getChannelData(0);
+  for(let i=0;i<len;i++) d[i]=Math.random()*2-1;
+  AU.noiseBuf = buf;
+  AU.whine = AU.ctx.createOscillator(); AU.whine.type='sawtooth'; AU.whine.frequency.value=600;
+  AU.whineG = AU.ctx.createGain(); AU.whineG.gain.value=0;
+  AU.whine.connect(AU.whineG); AU.whineG.connect(AU.master); AU.whine.start();
+  const sq = AU.ctx.createBufferSource(); sq.buffer=AU.noiseBuf; sq.loop=true;
+  const sqf = AU.ctx.createBiquadFilter(); sqf.type='bandpass'; sqf.frequency.value=1600; sqf.Q.value=8;
+  AU.squealG = AU.ctx.createGain(); AU.squealG.gain.value=0;
+  sq.connect(sqf); sqf.connect(AU.squealG); AU.squealG.connect(AU.master); sq.start();
+}
+function blip(freq, dur, vol, type, sweep){
+  if(!AU.ctx) return;
+  const t=AU.ctx.currentTime, o=AU.ctx.createOscillator(), g=AU.ctx.createGain();
+  o.type=type||'sine'; o.frequency.setValueAtTime(freq,t);
+  if(sweep) o.frequency.exponentialRampToValueAtTime(Math.max(30,sweep), t+dur);
+  g.gain.setValueAtTime(vol,t); g.gain.exponentialRampToValueAtTime(0.001,t+dur);
+  o.connect(g); g.connect(AU.master); o.start(t); o.stop(t+dur+0.02);
+}
+function thump(t, vol, freq, dur){
+  if(!AU.ctx) return;
+  const o=AU.ctx.createOscillator(), g=AU.ctx.createGain();
+  o.type='sine'; o.frequency.setValueAtTime(freq,t); o.frequency.exponentialRampToValueAtTime(freq*0.55,t+dur);
+  g.gain.setValueAtTime(vol,t); g.gain.exponentialRampToValueAtTime(0.001,t+dur);
+  o.connect(g); g.connect(AU.master); o.start(t); o.stop(t+dur+0.02);
+  const n=AU.ctx.createBufferSource(); n.buffer=AU.noiseBuf; n.playbackRate.value=0.7;
+  const f=AU.ctx.createBiquadFilter(); f.type='lowpass'; f.frequency.value=300;
+  const ng=AU.ctx.createGain(); ng.gain.setValueAtTime(vol*0.7,t); ng.gain.exponentialRampToValueAtTime(0.001,t+dur*0.8);
+  n.connect(f); f.connect(ng); ng.connect(AU.master); n.start(t); n.stop(t+dur);
+}
+function knockTick(t){
+  if(!AU.ctx) return;
+  const n=AU.ctx.createBufferSource(); n.buffer=AU.noiseBuf;
+  const f=AU.ctx.createBiquadFilter(); f.type='highpass'; f.frequency.value=3000;
+  const g=AU.ctx.createGain(); g.gain.setValueAtTime(0.25,t); g.gain.exponentialRampToValueAtTime(0.001,t+0.03);
+  n.connect(f); f.connect(g); g.connect(AU.master); n.start(t); n.stop(t+0.04);
+}
+function chuff(vol){
+  if(!AU.ctx) return;
+  const t=AU.ctx.currentTime, n=AU.ctx.createBufferSource(); n.buffer=AU.noiseBuf; n.playbackRate.value=0.5;
+  const f=AU.ctx.createBiquadFilter(); f.type='lowpass'; f.frequency.value=350;
+  const g=AU.ctx.createGain(); g.gain.setValueAtTime(vol,t); g.gain.exponentialRampToValueAtTime(0.001,t+0.22);
+  n.connect(f); f.connect(g); g.connect(AU.master); n.start(t); n.stop(t+0.25);
+}
+function crashNoise(vol,fq,dur){
+  if(!AU.ctx) return;
+  const t=AU.ctx.currentTime, n=AU.ctx.createBufferSource(); n.buffer=AU.noiseBuf;
+  const f=AU.ctx.createBiquadFilter(); f.type='lowpass'; f.frequency.value=fq;
+  const g=AU.ctx.createGain(); g.gain.setValueAtTime(vol,t); g.gain.exponentialRampToValueAtTime(0.001,t+dur);
+  n.connect(f); f.connect(g); g.connect(AU.master); n.start(t); n.stop(t+dur+0.05);
+}
+function grunt(kind){
+  if(!AU.ctx) return;
+  if(kind==='satisfied'){ blip(140,0.18,0.2,'sawtooth',95); }
+  else if(kind==='dismay'){ blip(160,0.35,0.2,'sawtooth',70); }
+  else if(kind==='effort'){ blip(110,0.12,0.22,'sawtooth',130); }
+}
+function goatBleat(){ blip(660,0.12,0.22,'square',520); setTimeout(()=>blip(700,0.18,0.2,'square',560),140); }
+function dingBullseye(){ blip(1320,0.35,0.22,'triangle'); setTimeout(()=>blip(1760,0.5,0.2,'triangle'),120); }
+function woodCrash(){ crashNoise(0.4,900,0.35); blip(220,0.15,0.18,'square',110); }
+
+/* ---------------- game state ---------------- */
+let mode = 'shop';                 /* shop | flight | result */
+const eng = {
+  on:false, warm:false, rpm:0, throttle:0.12,
+  cranks:0, cranksNeed:4+Math.floor(rand(0,3)),
+  sputter:-1, warnT:0, cracks:0, dead:false, beltOn:true,
+  visAngle:0, fireP:0,
+};
+let press = null;
+let flight = null;
+let crates = [];
+let debris = [];
+const parts = [];                  /* 3D particles: {p,v,life,t,s,col,alpha} */
+const mech = {state:'idle', t:0, hat:0};
+let shake = 0;
+const goat = {p:[25,0,32], yaw:2.6, t:0, stepT:-1};
+const round = {tire:0, score:0, launchStart:0};
+let aimClock = 55;                 /* contact position on rim, deg from 12 o'clock */
+let aimYaw = 0;                    /* radians, + = right */
+const YAWMAX = 22*D2R;
+let firstRun = save.launches===0;
+let camMode = 'shop';              /* shop | chase | impact */
+const cam = {eye:[-6.5,3.4,5.2], look:[3,1.6,0]};
+let impactAnchor=null, impactOrbit=0;
+let fwScreen = {x:0,y:0,r:60};     /* projected flywheel, for touch + HUD */
+let resultShown=false;
+
+const tier = ()=>TIERS[save.tier];
+const tire = ()=>TIRES[save.tire];
+const arm  = ()=>ARMS[save.arm];
+const inertia = ()=>0.5*tier().m*tier().r*tier().r;
+const omega   = ()=>eng.rpm*TAU/60;
+const vRim    = ()=>omega()*tier().r;
+const energyKJ= ()=>0.5*inertia()*omega()*omega()/1000;
+const visR    = ()=>tier().r*1.6;                 /* visual scale-up for readability */
+const tvR     = ()=>tire().r*1.6;
+const FW = [0.55,1.5,0.85];                       /* flywheel hub, engine-local */
+function launchAngleFor(clockDeg){ return lerp(88, 15, clamp(clockDeg,0,150)/150) * D2R; }
+
+let windX = windBX, windZ = windBZ;
+
+/* ---------------- crates ---------------- */
+function buildCrates(){
+  crates = [];
+  const put=(x,y,z,yaw)=>crates.push({p:[x,y,z],v:[0,0,0],yaw:yaw||0,tum:0,vt:0,rest:true,knocked:false,counted:false});
+  for (const s of STRUCTS){
+    if (s.kind==='pyramid'){
+      for(let i=0;i<3;i++) put(s.x, CS/2, s.z+(i-1)*CS*1.05, 0.04*i);
+      for(let i=0;i<2;i++) put(s.x, CS*1.52, s.z+(i-0.5)*CS*1.05, -0.03*i);
+      put(s.x, CS*2.54, s.z, 0.05);
+    } else if (s.kind==='wall'){
+      for(let j=0;j<2;j++) for(let i=0;i<3;i++) put(s.x, CS/2+j*CS*1.02, s.z+(i-1)*CS*1.05, (i+j)*0.03);
+    } else {
+      for(let j=0;j<2;j++) for(const [ox,oz] of [[-0.55,-0.55],[0.55,-0.55],[-0.55,0.55],[0.55,0.55]])
+        put(s.x+ox*CS, CS/2+j*CS*1.02, s.z+oz*CS, (j+ox)*0.05);
+    }
+  }
+}
+function updateCrates(dt){
+  for (const c of crates){
+    if (c.rest){
+      /* support check: floating crates start to fall (chain collapses count) */
+      if (c.p[1] > CS/2+0.05){
+        let held=false;
+        for (const o of crates){ if(o===c) continue;
+          if (Math.abs(o.p[0]-c.p[0])<CS*0.95 && Math.abs(o.p[2]-c.p[2])<CS*0.95 &&
+              Math.abs((c.p[1]-o.p[1])-CS)<0.3){ held=true; break; } }
+        if (!held){ c.rest=false; if(!c.knocked){c.knocked=true;} c.vt=rand(-3,3); }
+      }
+      continue;
+    }
+    c.v[1] -= GRAV*dt;
+    c.p[0]+=c.v[0]*dt; c.p[1]+=c.v[1]*dt; c.p[2]+=c.v[2]*dt;
+    c.tum += c.vt*dt;
+    if (c.p[1] < CS/2){
+      c.p[1]=CS/2;
+      if (Math.abs(c.v[1])>1.6){ c.v[1]*=-0.25; woodCrash(); } else c.v[1]=0;
+      c.v[0]*= (1-3.5*dt); c.v[2]*= (1-3.5*dt); c.vt*=0.7;
+      if (Math.hypot(c.v[0],c.v[2])<0.3 && Math.abs(c.v[1])<0.5){
+        c.v=[0,0,0]; c.vt=0; c.rest=true;
+      }
+    }
+  }
+}
+function crateHits(f, t, dt){
+  const r = t.r+CS*0.72;
+  for (const c of crates){
+    const dx=f.p[0]-c.p[0], dy=f.p[1]-c.p[1], dz=f.p[2]-c.p[2];
+    if (dx*dx+dy*dy+dz*dz < r*r){
+      const sp = vLen(f.v);
+      if (sp<2) continue;
+      if (!c.knocked){ c.knocked=true; }
+      c.rest=false;
+      const mr = clamp(t.m/14,0.35,2.2);
+      c.v=[f.v[0]*0.45*mr+rand(-1,1), Math.max(2.2, f.v[1]*0.3+3)*Math.min(mr,1.4), f.v[2]*0.45*mr+rand(-1,1)];
+      c.vt = rand(-7,7);
+      f.v[0]*=0.72; f.v[1]*=0.82; f.v[2]*=0.72;
+      woodCrash(); shake=Math.max(shake,3);
+      for(let i=0;i<5;i++) parts.push({p:[c.p[0],c.p[1],c.p[2]],v:[rand(-4,4),rand(1,6),rand(-4,4)],life:rand(0.5,1.1),t:0,s:rand(0.12,0.3),col:WOOD,alpha:1});
+      if (camMode==='chase'){ camMode='impact'; impactAnchor=[f.p[0],0,f.p[2]]; impactOrbit=0; }
+    }
+  }
+}
+function knockedCount(){ let n=0; for(const c of crates) if(c.knocked) n++; return n; }
+
+/* ---------------- engine sim ---------------- */
+let crankHold=false, crankT=0;
+function updateEngine(dt){
+  const T = tier(), I = inertia();
+  if (crankHold && !eng.on && eng.sputter<0){
+    crankT += dt;
+    if (crankT >= 0.55){ crankT=0; crankStroke(); }
+  }
+  if (eng.sputter >= 0){
+    eng.sputter += dt;
+    const p = eng.sputter/1.4;
+    eng.rpm = T.idle * clamp(p*p*1.1,0,1) * (0.85+0.3*Math.sin(eng.sputter*31));
+    if (p>=1){ eng.sputter=-1; eng.on=true; eng.warm=true; grunt('satisfied');
+      hint(firstRun?'She lives. Throttle on the right. Hold the flywheel to press a tire on — drag up/down for launch angle, left/right (or tilt) to aim across the field. Release to launch.':'');
+      if(!firstRun) hint('');
+    }
+  } else if (eng.on){
+    const target = T.idle + eng.throttle*(T.burst+60-T.idle);
+    let Tq = clamp((target-eng.rpm)*0.11*I, -T.torque*0.7, T.torque);
+    let load = 1.5;
+    if (press){ load += press.loadTq; }
+    const dw = (Tq-load)/I;
+    eng.rpm += dw*(60/TAU)*dt;
+    if (eng.rpm < 220){
+      eng.on=false; eng.rpm=0; press=null;
+      crashNoise(0.3,200,0.6); grunt('dismay');
+      hint('Bogged it. Hold the crank — it is warm, it will forgive you.');
+      eng.cranks=0; eng.cranksNeed=2+Math.floor(rand(0,2));
+      mech.state='dismay'; mech.t=0;
+    }
+    if (eng.rpm > T.redline){
+      shake = Math.max(shake, (eng.rpm-T.redline)/(T.burst-T.redline)*4);
+      eng.cracks = clamp(eng.cracks + dt*0.5, 0, 1);
+      if (AU.whineG) AU.whineG.gain.value = clamp((eng.rpm-T.redline)/(T.burst-T.redline),0,1)*0.14;
+      if (AU.whine)  AU.whine.frequency.value = 500 + eng.rpm*1.4;
+    } else {
+      eng.cracks = Math.max(0, eng.cracks - dt*0.3);
+      if (AU.whineG) AU.whineG.gain.value *= 0.9;
+    }
+    if (eng.rpm > T.burst){ eng.warnT += dt; if (eng.warnT > 2.0) burst(); }
+    else eng.warnT = Math.max(0, eng.warnT-dt*2);
+    eng.fireP += eng.rpm/60/2*dt;
+    if (eng.fireP >= 1){ eng.fireP-=1; puffExhaust(); }
+  } else {
+    eng.rpm = Math.max(0, eng.rpm - dt*300);
+  }
+  eng.visAngle += omega()*dt*0.55;
+  scheduleEngineAudio();
+}
+function scheduleEngineAudio(){
+  if(!AU.ctx || AU.ctx.state!=='running') return;
+  const now = AU.ctx.currentTime;
+  if (eng.rpm < 40){ AU.nextFire = now+0.05; return; }
+  const period = 1/(eng.rpm/60/2);
+  if (AU.nextFire < now) AU.nextFire = now;
+  while (AU.nextFire < now + 0.12){
+    const loadFac = press ? clamp(press.loadTq/tier().torque,0,1.5) : 0;
+    const vol = clamp(0.16 + eng.throttle*0.1 + loadFac*0.22, 0, 0.5);
+    const fq  = 65 + eng.rpm*0.05 + loadFac*18;
+    thump(AU.nextFire, vol, fq, Math.min(0.16, period*0.75));
+    if (eng.rpm > tier().redline) knockTick(AU.nextFire+period*0.3);
+    AU.nextFire += period*(1+rand(-0.02,0.02));
+  }
+}
+function crankStroke(){
+  if (eng.on || eng.sputter>=0 || mode!=='shop') return;
+  eng.cranks++; eng.visAngle += 2.2; chuff(0.35); grunt('effort');
+  mech.state='crank'; mech.t=0;
+  puffExhaust();
+  if (eng.cranks >= eng.cranksNeed){
+    if (!eng.warm && Math.random()<0.22){
+      eng.cranksNeed += 2; eng.warm=true;
+      const t0 = AU.ctx?AU.ctx.currentTime:0;
+      for(let i=0;i<5;i++) thump(t0+i*0.16*(1+i*0.18), 0.3-i*0.04, 70, 0.14);
+      setTimeout(()=>{ blip(200,0.5,0.15,'sawtooth',60); hint('It thought about it. It declined. Keep holding.'); }, 900);
+    } else {
+      eng.sputter = 0; eng.cranks = 0;
+      hint('');
+    }
+  } else {
+    hint(cranksHintText());
+  }
+}
+function cranksHintText(){
+  const left = eng.cranksNeed-eng.cranks;
+  if (eng.cranks===0) return (eng.warm?'Still warm. ':'Cold morning. ')+'Hold the crank button.';
+  return left<=1 ? 'One more — put your back into it.' : left+' more turns. It is listening.';
+}
+function burst(){
+  eng.on=false; eng.dead=true; eng.rpm=0; eng.warnT=0; press=null;
+  if (AU.whineG) AU.whineG.gain.value=0;
+  crashNoise(0.9,900,1.4); blip(90,1.0,0.5,'sine',40);
+  shake = 12;
+  const hub = engineWorld(FW), R=visR();
+  for(let i=0;i<10;i++){
+    const a = rand(0,TAU);
+    debris.push({p:[hub[0]+Math.cos(a)*R*0.7, hub[1]+Math.sin(a)*R*0.7, hub[2]+rand(-0.2,0.2)],
+      v:[Math.cos(a)*rand(4,12), Math.abs(Math.sin(a))*rand(6,14)+4, rand(-6,6)],
+      ry:rand(0,TAU), rx:rand(0,TAU), w:rand(-9,9), s:R*rand(0.18,0.4), life:4, col:METAL});
+  }
+  mech.state='sit'; mech.t=0; mech.hat=2.5;
+  setTimeout(()=>{ showLaunchResult({outcome:'SCATTERED', title:'💥 Full scatter', pts:0, crates:0, dist:0, targetPts:0, noFlight:true}); }, 2200);
+}
+function beltWhip(){
+  eng.beltOn=false; press=null;
+  crashNoise(0.5,1400,0.5); blip(600,0.4,0.25,'sawtooth',120);
+  shake = 7; mech.state='dismay'; mech.t=0; grunt('dismay');
+  hint('The belt left. It is in a tree now. Try a gentler press.');
+}
+
+/* ---------------- press / contact ---------------- */
+function updatePress(dt){
+  if (!press || !eng.on){ if(AU.squealG) AU.squealG.gain.value*=0.85; return; }
+  const T=tier(), t=tire();
+  press.t += dt;
+  press.N = 1500*Math.pow(Math.min(1, press.t/1.6), 1.2);
+  let mu;
+  const N = press.N;
+  if      (N<220)  mu = 0.22;
+  else if (N<550)  mu = lerp(0.22,0.85,(N-220)/330);
+  else if (N<1050) mu = 0.85;
+  else             mu = 0.78;
+  mu *= t.grip;
+  const rim = vRim();
+  press.slip = Math.max(0, rim - press.vTire);
+  const F = (press.slip > 0.3) ? mu*N : mu*N*0.25;
+  press.vTire = Math.min(rim, press.vTire + F/(t.m*1.6)*dt);
+  press.loadTq = F*T.r + N*0.11*T.r*(N>1050?2.2:1);
+  press.quality = clamp((N-180)/380,0,1) * clamp(1.6-N/1050,0.25,1) * clamp(press.vTire/Math.max(6,rim),0,1);
+  if (press.slip>6 && N>140){
+    const cp = contactWorld();
+    if (Math.random()<dt*30) parts.push({p:cp,v:[rand(-1,1),rand(1,3),rand(-1,1)],life:rand(0.5,1),t:0,s:rand(0.1,0.25),col:[0.75,0.75,0.75],alpha:0.7});
+  }
+  if (AU.squealG) AU.squealG.gain.value = clamp(press.slip/40,0,1)*clamp(N/900,0,1)*0.12;
+  if (N>1150 && eng.rpm<360 && eng.beltOn && Math.random() < dt*0.55) beltWhip();
+}
+function releasePress(){
+  if (!press) return;
+  const p = press; press = null;
+  if (AU.squealG) AU.squealG.gain.value=0;
+  if (!eng.on) return;
+  if (p.vTire < 3.5){
+    blip(160,0.3,0.2,'sine',60); crashNoise(0.2,300,0.3);
+    hint('It fell off. Press longer — let it bite.');
+    mech.state='dismay'; mech.t=0;
+    return;
+  }
+  startFlight(p);
+}
+/* engine-local point -> world (assembly yawed about origin) */
+function engineWorld(pl){
+  const c=Math.cos(aimYaw), s=Math.sin(aimYaw);
+  return [pl[0]*c - pl[2]*s, pl[1], pl[0]*s + pl[2]*c];
+}
+function contactWorld(){
+  const c = (press?press.clock:aimClock)*D2R, R=visR()+tvR();
+  return engineWorld([FW[0]+Math.sin(c)*R, FW[1]+Math.cos(c)*R, FW[2]]);
+}
+
+/* ---------------- flight ---------------- */
+function startFlight(p){
+  const t = tire(), a = arm();
+  const v0 = Math.min(p.vTire, vRim()) * a.mult;
+  const el = launchAngleFor(p.clock);
+  let spin = p.vTire / t.r;
+  let S = t.S;
+  if (t.wild){ spin *= rand(0.5,1.6)*(Math.random()<0.4?-1:1); S *= rand(0.6,1.5); }
+  const dir = [Math.cos(el)*Math.cos(aimYaw), Math.sin(el), Math.cos(el)*Math.sin(aimYaw)];
+  const dirH = vNorm([dir[0],0,dir[2]]);
+  const start = contactWorld(); start[1]=Math.max(start[1],1.2);
+  flight = {
+    p:start, v:vScl(dir,v0),
+    w:spin, S:S, axis:vNorm(vCross([0,1,0],dirH)), dirH:dirH,
+    t:0, air:0, landed:false, done:false,
+    maxH:start[1], impact:null, targetPts:0, targetName:'', bullseye:false,
+    crates0:knockedCount(),
+    wind:[windBX+rand(-1,1), 0, windBZ+rand(-1.2,1.2)],
+    goatNear:false, hitTower:false, hitChai:false,
+  };
+  mode='flight'; camMode='chase'; firstRun=false;
+  round.launchStart = knockedCount();
+  mech.state='watch'; mech.t=0;
+  crashNoise(0.35,2500,0.4); blip(300,0.5,0.25,'sawtooth',900);
+  grunt('satisfied');
+  hint('');
+}
+function updateFlight(DT){
+  const f = flight; if (!f || f.done) return;
+  const t = tire();
+  const steps = 4, dt = DT/steps;
+  for(let i=0;i<steps;i++){
+    f.t += dt;
+    if (!f.landed) f.air += dt;
+    const rv=[f.v[0]-f.wind[0], f.v[1], f.v[2]-f.wind[2]];
+    const rs=vLen(rv)||0.001, rvN=vScl(rv,1/rs);
+    const A = 2*t.r*0.6*t.r;
+    const aD = 0.5*RHO*rs*rs*1.1*A/t.m;
+    let acc = [-aD*rvN[0], -GRAV - aD*rvN[1], -aD*rvN[2]];
+    const aM = clamp(f.S*Math.abs(f.w)*rs*0.007, 0, 22);
+    const mg = vCross(f.axis, rvN);
+    const sgn = Math.sign(f.w)||1;
+    acc = vAdd(acc, vScl(mg, aM*sgn));
+    f.v = vAdd(f.v, vScl(acc,dt));
+    f.p = vAdd(f.p, vScl(f.v,dt));
+    f.w *= (1 - dt/3.5);
+    f.maxH = Math.max(f.maxH, f.p[1]);
+    collideFlight(f, t, dt);
+    if (f.done) return;
+  }
+  if (f.t > 30){ f.done=true; finishFlight(); }
+}
+function collideFlight(f, t, dt){
+  const r = t.r;
+  crateHits(f, t, dt);
+  if (f.done) return;
+  /* goat: never hittable — one unbothered step */
+  const gd = Math.hypot(f.p[0]-goat.p[0], f.p[2]-goat.p[2]);
+  if (f.p[1]<3 && gd<2.5 && goat.stepT<0){ goat.stepT=0; goatBleat(); }
+  /* water tower tank */
+  const td = Math.hypot(f.p[0]-TOWER3.x, f.p[2]-TOWER3.z);
+  if (!f.hitTower && td < TOWER3.r+r && f.p[1]>TOWER3.y0 && f.p[1]<TOWER3.y1){
+    f.hitTower=true;
+    crashNoise(0.5,700,0.6); blip(220,0.7,0.3,'triangle',140); shake=5;
+    const nx=(f.p[0]-TOWER3.x)/td, nz=(f.p[2]-TOWER3.z)/td;
+    const vn = f.v[0]*nx+f.v[2]*nz;
+    f.v[0]-=1.5*vn*nx; f.v[2]-=1.5*vn*nz; f.v[1]*=0.6;
+    if (camMode==='chase'){ camMode='impact'; impactAnchor=[f.p[0],0,f.p[2]]; impactOrbit=0; }
+    toast('🗼 Rang the water tower');
+  }
+  /* chai stall */
+  if (!f.hitChai && Math.abs(f.p[0]-CHAI3.x)<CHAI3.w/2+r && Math.abs(f.p[2]-CHAI3.z)<CHAI3.d/2+r && f.p[1]-r<CHAI3.top && f.p[1]>0.2){
+    f.hitChai=true;
+    crashNoise(0.5,1800,0.5); shake=4;
+    f.v[0]*=0.45; f.v[2]*=0.45; f.v[1]=Math.max(f.v[1],2.5);
+    toast('🫖 The chai stand. Again.');
+  }
+  /* boundary */
+  if (Math.hypot(f.p[0],f.p[2]) > 400){ f.done=true; finishFlight(); return; }
+  /* ground */
+  if (f.p[1] - r*0.55 <= 0 && f.v[1] < 0){
+    if (f.impact===null){
+      f.impact=[f.p[0],f.p[2]]; f.landed=true;
+      scoreImpact(f);
+      if (gd<5 && !f.goatNear){ f.goatNear=true; goatBleat(); }
+      crashNoise(clamp(0.15+t.m/60,0,0.7), 400, 0.4);
+      dustAt(f.p, Math.min(10,vLen(f.v))/2);
+      if (camMode==='chase'){ camMode='impact'; impactAnchor=[f.p[0],0,f.p[2]]; impactOrbit=0; }
+    } else if (Math.abs(f.v[1])>2.5) crashNoise(0.12,350,0.25);
+    f.p[1] = r*0.55;
+    if (Math.abs(f.v[1]) > 2.2){
+      f.v[1] = -f.v[1]*0.42;
+      const kick = clamp(-f.w*t.r*0.25,-8,8);
+      f.v[0] = f.v[0]*0.75 + f.dirH[0]*kick;
+      f.v[2] = f.v[2]*0.75 + f.dirH[2]*kick;
+      f.w *= 0.6;
+    } else {
+      f.v[1] = 0;
+      f.v[0] *= (1 - dt*1.7); f.v[2] *= (1 - dt*1.7);
+      if (Math.hypot(f.v[0],f.v[2]) < 0.4){
+        f.v=[0,0,0]; f.done=true;
+        finishFlight();
+      }
+    }
+  }
+}
+function scoreImpact(f){
+  let best=1e9, bt=null;
+  for (const tg of TARGETS){
+    const d = Math.hypot(f.impact[0]-tg.x, f.impact[1]-tg.z);
+    if (d<best){ best=d; bt=tg; }
+  }
+  let pts=0;
+  if      (best<=1.5) pts=150;
+  else if (best<=4)   pts=80;
+  else if (best<=8)   pts=40;
+  else if (best<=12)  pts=15;
+  f.targetPts=pts; f.targetName = pts? bt.name : '';
+  if (pts===150){ f.bullseye=true; dingBullseye(); toast('🎯 BULLSEYE — '+bt.name+' +150'); }
+  else if (pts>=80){ dingBullseye(); toast('🎯 '+bt.name+' +'+pts); }
+  else if (pts>0) toast('🎯 Near '+bt.name+' +'+pts);
+}
+function dustAt(p, n){
+  for(let i=0;i<n*3;i++) parts.push({p:[p[0]+rand(-1,1),0.2,p[2]+rand(-1,1)],v:[rand(-2,2),rand(0.5,3),rand(-2,2)],life:rand(0.5,1.2),t:0,s:rand(0.15,0.4),col:DIRT,alpha:0.8});
+}
+function finishFlight(){
+  const f=flight;
+  const dist = Math.round(Math.hypot(f.p[0],f.p[2]));
+  const ck = knockedCount() - round.launchStart;
+  const pts = f.targetPts + ck*10 + Math.floor(dist/10);
+  let title;
+  if (f.bullseye) title='🎯 Bullseye!';
+  else if (ck>=5) title='📦 '+ck+' crates flattened';
+  else if (f.targetPts>=80) title='On the '+f.targetName.toLowerCase();
+  else if (f.hitTower) title='🗼 Rang the water tower';
+  else if (ck>0) title='📦 Clipped '+ck+' crate'+(ck>1?'s':'');
+  else if (f.goatNear) title='🐐 The goat watched it land';
+  else if (dist>=180) title='Genuinely gone';
+  else if (dist<10) title='Technically a launch';
+  else title='Into the field';
+  setTimeout(()=>showLaunchResult({title, pts, crates:ck, dist, targetPts:f.targetPts}), 900);
+}
+
+/* ---------------- results / round flow ---------------- */
+function showLaunchResult(sum){
+  mode='result'; resultShown=true;
+  save.launches++;
+  round.tire++;
+  round.score += sum.pts;
+  let nb='';
+  if (sum.pts > save.bestLaunch){ save.bestLaunch=sum.pts; nb='★'; }
+  for (const [list,label] of [[TIERS,'engine'],[TIRES,'tire'],[ARMS,'launch arm']])
+    for (const it of list)
+      if (it.unlock===save.launches) toast('🔓 '+it.name+' — new '+label+' in the Garage');
+  persist();
+  const last = round.tire>=TIRES_PER_ROUND;
+  document.getElementById('resOutcome').textContent = 'TIRE '+round.tire+' / '+TIRES_PER_ROUND+' · ROUND '+round.score+' PTS';
+  document.getElementById('resTitle').textContent = sum.title;
+  document.getElementById('resT').textContent = sum.noFlight?'—':sum.targetPts;
+  document.getElementById('resC').textContent = sum.noFlight?'—':sum.crates;
+  document.getElementById('resD').textContent = sum.noFlight?'—':sum.dist;
+  document.getElementById('resS').textContent = sum.pts;
+  document.getElementById('nbS').textContent = nb;
+  document.getElementById('nextBtn').textContent = last ? 'Finish round' : 'Next tire';
+  document.getElementById('result').classList.add('show');
+}
+function showRoundResult(){
+  let nb='';
+  if (round.score > save.bestRound){ save.bestRound = round.score; nb='★ new best'; }
+  persist();
+  document.getElementById('resOutcome').textContent = 'ROUND COMPLETE';
+  document.getElementById('resTitle').textContent = round.score+' points '+(nb?'· '+nb:'');
+  document.getElementById('resT').textContent = '—';
+  document.getElementById('resC').textContent = knockedCount();
+  document.getElementById('resD').textContent = '—';
+  document.getElementById('resS').textContent = save.bestRound;
+  document.getElementById('nbS').textContent = 'best';
+  document.getElementById('nextBtn').textContent = 'New round';
+  document.getElementById('result').classList.add('show');
+  resultShown=true; mode='result';
+}
+let roundDone=false;
+document.getElementById('nextBtn').addEventListener('click', ()=>{
+  document.getElementById('result').classList.remove('show');
+  if (!roundDone && round.tire>=TIRES_PER_ROUND){ roundDone=true; showRoundResult(); return; }
+  if (roundDone){ round.tire=0; round.score=0; roundDone=false; buildCrates(); }
+  backToShop();
+});
+function backToShop(){
+  document.getElementById('result').classList.remove('show');
+  flight=null; debris=[]; mode='shop'; camMode='shop'; resultShown=false;
+  mech.state='idle'; mech.t=0;
+  eng.beltOn=true;
+  if (eng.dead){ eng.dead=false; eng.cracks=0; eng.warm=false; eng.cranks=0; eng.cranksNeed=4+Math.floor(rand(0,3));
+    hint('Rebuilt it from the good pieces. Cold again — hold the crank.'); }
+  else if (!eng.on) hint(cranksHintText());
+}
+
+/* ---------------- particles / misc updates ---------------- */
+function puffExhaust(){
+  const p = engineWorld([-0.55,3.7,-0.1]);
+  parts.push({p:p,v:[rand(-0.4,0.4),rand(1.6,2.6),rand(-0.4,0.4)],life:rand(1.0,1.8),t:0,s:rand(0.2,0.4),col:[0.45,0.45,0.45],alpha:0.65,grow:1});
+}
+function updateParts(dt){
+  for(let i=parts.length-1;i>=0;i--){
+    const p=parts[i]; p.t+=dt;
+    if(p.t>p.life){ parts.splice(i,1); continue; }
+    p.p=vAdd(p.p,vScl(p.v,dt));
+    if (p.grow){ p.s += dt*0.5; p.v[1]*= (1-dt*0.5); }
+    else p.v[1]-=6*dt;
+    if(p.p[1]<0.05){p.p[1]=0.05;p.v[1]*=-0.3;}
+  }
+  for(let i=debris.length-1;i>=0;i--){
+    const k=debris[i]; k.life-=dt;
+    if(k.life<=0){debris.splice(i,1);continue;}
+    k.p=vAdd(k.p,vScl(k.v,dt)); k.v[1]-=GRAV*1.5*dt; k.ry+=k.w*dt; k.rx+=k.w*0.7*dt;
+    if(k.p[1]<k.s/2){k.p[1]=k.s/2;k.v[1]*=-0.35;k.v[0]*=0.7;k.v[2]*=0.7;}
+  }
+  shake = Math.max(0, shake - dt*10);
+  mech.t += dt;
+  if (mech.state==='sit' && mech.hat>0) mech.hat = Math.max(0, mech.hat - (mech.t>1.4? dt*4:0));
+  /* goat wander + the step */
+  goat.t += dt;
+  if (goat.stepT>=0){
+    goat.stepT+=dt;
+    if (goat.stepT<0.5) goat.p[2]+=dt*3.2;
+    else goat.stepT=-1;
+  } else if (mode==='shop' && Math.random()<dt*0.1){
+    goat.yaw += rand(-0.6,0.6);
+  }
+}
+
+/* ---------------- camera ---------------- */
+function updateCam(dt){
+  let te, tl, k=0.08;
+  if (camMode==='shop'){
+    if (press){ te=[-4.4,2.9,3.8]; tl=engineWorld(FW); k=0.06; }
+    else { te=[-7,4.2,5.6]; tl=[9,2.2,0]; }
+    /* keep the shop camera roughly behind the yawed assembly */
+    const c=Math.cos(aimYaw*0.5), s=Math.sin(aimYaw*0.5);
+    te=[te[0]*c-te[2]*s, te[1], te[0]*s+te[2]*c];
+  } else if (camMode==='chase' && flight){
+    const f=flight;
+    const sp = vLen(f.v);
+    const d = vNorm(sp>1? f.v : [f.dirH[0],0.2,f.dirH[2]]);
+    const back = 9 + clamp(sp*0.12,0,7) + tvR()*3;
+    te = [f.p[0]-d[0]*back, Math.max(1.2, f.p[1]-d[1]*back*0.5+3), f.p[2]-d[2]*back];
+    tl = vAdd(f.p, vScl(d,6));
+    k=0.14;
+  } else if (camMode==='impact' && flight){
+    impactOrbit += dt*0.25;
+    const a = impactOrbit + Math.atan2(-flight.dirH[2],-flight.dirH[0]) + 0.7;
+    te = [impactAnchor[0]+Math.cos(a)*13, 4.5, impactAnchor[2]+Math.sin(a)*13];
+    tl = [flight.p[0], Math.max(1,flight.p[1]), flight.p[2]];
+    k=0.07;
+  } else { te=cam.eye; tl=cam.look; }
+  cam.eye = vLerp(cam.eye, te, k);
+  cam.look = vLerp(cam.look, tl, Math.min(0.2,k*1.6));
+}
+
+/* ---------------- rendering ---------------- */
+let projM=null, viewM=null, vpM=null;
+function project(p){
+  const x=p[0],y=p[1],z=p[2],m=vpM;
+  const cw = m[3]*x+m[7]*y+m[11]*z+m[15];
+  const cx2 = m[0]*x+m[4]*y+m[8]*z+m[12];
+  const cy2 = m[1]*x+m[5]*y+m[9]*z+m[13];
+  if (cw<=0.01) return null;
+  return {x:(cx2/cw+1)/2*W, y:(1-cy2/cw)/2*H, w:cw};
+}
+function render(){
+  if (!gl) return;
+  const shx = shake>0.2 ? rand(-shake,shake)*0.02 : 0;
+  const shy = shake>0.2 ? rand(-shake,shake)*0.02 : 0;
+  projM = m4Persp(60*D2R, W/H, 0.1, 900);
+  viewM = m4LookAt(vAdd(cam.eye,[shx,shy,0]), cam.look, [0,1,0]);
+  vpM = m4Mul(projM, viewM);
+  gl.uniformMatrix4fv(loc.u_proj,false,projM);
+  gl.uniformMatrix4fv(loc.u_view,false,viewM);
+  gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
+  gl.depthMask(true); gl.disable(gl.BLEND);
+
+  drawMesh(sceneMesh, m4Id());
+  /* engine assembly */
+  const yawM = m4RY(-aimYaw);
+  drawMesh(meshes.engine, yawM);
+  const R=visR();
+  const spinM = mm(yawM, m4T(FW[0],FW[1],FW[2]), m4RZ(-eng.visAngle), m4S(R,R,1));
+  const cracked = eng.cracks>0.3 ? [1,1-eng.cracks*0.4,1-eng.cracks*0.4] : [1,1,1];
+  drawMesh(meshes.flywheel, spinM, cracked);
+  /* launch arm at aim clock */
+  const clockR = (press?press.clock:aimClock)*D2R;
+  const armLen = R*arm().mult + 0.3;
+  drawMesh(meshes.arm, mm(yawM, m4T(FW[0],FW[1],FW[2]+0.28), m4RZ(-clockR), m4S(1,armLen,1)));
+  /* pressed tire on the rim */
+  if (press){
+    const tv = tvR();
+    const tm = mm(yawM, m4T(FW[0],FW[1],FW[2]), m4RZ(-clockR), m4T(0,R+tv,0), m4RZ(-press.vTire/Math.max(tire().r,0.01)*0.02*press.t*60), m4S(tv,tv,tv*0.9));
+    drawMesh(meshes.tire, tm);
+  }
+  /* stacked spare tires by the shed */
+  for (let i=0;i<3;i++)
+    drawMesh(meshes.tire, mm(m4T(-6,0.25+i*0.45,-3.5), m4RX(Math.PI/2), m4S(0.62,0.62,0.6)), [0.9,0.9,0.9]);
+  /* mechanic */
+  const sitY = mech.state==='sit'? -0.35 : 0;
+  drawMesh(meshes.mech, mm(m4T(-2.4,sitY,2.4), m4RY(mech.state==='crank'? Math.sin(mech.t*12)*0.15 : 0.5), m4S(0.9,0.9,0.9)));
+  if (mech.state==='sit' && mech.hat>0)
+    drawMesh(meshes.cube, mm(m4T(-2.4,1.2+mech.hat,2.4), m4S(0.3,0.12,0.3)), [0.55,0.4,0.2]);
+  /* goat */
+  drawMesh(meshes.goat, mm(m4T(goat.p[0],0,goat.p[2]), m4RY(goat.yaw), m4S(1.1,1.1,1.1)));
+  /* crates */
+  for (const c of crates)
+    drawMesh(meshes.crate, mm(m4T(c.p[0],c.p[1],c.p[2]), m4RY(c.yaw), m4RX(c.tum), m4S(CS,CS,CS)));
+  /* flight tire */
+  if (flight){
+    const f=flight;
+    const heading = Math.atan2(f.v[2]||f.dirH[2], f.v[0]||f.dirH[0]);
+    const tv=tvR();
+    drawMesh(meshes.tire, mm(m4T(f.p[0],f.p[1],f.p[2]), m4RY(-heading), m4RZ(-f.t*f.w*0.5), m4S(tv,tv,tv*0.9)));
+  }
+  /* debris */
+  for (const k of debris)
+    drawMesh(meshes.cube, mm(m4T(k.p[0],k.p[1],k.p[2]), m4RY(k.ry), m4RX(k.rx), m4S(k.s,k.s*0.4,k.s)), k.col);
+
+  /* translucent pass: shadows + smoke */
+  gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); gl.depthMask(false);
+  if (flight && flight.p[1]<80){
+    const sr = tvR()*(1+flight.p[1]*0.05);
+    drawMesh(meshes.disc, mm(m4T(flight.p[0],0.06,flight.p[2]), m4S(sr,1,sr)), [0,0,0], clamp(0.35-flight.p[1]*0.004,0.05,0.35));
+  }
+  drawMesh(meshes.disc, mm(m4T(goat.p[0],0.05,goat.p[2]), m4S(0.8,1,0.6)), [0,0,0], 0.25);
+  for (const p of parts){
+    const a = (1-p.t/p.life)*(p.alpha||1);
+    drawMesh(meshes.cube, mm(m4T(p.p[0],p.p[1],p.p[2]), m4RY(p.t*2), m4S(p.s,p.s,p.s)), p.col, a);
+  }
+  gl.depthMask(true); gl.disable(gl.BLEND);
+
+  /* projected flywheel hub for HUD/touch */
+  const hub = project(engineWorld(FW));
+  if (hub){
+    const rimP = project(engineWorld([FW[0],FW[1]+visR(),FW[2]]));
+    fwScreen = {x:hub.x, y:hub.y, r: rimP? Math.max(46, Math.hypot(rimP.x-hub.x,rimP.y-hub.y)) : 60};
+  }
+}
+
+/* ---------------- HUD ---------------- */
+function throttleRect(){ return {x:W-46, y:H*0.30, w:34, h:H*0.40}; }
+function crankBtn(){ return {x:W*0.3, y:H-Math.max(96, H*0.15), r:44}; }
+function drawHUD(){
+  hx.clearRect(0,0,W,H);
+  if (mode==='shop'){
+    /* throttle slider */
+    const tr=throttleRect();
+    hx.fillStyle='rgba(20,40,32,.55)';
+    roundRect(tr.x,tr.y,tr.w,tr.h,10); hx.fill();
+    const T=tier();
+    const redFrac = clamp(1-(T.redline-T.idle)/(T.burst+60-T.idle),0,1);
+    hx.fillStyle='rgba(201,55,44,.55)';
+    roundRect(tr.x+3,tr.y+3,tr.w-6,(tr.h-6)*redFrac,7); hx.fill();
+    const hy=tr.y+(1-eng.throttle)*tr.h;
+    hx.fillStyle='#f3e9d2';
+    roundRect(tr.x-6,hy-9,tr.w+12,18,8); hx.fill();
+    hx.fillStyle='rgba(243,233,210,.8)'; hx.font='700 10px system-ui'; hx.textAlign='center';
+    hx.fillText('THR', tr.x+tr.w/2, tr.y-8);
+    /* crank button */
+    if (!eng.on && eng.sputter<0){
+      const cb=crankBtn();
+      hx.beginPath(); hx.arc(cb.x,cb.y,cb.r,0,TAU);
+      hx.fillStyle=crankHold?'rgba(46,107,79,.9)':'rgba(20,40,32,.8)'; hx.fill();
+      hx.lineWidth=4; hx.strokeStyle='rgba(243,233,210,.4)'; hx.stroke();
+      if (eng.cranksNeed>0){
+        hx.beginPath(); hx.arc(cb.x,cb.y,cb.r,-Math.PI/2,-Math.PI/2+TAU*eng.cranks/eng.cranksNeed);
+        hx.strokeStyle='#8fe388'; hx.stroke();
+      }
+      hx.fillStyle='#f3e9d2'; hx.font='800 11px system-ui';
+      hx.fillText('HOLD TO', cb.x, cb.y-4); hx.fillText('CRANK', cb.x, cb.y+9);
+    }
+    /* radial contact indicator on the flywheel */
+    if (eng.on){
+      const R=Math.min(fwScreen.r*1.15, Math.min(W,H)*0.3);
+      const cx2=fwScreen.x, cy2=fwScreen.y;
+      hx.lineWidth=5; hx.strokeStyle='rgba(243,233,210,.35)';
+      hx.beginPath(); hx.arc(cx2,cy2,R,-Math.PI/2-0.07,-Math.PI/2+150*D2R+0.07); hx.stroke();
+      if (press){
+        const N=press.N;
+        const zone = N<220?'#aaa':N<1050?'#8fe388':'#e2574c';
+        hx.lineWidth=9; hx.strokeStyle=zone;
+        hx.beginPath(); hx.arc(cx2,cy2,R,-Math.PI/2,-Math.PI/2+TAU*clamp(N/1500,0,1)*(150/360)); hx.stroke();
+      }
+      const ca=(press?press.clock:aimClock)*D2R;
+      const nx=cx2+Math.sin(ca)*R, ny=cy2-Math.cos(ca)*R;
+      hx.beginPath(); hx.arc(nx,ny,press?11:8,0,TAU);
+      hx.fillStyle=press?'#ffd98a':'#f3e9d2'; hx.fill();
+      hx.strokeStyle='rgba(0,0,0,.4)'; hx.lineWidth=2; hx.stroke();
+      if (press){
+        const N=press.N;
+        const word = N<220?'glazing…':N<1050?'BITE':'bogging!';
+        hx.fillStyle='#f3e9d2'; hx.font='800 13px system-ui';
+        hx.fillText(word, cx2, cy2+R+22);
+      }
+    }
+    /* yaw / aim strip with target bearings */
+    if (eng.on){
+      const sy=Math.max(58, H*0.075)+ (window.innerHeight>window.innerWidth?36:0);
+      const sw2=Math.min(W*0.6,300);
+      hx.fillStyle='rgba(20,40,32,.55)';
+      roundRect(W/2-sw2/2, sy, sw2, 24, 12); hx.fill();
+      const map = y=>W/2 + (y/YAWMAX)*sw2/2*0.92;
+      for (const tg of TARGETS){
+        const b = Math.atan2(tg.z,tg.x);
+        if (Math.abs(b)<YAWMAX*1.1){
+          hx.fillStyle='#e2574c';
+          const mx=map(clamp(b,-YAWMAX,YAWMAX));
+          hx.beginPath(); hx.moveTo(mx,sy+5); hx.lineTo(mx+4,sy+12); hx.lineTo(mx,sy+19); hx.lineTo(mx-4,sy+12); hx.closePath(); hx.fill();
+        }
+      }
+      hx.fillStyle='#ffd98a';
+      const ax=map(aimYaw);
+      hx.beginPath(); hx.moveTo(ax,sy+2); hx.lineTo(ax+5,sy+12); hx.lineTo(ax,sy+22); hx.lineTo(ax-5,sy+12); hx.closePath(); hx.fill();
+      hx.fillStyle='rgba(243,233,210,.7)'; hx.font='700 10px system-ui';
+      hx.fillText('AIM'+(gyro.on?' · TILT':''), W/2, sy-5);
+      /* wind */
+      const wa=Math.atan2(windZ, windX), ws=Math.hypot(windX,windZ);
+      hx.save(); hx.translate(W/2+sw2/2+26, sy+12); hx.rotate(wa);
+      hx.strokeStyle='#8ecfd6'; hx.lineWidth=3; hx.beginPath(); hx.moveTo(-9,0); hx.lineTo(9,0); hx.lineTo(4,-4); hx.moveTo(9,0); hx.lineTo(4,4); hx.stroke();
+      hx.restore();
+      hx.fillStyle='rgba(243,233,210,.7)';
+      hx.fillText(ws.toFixed(1), W/2+sw2/2+26, sy+34);
+    }
+  }
+  /* offscreen tire arrow + altitude */
+  if (mode==='flight' && flight && !flight.done){
+    const s = project(flight.p);
+    const off = !s || s.x<0||s.x>W||s.y<0||s.y>H;
+    if (off){
+      let ex = s? clamp(s.x,26,W-26) : W/2, ey = s? clamp(s.y,80,H-90) : 60;
+      hx.fillStyle='rgba(20,40,32,.8)';
+      hx.beginPath(); hx.arc(ex,ey,22,0,TAU); hx.fill();
+      hx.fillStyle='#ffd98a'; hx.font='800 12px system-ui'; hx.textAlign='center';
+      hx.fillText('▲', ex, ey-1);
+      hx.fillText(Math.round(flight.p[1])+'m', ex, ey+12);
+    }
+  }
+}
+function roundRect(x,y,w,h,r){
+  hx.beginPath();
+  hx.moveTo(x+r,y); hx.arcTo(x+w,y,x+w,y+h,r); hx.arcTo(x+w,y+h,x,y+h,r);
+  hx.arcTo(x,y+h,x,y,r); hx.arcTo(x,y,x+w,y,r); hx.closePath();
+}
+
+/* ---------------- input ---------------- */
+let pointers = {};
+hc.style.pointerEvents='auto';
+hc.addEventListener('pointerdown', e=>{
+  auInit(); if(AU.ctx&&AU.ctx.state==='suspended')AU.ctx.resume();
+  if (mode!=='shop') return;
+  const x=e.clientX,y=e.clientY;
+  const tr=throttleRect();
+  if (x>tr.x-18 && x<tr.x+tr.w+14 && y>tr.y-20 && y<tr.y+tr.h+20){
+    pointers[e.pointerId]={role:'throttle'}; setThrottle(y); return;
+  }
+  if (!eng.on && eng.sputter<0){
+    const cb=crankBtn();
+    if (Math.hypot(x-cb.x,y-cb.y)<cb.r+16){
+      pointers[e.pointerId]={role:'crank'}; crankHold=true; crankT=0.4; return;
+    }
+  }
+  if (eng.on && Math.hypot(x-fwScreen.x,y-fwScreen.y) < Math.max(fwScreen.r*1.6, 90)){
+    press = {t:0,N:0,vTire:0,clock:aimClock,quality:0,slip:0,loadTq:0};
+    pointers[e.pointerId]={role:'press', lx:x, ly:y};
+    mech.state='press'; mech.t=0;
+    return;
+  }
+  if (eng.on){ pointers[e.pointerId]={role:'aim', lx:x}; return; }
+  pointers[e.pointerId]={role:'none'};
+});
+hc.addEventListener('pointermove', e=>{
+  const p=pointers[e.pointerId]; if(!p) return;
+  if (p.role==='throttle') setThrottle(e.clientY);
+  else if (p.role==='press' && press){
+    const dy=e.clientY-p.ly, dx=e.clientX-p.lx;
+    p.ly=e.clientY; p.lx=e.clientX;
+    press.clock = clamp(press.clock + dy*0.45, -4, 150);
+    aimClock = press.clock;
+    if (!gyro.on) aimYaw = clamp(aimYaw + dx*0.0035, -YAWMAX, YAWMAX);
+  }
+  else if (p.role==='aim'){
+    const dx=e.clientX-p.lx; p.lx=e.clientX;
+    if (!gyro.on) aimYaw = clamp(aimYaw + dx*0.0035, -YAWMAX, YAWMAX);
+  }
+});
+function endPointer(e){
+  const p=pointers[e.pointerId]; delete pointers[e.pointerId];
+  if (!p) return;
+  if (p.role==='press') releasePress();
+  if (p.role==='crank') crankHold=false;
+}
+hc.addEventListener('pointerup', endPointer);
+hc.addEventListener('pointercancel', endPointer);
+function setThrottle(y){
+  const tr=throttleRect();
+  eng.throttle = clamp(1-(y-tr.y)/tr.h, 0, 1);
+}
+
+/* ---------------- gyro aim ---------------- */
+const gyro = {on:false, zero:null, raw:0};
+function gyroReading(e){
+  const a = (screen.orientation && screen.orientation.angle)||0;
+  let raw;
+  if (a===0) raw = e.gamma; else if (a===180) raw = -e.gamma;
+  else if (a===90) raw = e.beta; else raw = -e.beta;
+  if (raw===null||raw===undefined) return;
+  if (gyro.zero===null) gyro.zero = raw;
+  gyro.raw = raw - gyro.zero;
+}
+function updateGyro(){
+  if (!gyro.on) return;
+  const target = clamp(gyro.raw*1.5*D2R, -YAWMAX, YAWMAX);
+  aimYaw = lerp(aimYaw, target, 0.12);
+}
+document.getElementById('tiltBtn').addEventListener('click', async ()=>{
+  auInit();
+  if (gyro.on){
+    gyro.on=false; window.removeEventListener('deviceorientation',gyroReading);
+    document.getElementById('tiltBtn').classList.remove('on');
+    toast('Tilt aiming off'); return;
+  }
+  try {
+    if (typeof DeviceOrientationEvent!=='undefined' && typeof DeviceOrientationEvent.requestPermission==='function'){
+      const r = await DeviceOrientationEvent.requestPermission();
+      if (r!=='granted'){ toast('Tilt permission declined'); return; }
+    }
+    gyro.zero=null; gyro.on=true;
+    window.addEventListener('deviceorientation',gyroReading);
+    document.getElementById('tiltBtn').classList.add('on');
+    toast('📐 Tilt to aim left / right');
+  } catch(e){ toast('No tilt sensor here'); }
+});
+
+/* ---------------- UI: garage / toasts / hint / chip ---------------- */
+function toast(msg){
+  const el=document.createElement('div'); el.className='toast'; el.textContent=msg;
+  document.getElementById('toasts').appendChild(el);
+  setTimeout(()=>el.remove(), 2600);
+}
+let hintT=null;
+function hint(msg){
+  const el=document.getElementById('hint');
+  if (!msg){ el.classList.add('hide'); return; }
+  el.textContent=msg; el.classList.remove('hide');
+  clearTimeout(hintT); hintT=setTimeout(()=>el.classList.add('hide'), 6000);
+}
+function refreshChip(){
+  const f=flight;
+  let s = '<b>'+tier().name+'</b> · '+Math.round(eng.rpm)+' rpm · '+energyKJ().toFixed(1)+' kJ<br/>';
+  s += 'Tire '+Math.min(round.tire+1,TIRES_PER_ROUND)+'/'+TIRES_PER_ROUND+' · Round <b>'+round.score+'</b> pts · Best '+save.bestRound;
+  document.getElementById('chip').innerHTML=s;
+}
+function buildGarage(){
+  document.getElementById('garSub').textContent =
+    save.launches+' tires launched · best round '+save.bestRound+' pts';
+  const mk=(listEl, items, sel, setter)=>{
+    listEl.innerHTML='';
+    items.forEach((it,i)=>{
+      const locked = it.unlock>save.launches;
+      const row=document.createElement('div');
+      row.className='sel-row'+(i===sel?' on':'')+(locked?' lock':'');
+      row.innerHTML='<div><div class="nm">'+(locked?'🔒 ':'')+it.name+'</div><div class="st">'+
+        (locked?('Unlocks at '+it.unlock+' tires'):(it.note||it.how||''))+'</div></div>'+
+        (i===sel?'<div class="tick">✓</div>':'');
+      if(!locked) row.addEventListener('click',()=>{ setter(i); persist(); buildGarage(); });
+      listEl.appendChild(row);
+    });
+  };
+  mk(document.getElementById('engineList'), TIERS, save.tier, i=>{save.tier=i;});
+  mk(document.getElementById('tireList'),  TIRES, save.tire, i=>{save.tire=i;});
+  mk(document.getElementById('armList'),   ARMS,  save.arm,  i=>{save.arm=i;});
+}
+document.getElementById('garageBtn').addEventListener('click',()=>{ buildGarage(); document.getElementById('garagePanel').classList.add('open'); });
+document.getElementById('garBtn2').addEventListener('click',()=>{ buildGarage(); document.getElementById('garagePanel').classList.add('open'); });
+document.querySelectorAll('.close-x').forEach(b=>b.addEventListener('click',()=>document.getElementById(b.dataset.close).classList.remove('open')));
+document.getElementById('muteBtn').addEventListener('click',()=>{
+  save.muted=!save.muted; persist();
+  if (AU.master) AU.master.gain.value = save.muted?0:0.9;
+  document.getElementById('muteBtn').textContent = save.muted?'🔇':'🔊';
+});
+if (save.muted) document.getElementById('muteBtn').textContent='🔇';
+
+/* ---------------- main loop ---------------- */
+let lastT=0;
+function frame(ts){
+  requestAnimationFrame(frame);
+  if (!gl) return;
+  const dt = Math.min(1/30, (ts-lastT)/1000 || 0.016); lastT=ts;
+  updateGyro();
+  updateEngine(dt);
+  updatePress(dt);
+  updateCrates(dt);
+  if (mode==='flight') updateFlight(dt);
+  updateParts(dt);
+  updateCam(dt);
+  render();
+  drawHUD();
+  refreshChip();
+}
+if (gl){
+  glInit();
+  buildScene();
+  buildUnitMeshes();
+  buildCrates();
+  hint(firstRun
+    ? 'A field, three targets, and a diesel engine that owes you nothing. Hold the crank button to wake it.'
+    : cranksHintText());
+  requestAnimationFrame(frame);
+}
+</script>
+</body>
+</html>
