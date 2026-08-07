@@ -1,0 +1,1348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+<title>FLYWHEEL</title>
+<meta name="description" content="A physics comedy game about launching tires with a stationary diesel engine. Crank it, spin it up, press a tire to the rim, and watch it go wrong." />
+<meta name="theme-color" content="#1d3a2f" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%;overflow:hidden;background:#1d3a2f;touch-action:none;overscroll-behavior:none;
+    font-family:ui-rounded,'SF Pro Rounded',system-ui,-apple-system,'Segoe UI',sans-serif;
+    -webkit-user-select:none;user-select:none}
+  #c{position:fixed;inset:0;width:100%;height:100%;display:block}
+  .btn{pointer-events:auto;background:rgba(20,40,32,.78);color:#f3e9d2;border:1px solid rgba(243,233,210,.35);
+    border-radius:12px;padding:8px 12px;font-size:14px;font-weight:600;cursor:pointer;backdrop-filter:blur(4px)}
+  .btn:active{transform:scale(.96)}
+  #topbar{position:fixed;top:calc(env(safe-area-inset-top,0px) + 8px);right:8px;display:flex;gap:8px;z-index:20;pointer-events:none}
+  #chip{position:fixed;top:calc(env(safe-area-inset-top,0px) + 8px);left:8px;z-index:20;pointer-events:none;
+    background:rgba(20,40,32,.78);color:#f3e9d2;border:1px solid rgba(243,233,210,.3);border-radius:12px;
+    padding:6px 10px;font-size:11px;font-weight:600;max-width:44vw;line-height:1.35}
+  #chip .done{color:#8fe388}
+  .panel{position:fixed;inset:0;z-index:40;display:none;align-items:center;justify-content:center;
+    background:rgba(12,24,19,.72);backdrop-filter:blur(3px)}
+  .panel.open{display:flex}
+  .card-box{background:#f3e9d2;color:#2c2418;border-radius:18px;width:min(480px,92vw);max-height:84vh;
+    overflow-y:auto;padding:20px;box-shadow:0 24px 60px rgba(0,0,0,.5)}
+  .card-box h2{font-size:20px;letter-spacing:.06em;margin-bottom:4px}
+  .card-box .sub{font-size:12.5px;color:#6b5d43;margin-bottom:14px}
+  .row-list{display:flex;flex-direction:column;gap:8px;margin-bottom:16px}
+  .sel-row{display:flex;align-items:center;gap:10px;border:2px solid #d9cba6;border-radius:12px;padding:10px 12px;cursor:pointer;background:#faf4e4}
+  .sel-row.on{border-color:#2e6b4f;background:#e7f0e5}
+  .sel-row.lock{opacity:.5;cursor:default}
+  .sel-row .nm{font-weight:700;font-size:14.5px}
+  .sel-row .st{font-size:11.5px;color:#6b5d43}
+  .sel-row .tick{margin-left:auto;font-size:15px;color:#2e6b4f;font-weight:800}
+  .sect{font-size:11px;letter-spacing:.14em;font-weight:800;color:#8a7752;margin:14px 0 6px}
+  #cardsGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .fcard{border-radius:12px;padding:10px 8px;text-align:center;background:#faf4e4;border:2px solid #d9cba6;min-height:104px;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
+  .fcard.got{background:#fff7dd;border-color:#c9a227;box-shadow:0 2px 10px rgba(201,162,39,.25)}
+  .fcard .ico{font-size:24px}
+  .fcard .nm{font-size:11px;font-weight:800;line-height:1.15}
+  .fcard .ct{font-size:10.5px;color:#8a7752}
+  .fcard.mystery{filter:grayscale(1);opacity:.55}
+  #result{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 16px);transform:translateX(-50%) translateY(140%);
+    transition:transform .45s cubic-bezier(.2,1.4,.4,1);z-index:30;width:min(420px,92vw);
+    background:#f3e9d2;color:#2c2418;border-radius:18px;padding:16px 18px;box-shadow:0 18px 50px rgba(0,0,0,.5)}
+  #result.show{transform:translateX(-50%) translateY(0)}
+  #result .outcome{font-size:12px;letter-spacing:.16em;font-weight:800;color:#8a7752}
+  #result .big{font-size:22px;font-weight:800;margin:2px 0 8px;line-height:1.15}
+  #result .stats{display:flex;gap:14px;margin-bottom:10px}
+  #result .stat{flex:1;background:#faf4e4;border-radius:10px;padding:8px;text-align:center}
+  #result .stat b{display:block;font-size:19px}
+  #result .stat span{font-size:10.5px;color:#8a7752;letter-spacing:.08em;font-weight:700}
+  #result .nb{color:#b8860b;font-size:11px;font-weight:800}
+  #result .actions{display:flex;gap:8px}
+  #result .actions button{flex:1;border:0;border-radius:12px;padding:12px;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit}
+  #againBtn{background:#2e6b4f;color:#fff}
+  #garBtn2{background:#d9cba6;color:#2c2418}
+  #toasts{position:fixed;top:calc(env(safe-area-inset-top,0px) + 54px);left:50%;transform:translateX(-50%);z-index:50;
+    display:flex;flex-direction:column;gap:6px;pointer-events:none;width:max-content;max-width:90vw}
+  .toast{background:#c9a227;color:#241d0d;font-weight:800;font-size:13px;border-radius:10px;padding:9px 14px;
+    box-shadow:0 8px 24px rgba(0,0,0,.4);animation:tpop .35s cubic-bezier(.2,1.5,.4,1);text-align:center}
+  @keyframes tpop{from{transform:scale(.6);opacity:0}}
+  #hint{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 18px);transform:translateX(-50%);z-index:15;
+    background:rgba(20,40,32,.82);color:#f3e9d2;border-radius:14px;padding:10px 16px;font-size:13.5px;font-weight:600;
+    pointer-events:none;text-align:center;line-height:1.45;max-width:88vw;transition:opacity .4s}
+  #hint.hide{opacity:0}
+  .cbadge{background:#c9372c;color:#fff;border-radius:99px;font-size:10px;padding:1px 6px;margin-left:4px;font-weight:800}
+  .close-x{float:right;border:0;background:#d9cba6;border-radius:10px;width:32px;height:32px;font-size:16px;font-weight:800;cursor:pointer;color:#2c2418;font-family:inherit}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<div id="chip"></div>
+<div id="topbar">
+  <button class="btn" id="garageBtn">⚙︎ Garage</button>
+  <button class="btn" id="cardsBtn">🃏<span id="cardsCt" class="cbadge" style="display:none">0</span></button>
+  <button class="btn" id="muteBtn">🔊</button>
+</div>
+
+<div id="hint"></div>
+
+<div class="panel" id="garagePanel"><div class="card-box">
+  <button class="close-x" data-close="garagePanel">✕</button>
+  <h2>GARAGE</h2>
+  <div class="sub" id="garSub"></div>
+  <div class="sect">ENGINE</div><div class="row-list" id="engineList"></div>
+  <div class="sect">TIRE</div><div class="row-list" id="tireList"></div>
+  <div class="sect">LAUNCH ARM</div><div class="row-list" id="armList"></div>
+</div></div>
+
+<div class="panel" id="cardsPanel"><div class="card-box">
+  <button class="close-x" data-close="cardsPanel">✕</button>
+  <h2>FAILURE COLLECTION</h2>
+  <div class="sub">Every bad launch is content. Collect them all.</div>
+  <div id="cardsGrid"></div>
+</div></div>
+
+<div id="result">
+  <div class="outcome" id="resOutcome"></div>
+  <div class="big" id="resTitle"></div>
+  <div class="stats">
+    <div class="stat"><b id="resH">0</b><span>HEIGHT&nbsp;m <em id="nbH" class="nb"></em></span></div>
+    <div class="stat"><b id="resD">0</b><span>DISTANCE&nbsp;m <em id="nbD" class="nb"></em></span></div>
+    <div class="stat"><b id="resA">0</b><span>AIRTIME&nbsp;s</span></div>
+  </div>
+  <div id="resChal" style="font-size:12.5px;font-weight:700;margin-bottom:10px"></div>
+  <div class="actions">
+    <button id="garBtn2">Garage</button>
+    <button id="againBtn">Launch again</button>
+  </div>
+</div>
+
+<div id="toasts"></div>
+
+<script>
+'use strict';
+/* ================================================================
+   FLYWHEEL — a physics comedy about launching tires
+   with a stationary diesel engine.  v0.1
+   ================================================================ */
+const TAU = Math.PI*2, GRAV = 9.81, RHO = 1.2;
+const clamp = (v,a,b)=>v<a?a:v>b?b:v;
+const lerp  = (a,b,t)=>a+(b-a)*t;
+const rand  = (a,b)=>a+Math.random()*(b-a);
+
+/* ---------------- data ---------------- */
+const TIERS = [
+ {name:'The Faithful 5HP', m:45,  r:0.32, idle:420, rated:650, redline:800,  burst:1000, torque:55,  unlock:0,   how:'Start'},
+ {name:'Workshop 10HP',    m:60,  r:0.40, idle:450, rated:700, redline:900,  burst:1150, torque:95,  unlock:15,  how:'15 launches'},
+ {name:'The Twin',         m:120, r:0.42, idle:450, rated:720, redline:950,  burst:1200, torque:170, unlock:40,  how:'Chapter 2 · 40 launches', twin:true},
+ {name:'Mill Engine',      m:110, r:0.55, idle:400, rated:640, redline:900,  burst:1120, torque:230, unlock:80,  how:'Chapter 3 · 80 launches'},
+ {name:'The Monster',      m:180, r:0.75, idle:380, rated:600, redline:1000, burst:1250, torque:380, unlock:150, how:'Endgame · 150 launches'},
+];
+const TIRES = [
+ {name:'Scooter',      m:3,  r:0.20, S:0.10, grip:1.0,  unlock:0,  note:'Highest ceiling, wildest curve'},
+ {name:'Motorcycle',   m:6,  r:0.28, S:0.08, grip:1.0,  unlock:5,  note:'All-rounder'},
+ {name:'Car',          m:11, r:0.32, S:0.05, grip:1.05, unlock:0,  note:'Predictable, good for targets'},
+ {name:'Truck',        m:28, r:0.45, S:0.03, grip:1.1,  unlock:30, note:'Low, heavy, breaks things'},
+ {name:'Tractor',      m:55, r:0.70, S:0.02, grip:1.15, unlock:70, note:'Barely flies, enormous impact'},
+ {name:'Bald Retread', m:4,  r:0.30, S:0.14, grip:0.55, unlock:20, note:'Unpredictable. High risk.', wild:true},
+ {name:'Wheelbarrow',  m:2,  r:0.15, S:0.12, grip:0.9,  unlock:50, note:'Goes forever, hits nothing'},
+];
+const ARMS = [
+ {name:'Bare rim',       mult:1.0, unlock:0,  note:'Honest physics. ~45 m ceiling.'},
+ {name:'Short arm',      mult:1.5, unlock:10, note:'Hinged plank. Lever tip runs 1.5×.'},
+ {name:'Field arm',      mult:2.0, unlock:30, note:'Proper linkage. 2× rim speed.'},
+ {name:'The Long Lever', mult:2.6, unlock:60, note:'An irresponsible amount of arm.'},
+];
+const CARDS = [
+ {id:'roof',     ico:'🏠', name:'Roof Tax',           desc:'Landed on the workshop shed'},
+ {id:'self',     ico:'🤕', name:'Self Inflicted',     desc:'Landed on the mechanic'},
+ {id:'silence',  ico:'🌫️', name:'The Long Silence',   desc:'8+ seconds of airtime, offscreen, unaccounted for'},
+ {id:'chai',     ico:'🫖', name:'Chai Stand Incident', desc:'Hit the tea stall'},
+ {id:'belt',     ico:'🧵', name:'Belt Whip',          desc:'Drive belt departed with the laundry line'},
+ {id:'scatter',  ico:'💥', name:'Full Scatter',       desc:'Flywheel burst'},
+ {id:'boom',     ico:'🪃', name:'The Boomerang',      desc:'Magnus curve returned the tire to origin'},
+ {id:'goat',     ico:'🐐', name:'Livestock Adjacent', desc:'Near miss on a goat. Goat entirely unbothered.'},
+ {id:'neighbor', ico:'🛖', name:"Neighbor's Problem", desc:'Cleared the map boundary'},
+];
+const CHALLENGES = [
+ {id:'tower', txt:'Hit the water tower',            chk:s=>s.hitTower},
+ {id:'d120',  txt:'Land a tire past 120 m',         chk:s=>s.dist>=120},
+ {id:'h60',   txt:'Reach 60 m of height',           chk:s=>s.apogee>=60},
+ {id:'air6',  txt:'Get 6 seconds of airtime',       chk:s=>s.airtime>=6},
+ {id:'goat',  txt:'Land within 4 m of the goat',    chk:s=>s.goatNear},
+ {id:'d40',   txt:'Land between 40 and 60 m out',   chk:s=>s.dist>=40&&s.dist<=60},
+ {id:'chai',  txt:'Hit the chai stall (sorry)',     chk:s=>s.hitChai},
+];
+
+/* ---------------- save ---------------- */
+const SKEY='flywheel-v1';
+let save;
+try { save = JSON.parse(localStorage.getItem(SKEY)) || null; } catch(e){ save = null; }
+save = Object.assign({launches:0,bestH:0,bestD:0,cards:{},tier:0,tire:0,arm:0,daily:{key:'',done:false},muted:false},save||{});
+const persist = ()=>{ try{ localStorage.setItem(SKEY, JSON.stringify(save)); }catch(e){} };
+
+const dayKey = ()=>{ const d=new Date(); return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); };
+function hashStr(s){ let h=2166136261; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619); } return (h>>>0); }
+if (save.daily.key !== dayKey()) save.daily = {key:dayKey(), done:false};
+const daily = CHALLENGES[ hashStr(save.daily.key) % CHALLENGES.length ];
+/* keep selections legal */
+save.tier = clamp(save.tier,0,TIERS.length-1); if (TIERS[save.tier].unlock>save.launches) save.tier=0;
+save.tire = clamp(save.tire,0,TIRES.length-1); if (TIRES[save.tire].unlock>save.launches) save.tire=0;
+save.arm  = clamp(save.arm ,0,ARMS.length-1);  if (ARMS[save.arm].unlock>save.launches)  save.arm=0;
+
+/* daily wind: seeded, plus small per-launch jitter */
+const windBase = ((hashStr('w'+save.daily.key)%1000)/1000 - 0.5) * 9;   /* -4.5..4.5 m/s */
+
+/* ---------------- canvas ---------------- */
+const cv = document.getElementById('c'), cx = cv.getContext('2d');
+let W=0,H=0,DPR=1;
+function resize(){
+  DPR = Math.min(2, window.devicePixelRatio||1);
+  W = window.innerWidth; H = window.innerHeight;
+  cv.width = W*DPR; cv.height = H*DPR;
+  cx.setTransform(DPR,0,0,DPR,0,0);
+}
+window.addEventListener('resize', resize); resize();
+
+/* ---------------- audio ---------------- */
+const AU = {ctx:null, master:null, noiseBuf:null, nextFire:0, whine:null, whineG:null, squeal:null, squealG:null, wind:null, windG:null};
+function auInit(){
+  if (AU.ctx) return;
+  const C = window.AudioContext||window.webkitAudioContext; if(!C) return;
+  AU.ctx = new C();
+  AU.master = AU.ctx.createGain(); AU.master.gain.value = save.muted?0:0.9; AU.master.connect(AU.ctx.destination);
+  const len = AU.ctx.sampleRate*1.5, buf = AU.ctx.createBuffer(1,len,AU.ctx.sampleRate), d = buf.getChannelData(0);
+  for(let i=0;i<len;i++) d[i]=Math.random()*2-1;
+  AU.noiseBuf = buf;
+  /* overspeed whine */
+  AU.whine = AU.ctx.createOscillator(); AU.whine.type='sawtooth'; AU.whine.frequency.value=600;
+  AU.whineG = AU.ctx.createGain(); AU.whineG.gain.value=0;
+  AU.whine.connect(AU.whineG); AU.whineG.connect(AU.master); AU.whine.start();
+  /* tire squeal (slip) */
+  const sq = AU.ctx.createBufferSource(); sq.buffer=AU.noiseBuf; sq.loop=true;
+  const sqf = AU.ctx.createBiquadFilter(); sqf.type='bandpass'; sqf.frequency.value=1600; sqf.Q.value=8;
+  AU.squealG = AU.ctx.createGain(); AU.squealG.gain.value=0;
+  sq.connect(sqf); sqf.connect(AU.squealG); AU.squealG.connect(AU.master); sq.start();
+  /* flight wind */
+  const wn = AU.ctx.createBufferSource(); wn.buffer=AU.noiseBuf; wn.loop=true;
+  const wf = AU.ctx.createBiquadFilter(); wf.type='lowpass'; wf.frequency.value=500;
+  AU.windG = AU.ctx.createGain(); AU.windG.gain.value=0;
+  wn.connect(wf); wf.connect(AU.windG); AU.windG.connect(AU.master); wn.start();
+}
+function blip(freq, dur, vol, type, sweep){
+  if(!AU.ctx) return;
+  const t=AU.ctx.currentTime, o=AU.ctx.createOscillator(), g=AU.ctx.createGain();
+  o.type=type||'sine'; o.frequency.setValueAtTime(freq,t);
+  if(sweep) o.frequency.exponentialRampToValueAtTime(Math.max(30,sweep), t+dur);
+  g.gain.setValueAtTime(vol,t); g.gain.exponentialRampToValueAtTime(0.001,t+dur);
+  o.connect(g); g.connect(AU.master); o.start(t); o.stop(t+dur+0.02);
+}
+function thump(t, vol, freq, dur){          /* one diesel firing stroke */
+  if(!AU.ctx) return;
+  const o=AU.ctx.createOscillator(), g=AU.ctx.createGain();
+  o.type='sine'; o.frequency.setValueAtTime(freq,t); o.frequency.exponentialRampToValueAtTime(freq*0.55,t+dur);
+  g.gain.setValueAtTime(vol,t); g.gain.exponentialRampToValueAtTime(0.001,t+dur);
+  o.connect(g); g.connect(AU.master); o.start(t); o.stop(t+dur+0.02);
+  const n=AU.ctx.createBufferSource(); n.buffer=AU.noiseBuf; n.playbackRate.value=0.7;
+  const f=AU.ctx.createBiquadFilter(); f.type='lowpass'; f.frequency.value=300;
+  const ng=AU.ctx.createGain(); ng.gain.setValueAtTime(vol*0.7,t); ng.gain.exponentialRampToValueAtTime(0.001,t+dur*0.8);
+  n.connect(f); f.connect(ng); ng.connect(AU.master); n.start(t); n.stop(t+dur);
+}
+function knockTick(t){
+  if(!AU.ctx) return;
+  const n=AU.ctx.createBufferSource(); n.buffer=AU.noiseBuf;
+  const f=AU.ctx.createBiquadFilter(); f.type='highpass'; f.frequency.value=3000;
+  const g=AU.ctx.createGain(); g.gain.setValueAtTime(0.25,t); g.gain.exponentialRampToValueAtTime(0.001,t+0.03);
+  n.connect(f); f.connect(g); g.connect(AU.master); n.start(t); n.stop(t+0.04);
+}
+function chuff(vol){
+  if(!AU.ctx) return;
+  const t=AU.ctx.currentTime, n=AU.ctx.createBufferSource(); n.buffer=AU.noiseBuf; n.playbackRate.value=0.5;
+  const f=AU.ctx.createBiquadFilter(); f.type='lowpass'; f.frequency.value=350;
+  const g=AU.ctx.createGain(); g.gain.setValueAtTime(vol,t); g.gain.exponentialRampToValueAtTime(0.001,t+0.22);
+  n.connect(f); f.connect(g); g.connect(AU.master); n.start(t); n.stop(t+0.25);
+}
+function crashNoise(vol,fq,dur){
+  if(!AU.ctx) return;
+  const t=AU.ctx.currentTime, n=AU.ctx.createBufferSource(); n.buffer=AU.noiseBuf;
+  const f=AU.ctx.createBiquadFilter(); f.type='lowpass'; f.frequency.value=fq;
+  const g=AU.ctx.createGain(); g.gain.setValueAtTime(vol,t); g.gain.exponentialRampToValueAtTime(0.001,t+dur);
+  n.connect(f); f.connect(g); g.connect(AU.master); n.start(t); n.stop(t+dur+0.05);
+}
+function grunt(kind){ /* the mechanic's entire vocabulary */
+  if(!AU.ctx) return;
+  if(kind==='satisfied'){ blip(140,0.18,0.2,'sawtooth',95); }
+  else if(kind==='dismay'){ blip(160,0.35,0.2,'sawtooth',70); }
+  else if(kind==='effort'){ blip(110,0.12,0.22,'sawtooth',130); }
+}
+function goatBleat(){ blip(660,0.12,0.22,'square',520); setTimeout(()=>blip(700,0.18,0.2,'square',560),140); }
+
+/* ---------------- game state ---------------- */
+let mode = 'shop';                 /* shop | flight | result */
+const eng = {
+  on:false, warm:false, rpm:0, throttle:0.12,
+  cranks:0, cranksNeed:4+Math.floor(rand(0,3)),
+  sputter:-1,            /* >=0 while start sequence runs */
+  warnT:0, cracks:0, dead:false, beltOn:true,
+  visAngle:0, fireP:0, exSmoke:0,
+};
+let press = null;                  /* {t,N,vTire,clock,quality,slip} */
+let flight = null;
+let chunks = [];                   /* burst debris + belt */
+const parts = [];                  /* smoke/dust/etc particles */
+const mech = {state:'idle', t:0, hatY:0};
+let shake = 0;
+let goatX = rand(18,60);
+let launchPending = 0;             /* small cut delay after release */
+let resultData = null;
+let firstRun = save.launches===0;
+
+const tier = ()=>TIERS[save.tier];
+const tire = ()=>TIRES[save.tire];
+const arm  = ()=>ARMS[save.arm];
+const inertia = ()=>0.5*tier().m*tier().r*tier().r;         /* solid disc */
+const omega   = ()=>eng.rpm*TAU/60;
+const vRim    = ()=>omega()*tier().r;
+const energyKJ= ()=>0.5*inertia()*omega()*omega()/1000;
+
+/* clock position (0 = 12:00 .. 150deg = 5:00) → launch elevation */
+function launchAngleFor(clockDeg){ return lerp(88, 15, clamp(clockDeg,0,150)/150) * Math.PI/180; }
+
+/* ---------------- world objects (flight, meters) ---------------- */
+const SHED   = {x0:-10, x1:-3.2, roof:3.8};
+const MECHW  = {x0:-2.0, x1:-0.7, top:1.8};
+const CHAI   = {x0:34, x1:38, top:2.6};
+const TOWER  = {x0:84, x1:90, y0:9, y1:14};
+const BOUND  = 260;
+
+/* ---------------- engine simulation ---------------- */
+function updateEngine(dt){
+  const T = tier(), I = inertia();
+  if (eng.sputter >= 0){                      /* start sequence */
+    eng.sputter += dt;
+    const p = eng.sputter/1.4;
+    eng.rpm = T.idle * clamp(p*p*1.1,0,1) * (0.85+0.3*Math.sin(eng.sputter*31));
+    if (p>=1){ eng.sputter=-1; eng.on=true; eng.warm=true; grunt('satisfied');
+      hint(firstRun?'She lives. Throttle on the right edge — then press and hold a tire on the rim. Where you touch sets the angle; how long you hold sets the press. Release to launch.':'');
+      if(!firstRun) hint('');
+    }
+  } else if (eng.on){
+    const target = T.idle + eng.throttle*(T.burst+60-T.idle);
+    let Tq = clamp((target-eng.rpm)*0.11*I, -T.torque*0.7, T.torque);
+    let load = 1.5;                            /* bearing friction Nm */
+    if (press){ load += press.loadTq; }
+    const dw = (Tq-load)/I;
+    eng.rpm += dw*(60/TAU)*dt;                 /* heavy wheels spool slowly */
+    if (eng.rpm < 220){                        /* stalled */
+      eng.on=false; eng.rpm=0; press=null;
+      crashNoise(0.3,200,0.6); grunt('dismay');
+      hint('Bogged it. Crank it again — it is warm now, it will forgive you.');
+      eng.cranks=0; eng.cranksNeed=2+Math.floor(rand(0,2));
+      mech.state='dismay'; mech.t=0;
+    }
+    /* overspeed drama */
+    if (eng.rpm > T.redline){
+      shake = Math.max(shake, (eng.rpm-T.redline)/(T.burst-T.redline)*6);
+      eng.cracks = clamp(eng.cracks + dt*0.5, 0, 1);
+      if (AU.whineG) AU.whineG.gain.value = clamp((eng.rpm-T.redline)/(T.burst-T.redline),0,1)*0.14;
+      if (AU.whine)  AU.whine.frequency.value = 500 + eng.rpm*1.4;
+    } else {
+      eng.cracks = Math.max(0, eng.cracks - dt*0.3);
+      if (AU.whineG) AU.whineG.gain.value *= 0.9;
+    }
+    if (eng.rpm > T.burst){ eng.warnT += dt; if (eng.warnT > 2.0) burst(); }
+    else eng.warnT = Math.max(0, eng.warnT-dt*2);
+    /* exhaust puffs per firing stroke */
+    eng.fireP += eng.rpm/60/2*dt;
+    if (eng.fireP >= 1){ eng.fireP-=1; puffExhaust(); }
+  } else {
+    eng.rpm = Math.max(0, eng.rpm - dt*300);
+  }
+  eng.visAngle += omega()*dt*0.55;             /* slowed for readability */
+  scheduleEngineAudio();
+}
+function scheduleEngineAudio(){
+  if(!AU.ctx || AU.ctx.state!=='running') return;
+  const now = AU.ctx.currentTime;
+  if (eng.rpm < 40){ AU.nextFire = now+0.05; return; }
+  const period = 1/(eng.rpm/60/2);             /* 4-stroke single: fires every 2 revs */
+  if (AU.nextFire < now) AU.nextFire = now;
+  while (AU.nextFire < now + 0.12){
+    const loadFac = press ? clamp(press.loadTq/tier().torque,0,1.5) : 0;
+    const vol = clamp(0.16 + eng.throttle*0.1 + loadFac*0.22, 0, 0.5);
+    const fq  = 65 + eng.rpm*0.05 + loadFac*18;
+    thump(AU.nextFire, vol, fq, Math.min(0.16, period*0.75));
+    if (eng.rpm > tier().redline) knockTick(AU.nextFire+period*0.3);
+    AU.nextFire += period*(1+rand(-0.02,0.02));
+  }
+}
+function crankStroke(){
+  if (eng.on || eng.sputter>=0 || mode!=='shop') return;
+  eng.cranks++; eng.visAngle += 2.2; chuff(0.35); grunt('effort');
+  mech.state='crank'; mech.t=0;
+  puffExhaust();
+  if (eng.cranks >= eng.cranksNeed){
+    if (!eng.warm && Math.random()<0.22){      /* cold false start: pure character */
+      eng.cranksNeed += 2; eng.warm=true;
+      const t0 = AU.ctx?AU.ctx.currentTime:0;
+      for(let i=0;i<5;i++) thump(t0+i*0.16*(1+i*0.18), 0.3-i*0.04, 70, 0.14);
+      setTimeout(()=>{ blip(200,0.5,0.15,'sawtooth',60); hint('It thought about it. It declined. Two more cranks.'); }, 900);
+    } else {
+      eng.sputter = 0; eng.cranks = 0;
+      hint('');
+    }
+  } else {
+    hint(cranksHintText());
+  }
+}
+function cranksHintText(){
+  const left = eng.cranksNeed-eng.cranks;
+  if (eng.cranks===0) return (eng.warm?'Still warm. ':'Cold morning. ')+'Swipe up on the crank handle.';
+  return left<=1 ? 'One more — put your back into it.' : left+' more cranks. It is listening.';
+}
+function burst(){
+  const T=tier();
+  eng.on=false; eng.dead=true; eng.rpm=0; eng.warnT=0; press=null;
+  if (AU.whineG) AU.whineG.gain.value=0;
+  crashNoise(0.9,900,1.4); blip(90,1.0,0.5,'sine',40);
+  shake = 14;
+  const R = fwScreenR(), c = fwScreenC();
+  for(let i=0;i<9;i++){
+    const a = rand(0,TAU);
+    chunks.push({x:c.x+Math.cos(a)*R*0.7, y:c.y+Math.sin(a)*R*0.7,
+      vx:Math.cos(a)*rand(300,700), vy:Math.sin(a)*rand(300,700)-350,
+      rot:rand(0,TAU), vr:rand(-9,9), s:R*rand(0.18,0.4), life:3});
+  }
+  mech.state='sit'; mech.t=0; mech.hatY=-120;
+  awardCard('scatter');
+  setTimeout(()=>{ showResult({outcome:'scatter', apogee:0, dist:0, airtime:0, noFlight:true}); }, 2200);
+}
+function beltWhip(){
+  eng.beltOn=false; press=null;
+  crashNoise(0.5,1400,0.5); blip(600,0.4,0.25,'sawtooth',120);
+  shake = 8; mech.state='dismay'; mech.t=0; grunt('dismay');
+  for(let i=0;i<7;i++) parts.push({sx:1,x:W*0.55+rand(-40,40),y:H*0.45+rand(-30,30),vx:rand(-80,320),vy:rand(-320,-80),life:rand(0.8,1.5),t:0,type:'cloth',hue:rand(0,360)});
+  awardCard('belt');
+  setTimeout(()=>{ showResult({outcome:'belt', apogee:0, dist:0, airtime:0, noFlight:true}); }, 1600);
+}
+
+/* ---------------- press / contact ---------------- */
+function updatePress(dt){
+  if (!press || !eng.on){ if(AU.squealG) AU.squealG.gain.value*=0.85; return; }
+  const T=tier(), t=tire(), I=inertia();
+  press.t += dt;
+  press.N = 1500*Math.pow(Math.min(1, press.t/1.6), 1.2);
+  /* grip curve: skid window low, sweet middle, bog high */
+  let mu;
+  const N = press.N;
+  if      (N<220)  mu = 0.22;
+  else if (N<550)  mu = lerp(0.22,0.85,(N-220)/330);
+  else if (N<1050) mu = 0.85;
+  else             mu = 0.78;
+  mu *= t.grip;
+  const rim = vRim();
+  press.slip = Math.max(0, rim - press.vTire);
+  const F = (press.slip > 0.3) ? mu*N : mu*N*0.25;
+  press.vTire = Math.min(rim, press.vTire + F/(t.m*1.6)*dt);
+  press.loadTq = F*T.r + N*0.11*T.r*(N>1050?2.2:1);   /* drive + parasitic (bog doubles it) */
+  press.quality = clamp((N-180)/380,0,1) * clamp(1.6-N/1050,0.25,1) * clamp(press.vTire/Math.max(6,rim),0,1);
+  /* skid smoke + squeal */
+  if (press.slip>6 && N>140){
+    const c=contactScreen();
+    if (Math.random()<dt*40) parts.push({sx:1,x:c.x,y:c.y,vx:rand(-40,40),vy:rand(-90,-30),life:rand(0.5,1),t:0,type:'smoke'});
+  }
+  if (AU.squealG) AU.squealG.gain.value = clamp(press.slip/40,0,1)*clamp(N/900,0,1)*0.12;
+  /* belt whip risk while bogging hard */
+  if (N>1150 && eng.rpm<360 && eng.beltOn && Math.random() < dt*0.55) beltWhip();
+}
+function releasePress(){
+  if (!press) return;
+  const p = press; press = null;
+  if (AU.squealG) AU.squealG.gain.value=0;
+  if (!eng.on) return;
+  if (p.vTire < 3.5){                       /* the flop */
+    blip(160,0.3,0.2,'sine',60); crashNoise(0.2,300,0.3);
+    hint('It fell off. Press longer — let it bite.');
+    mech.state='dismay'; mech.t=0;
+    return;
+  }
+  startFlight(p);
+}
+
+/* ---------------- flight ---------------- */
+function startFlight(p){
+  const t = tire(), a = arm();
+  const v0 = Math.min(p.vTire, vRim()) * a.mult;
+  const ang = launchAngleFor(p.clock);
+  let spin = p.vTire / t.r;                 /* rad/s, backspin */
+  let S = t.S;
+  if (t.wild){ spin *= rand(0.5,1.6)*(Math.random()<0.4?-1:1); S *= rand(0.6,1.5); }
+  flight = {
+    x:0.5, y:1.4, vx:v0*Math.cos(ang), vy:v0*Math.sin(ang),
+    w:spin, S:S, t:0, air:0, landed:false, rest:false,
+    maxH:1.4, impactX:null, maxX:0.5,
+    wind: windBase + rand(-1.5,1.5),
+    hitChai:false, hitTower:false, goatNear:false, goatStepped:false,
+    events:[], trail:[], done:false, endT:0, quality:p.quality,
+  };
+  mode='flight'; launchPending=0; firstRun=false;
+  cam.x=0; cam.y=6; cam.s=20;
+  goatX = rand(18,60);
+  mech.state='watch'; mech.t=0;
+  crashNoise(0.35,2500,0.4); blip(300,0.5,0.25,'sawtooth',900);
+  grunt('satisfied');
+  hint('');
+}
+function updateFlight(DT){
+  const f = flight; if (!f || f.done) return;
+  const t = tire();
+  const steps = 4, dt = DT/steps;
+  for(let i=0;i<steps;i++){
+    f.t += dt;
+    if (!f.landed) f.air += dt;
+    const rvx = f.vx - f.wind, rvy = f.vy;
+    const rv = Math.hypot(rvx,rvy)||0.001;
+    /* drag: Cd 1.1, frontal area 2r * 0.6r */
+    const A = 2*t.r*0.6*t.r;
+    const aD = 0.5*RHO*rv*rv*1.1*A/t.m;
+    let ax = -aD*rvx/rv, ay = -GRAV - aD*rvy/rv;
+    /* Magnus: backspin lifts; F = S(ω×v), tuned */
+    let aM = clamp(f.S*Math.abs(f.w)*rv*0.007, 0, 22);
+    const sgn = Math.sign(f.w)||1;
+    ax += aM * (-rvy/rv) * sgn;
+    ay += aM * ( rvx/rv) * sgn;
+    f.vx += ax*dt; f.vy += ay*dt;
+    f.x += f.vx*dt; f.y += f.vy*dt;
+    f.w *= (1 - dt/3.5);
+    f.maxH = Math.max(f.maxH, f.y);
+    f.maxX = Math.max(f.maxX, f.x);
+    collideFlight(f, t, dt);
+    if (f.done) return;
+  }
+  f.trail.push({x:f.x,y:f.y}); if (f.trail.length>46) f.trail.shift();
+  /* The Long Silence */
+  if (f.air > 8 && !f.landed && !onScreen(f.x,f.y)){
+    f.events.push('silence');
+    f.done=true;
+    setTimeout(()=>crashNoise(0.12,150,0.8), 1800);   /* a distant, unexplained thump */
+    finishFlight('silence');
+    return;
+  }
+  if (f.t > 30){ f.done=true; finishFlight(null); }
+}
+function collideFlight(f, t, dt){
+  const r = t.r;
+  /* goat: never hittable. It takes one step. Unbothered. */
+  if (!f.goatStepped && f.y < 3 && Math.abs(f.x-goatX) < 2.2 && f.vy<0){
+    goatX += (f.vx>=0?1.6:-1.6); f.goatStepped=true; goatBleat();
+  }
+  /* water tower tank */
+  if (f.x>TOWER.x0-r && f.x<TOWER.x1+r && f.y>TOWER.y0 && f.y<TOWER.y1 && !f.hitTower){
+    f.hitTower=true; f.events.push('tower');
+    crashNoise(0.5,700,0.6); blip(220,0.7,0.3,'triangle',140); shake=6;
+    f.vx*=-0.4; f.vy*=0.5;
+    for(let i=0;i<10;i++) parts.push({sx:0,x:f.x,y:f.y,vx:rand(-6,6),vy:rand(-2,7),life:rand(0.6,1.4),t:0,type:'drop'});
+  }
+  /* chai stall */
+  if (f.x>CHAI.x0-r && f.x<CHAI.x1+r && f.y-r<CHAI.top && f.y>0.2 && !f.hitChai){
+    f.hitChai=true; f.events.push('chai');
+    crashNoise(0.5,1800,0.5); shake=5;
+    for(let i=0;i<8;i++) parts.push({sx:0,x:f.x,y:CHAI.top,vx:rand(-5,5),vy:rand(2,8),life:rand(0.7,1.5),t:0,type:'cup'});
+    f.vx*=0.45; f.vy=Math.max(f.vy,2.5);
+  }
+  /* shed roof */
+  if (f.x>SHED.x0 && f.x<SHED.x1 && f.y-r<=SHED.roof && f.vy<0){
+    f.events.push('roof'); landAt(f, SHED.roof+r, 'roof'); return;
+  }
+  /* the mechanic */
+  if (f.x>MECHW.x0 && f.x<MECHW.x1 && f.y-r<=MECHW.top && f.vy<0 && f.t>0.6){
+    f.events.push('self'); crashNoise(0.4,500,0.4);
+    mech.state='bonked'; mech.t=0; shake=7;
+    landAt(f, MECHW.top, 'self'); return;
+  }
+  /* boundary */
+  if (f.x > BOUND){ f.events.push('neighbor'); f.done=true; finishFlight('neighbor'); return; }
+  if (f.x < -38){ f.done=true; finishFlight(null); return; }
+  /* ground */
+  if (f.y - r*0.55 <= 0 && f.vy < 0){
+    if (f.impactX===null){
+      f.impactX = f.x; f.landed = true;
+      if (Math.abs(f.x-goatX)<4 && !f.events.includes('goat')){ f.events.push('goat'); f.goatNear=true; goatBleat(); }
+      crashNoise(clamp(0.15+t.m/60,0,0.7), 400, 0.4);
+      dustAt(f.x, Math.min(10,Math.hypot(f.vx,f.vy))/2 );
+    } else if (Math.abs(f.vy)>2.5) crashNoise(0.12,350,0.25);
+    f.y = r*0.55;
+    if (Math.abs(f.vy) > 2.2){
+      f.vy = -f.vy*0.42;
+      f.vx = f.vx*0.75 + clamp(-f.w*t.r*0.25,-8,8);   /* spin kicks it on the bounce */
+      f.w *= 0.6;
+    } else {
+      f.vy = 0;
+      f.vx *= (1 - dt*1.7);                            /* rolling out */
+      if (Math.abs(f.vx) < 0.4){
+        f.vx=0; f.rest=true; f.done=true;
+        /* boomerang: went out, came home */
+        if (f.maxX>15 && f.x < 4) f.events.push('boom');
+        finishFlight(null);
+        return;
+      }
+    }
+  }
+}
+function landAt(f, y, why){
+  f.y=y; f.landed=true; if(f.impactX===null) f.impactX=f.x;
+  f.vx=0; f.vy=0; f.done=true;
+  finishFlight(why);
+}
+function dustAt(x, n){
+  for(let i=0;i<n*3;i++) parts.push({sx:0,x:x+rand(-1,1),y:0.2,vx:rand(-3,3),vy:rand(0.5,3),life:rand(0.5,1.2),t:0,type:'dust'});
+}
+function onScreen(x,y){
+  const s=camScr(x,y);
+  return s.x>-60 && s.x<W+60 && s.y>-60 && s.y<H+60;
+}
+
+/* ---------------- results / cards / progression ---------------- */
+const CARD_PRIORITY = ['scatter','belt','self','roof','chai','boom','silence','neighbor','goat'];
+function awardCard(id){
+  save.cards[id] = (save.cards[id]||0)+1;
+  persist(); refreshCardsBadge();
+  const c = CARDS.find(c=>c.id===id);
+  toast(c.ico+' '+c.name+(save.cards[id]===1?' — new card!':' ×'+save.cards[id]));
+}
+function finishFlight(primary){
+  const f = flight;
+  const sum = {
+    apogee: Math.round(f.maxH), dist: Math.round(Math.max(0,f.impactX!==null?f.impactX:f.x)),
+    airtime: Math.round(f.air*10)/10,
+    hitTower:f.hitTower, hitChai:f.hitChai, goatNear:f.goatNear,
+  };
+  for (const ev of f.events) if (CARDS.some(c=>c.id===ev)) awardCard(ev);
+  let star = primary;
+  if (!star) for (const id of CARD_PRIORITY) if (f.events.includes(id)){ star=id; break; }
+  sum.outcome = star;
+  setTimeout(()=>showResult(sum), star==='silence'?2400:900);
+}
+function showResult(sum){
+  mode='result'; resultData=sum;
+  const before = {t:save.tier, ti:save.tire, a:save.arm};
+  save.launches++;
+  let nbH='', nbD='';
+  if (!sum.noFlight){
+    if (sum.apogee > save.bestH){ save.bestH=sum.apogee; nbH='★'; }
+    if (sum.dist  > save.bestD){ save.bestD=sum.dist;  nbD='★'; }
+  }
+  /* daily challenge */
+  let chalTxt='';
+  if (!save.daily.done && !sum.noFlight && daily.chk(sum)){
+    save.daily.done=true; chalTxt='🎯 Daily challenge complete!';
+    toast('🎯 Daily done: '+daily.txt);
+  } else if (save.daily.done) chalTxt='🎯 Daily challenge: done ✓';
+  else chalTxt='🎯 '+daily.txt;
+  /* unlocks */
+  for (const [list,label] of [[TIERS,'engine'],[TIRES,'tire'],[ARMS,'launch arm']])
+    for (const it of list)
+      if (it.unlock===save.launches) toast('🔓 '+it.name+' — new '+label+' in the Garage');
+  persist(); refreshChip();
+  const co = sum.outcome ? CARDS.find(c=>c.id===sum.outcome) : null;
+  document.getElementById('resOutcome').textContent = co ? 'NAMED OUTCOME' : 'LAUNCH '+save.launches;
+  document.getElementById('resTitle').textContent = co ? co.ico+' '+co.name : cleanTitle(sum);
+  document.getElementById('resH').textContent = sum.noFlight?'—':sum.apogee;
+  document.getElementById('resD').textContent = sum.noFlight?'—':sum.dist;
+  document.getElementById('resA').textContent = sum.noFlight?'—':sum.airtime;
+  document.getElementById('nbH').textContent=nbH; document.getElementById('nbD').textContent=nbD;
+  document.getElementById('resChal').textContent = chalTxt;
+  document.getElementById('result').classList.add('show');
+}
+function cleanTitle(sum){
+  if (sum.hitTower) return '🗼 Rang the water tower';
+  if (sum.apogee>=100) return 'Genuinely gone';
+  if (sum.apogee>=55) return 'A proud arc';
+  if (sum.dist>=100) return 'Deep into the field';
+  if (sum.dist<8) return 'Technically a launch';
+  return 'A launch occurs';
+}
+function backToShop(){
+  document.getElementById('result').classList.remove('show');
+  flight=null; chunks=[]; mode='shop';
+  mech.state='idle'; mech.t=0;
+  eng.beltOn=true;
+  if (eng.dead){ eng.dead=false; eng.cracks=0; eng.warm=false; eng.cranks=0; eng.cranksNeed=4+Math.floor(rand(0,3));
+    hint('Rebuilt it from the good pieces. Cold again — crank it.'); }
+  else if (!eng.on) hint(cranksHintText());
+}
+
+/* ---------------- particles / effects ---------------- */
+function puffExhaust(){
+  const c=fwScreenC(), R=fwScreenR();
+  parts.push({sx:1,x:c.x+R*0.9,y:c.y-R*1.78,vx:rand(-8,8),vy:rand(-70,-45),life:rand(0.9,1.6),t:0,type:'puff'});
+}
+function updateParts(dt){
+  for(let i=parts.length-1;i>=0;i--){
+    const p=parts[i]; p.t+=dt;
+    if(p.t>p.life){ parts.splice(i,1); continue; }
+    if(p.sx){ p.x+=p.vx*dt; p.y+=p.vy*dt; p.vy+= (p.type==='cloth'?500:(p.type==='puff'?-15:80))*dt; }
+    else { p.x+=p.vx*dt; p.y+=p.vy*dt; p.vy-= 6*dt; if(p.y<0.05){p.y=0.05;p.vy*=-0.3;} }
+  }
+  for(let i=chunks.length-1;i>=0;i--){
+    const k=chunks[i]; k.life-=dt;
+    if(k.life<=0){chunks.splice(i,1);continue;}
+    k.x+=k.vx*dt; k.y+=k.vy*dt; k.vy+=1500*dt; k.rot+=k.vr*dt;
+    if(k.y>H*0.85){k.y=H*0.85;k.vy*=-0.35;k.vx*=0.7;}
+  }
+  if (mech.state==='sit' && mech.hatY<0) mech.hatY = Math.min(0, mech.hatY + dt*(mech.t>1.4?260:0));
+  shake = Math.max(0, shake - dt*12);
+  mech.t += dt;
+}
+
+/* ---------------- layout helpers (shop view) ---------------- */
+function fwScreenC(){ return {x:W*0.44, y:H*0.54}; }
+function fwScreenR(){ return Math.min(W*0.30, H*0.24); }
+function throttleRect(){ return {x:W-46, y:H*0.28, w:34, h:H*0.42}; }
+function contactScreen(){
+  const c=fwScreenC(), R=fwScreenR();
+  const a = (press?press.clock:aimClock)*Math.PI/180;
+  return {x:c.x+Math.sin(a)*(R+tireScreenR()), y:c.y-Math.cos(a)*(R+tireScreenR())};
+}
+function tireScreenR(){ return fwScreenR()*tire().r/tier().r; }
+
+/* ---------------- input ---------------- */
+let aimClock = 55;                     /* remembered contact position */
+let pointers = {};                     /* id -> {role,...} */
+cv.addEventListener('pointerdown', e=>{
+  auInit(); if(AU.ctx&&AU.ctx.state==='suspended')AU.ctx.resume();
+  if (mode==='result'){ return; }
+  if (mode==='flight') return;
+  const x=e.clientX,y=e.clientY;
+  const tr=throttleRect();
+  if (x>tr.x-18 && x<tr.x+tr.w+14 && y>tr.y-20 && y<tr.y+tr.h+20){
+    pointers[e.pointerId]={role:'throttle'}; setThrottle(y); return;
+  }
+  const c=fwScreenC(), R=fwScreenR();
+  const dx=x-c.x, dy=y-c.y, d=Math.hypot(dx,dy);
+  if (eng.on && d < R*1.35){
+    /* clock position: 0 at 12, clockwise; clamp to launch arc */
+    let clock = Math.atan2(dx,-dy)*180/Math.PI;
+    clock = clamp(clock, -4, 150);
+    aimClock = clock;
+    press = {t:0,N:0,vTire:0,clock:clock,quality:0,slip:0,loadTq:0};
+    pointers[e.pointerId]={role:'press'};
+    mech.state='press'; mech.t=0;
+    return;
+  }
+  if (!eng.on && eng.sputter<0){
+    pointers[e.pointerId]={role:'crank', y0:y, armed:true};
+    return;
+  }
+  pointers[e.pointerId]={role:'none'};
+});
+cv.addEventListener('pointermove', e=>{
+  const p=pointers[e.pointerId]; if(!p) return;
+  if (p.role==='throttle') setThrottle(e.clientY);
+  else if (p.role==='press' && press){
+    const c=fwScreenC();
+    let clock = Math.atan2(e.clientX-c.x,-(e.clientY-c.y))*180/Math.PI;
+    press.clock = clamp(clock,-4,150); aimClock = press.clock;
+  }
+  else if (p.role==='crank'){
+    const dy = e.clientY - p.y0;
+    if (p.armed && dy < -64){ p.armed=false; p.y0=e.clientY; crankStroke(); }
+    else if (!p.armed && dy > 26){ p.armed=true; p.y0=e.clientY; }
+  }
+});
+function endPointer(e){
+  const p=pointers[e.pointerId]; delete pointers[e.pointerId];
+  if (p && p.role==='press') releasePress();
+}
+cv.addEventListener('pointerup', endPointer);
+cv.addEventListener('pointercancel', endPointer);
+function setThrottle(y){
+  const tr=throttleRect();
+  eng.throttle = clamp(1-(y-tr.y)/tr.h, 0, 1);
+}
+
+/* ---------------- camera (flight) ---------------- */
+const cam = {x:0,y:6,s:20};
+function updateCam(){
+  const f=flight; if(!f) return;
+  const viewH = Math.max(16, f.y*1.25+14, Math.abs(f.x)*0.35+10);
+  const ts = (H*0.82)/viewH;
+  cam.s = lerp(cam.s, clamp(ts, 1.2, 26), 0.08);
+  cam.x = lerp(cam.x, f.x + 14*Math.sign(f.vx||1)*clamp(Math.abs(f.vx)/30,0,1), 0.1);
+  cam.y = lerp(cam.y, Math.max(5, f.y*0.55), 0.1);
+}
+function camScr(x,y){ return {x:(x-cam.x)*cam.s + W*0.5, y:(cam.y-y)*cam.s + H*0.52}; }
+
+/* ================================================================
+   RENDERING
+   ================================================================ */
+function draw(){
+  cx.save();
+  if (shake>0.2) cx.translate(rand(-shake,shake), rand(-shake,shake));
+  if (mode==='flight' || (mode==='result' && resultData && !resultData.noFlight)) drawFlight();
+  else drawShop();
+  cx.restore();
+}
+/* ------- sky / ground shared ------- */
+function skyGrad(){
+  const g=cx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,'#8ecfd6'); g.addColorStop(0.55,'#cfe8d9'); g.addColorStop(1,'#f2e2b8');
+  return g;
+}
+/* ------- SHOP VIEW (stylized close-up) ------- */
+function drawShop(){
+  cx.fillStyle=skyGrad(); cx.fillRect(0,0,W,H);
+  const gy = H*0.80;
+  /* far hills */
+  cx.fillStyle='#a9c491';
+  cx.beginPath(); cx.moveTo(0,gy-70);
+  for(let x=0;x<=W;x+=60) cx.lineTo(x, gy-70-30*Math.sin(x*0.01+2));
+  cx.lineTo(W,gy); cx.lineTo(0,gy); cx.fill();
+  /* shed silhouette (left) */
+  drawShedShop(gy);
+  /* laundry line */
+  if (eng.beltOn) drawLaundry(gy);
+  /* ground */
+  cx.fillStyle='#cfa268'; cx.fillRect(0,gy,W,H-gy);
+  cx.fillStyle='rgba(120,84,40,.35)';
+  for(let i=0;i<7;i++){ const px=(i*137)%W, pw=30+(i*53)%50; cx.fillRect(px,gy+8+(i*29)%40,pw,3); }
+  drawEngine(gy);
+  drawMechanic(W*0.13, gy, 1);
+  drawArmRamp(gy);
+  drawTireStaged();
+  drawChunks();
+  drawShopParts();
+  drawGauges();
+  drawThrottle();
+  if (press) drawPressUI();
+  else if (eng.on) drawAimHintRing();
+}
+function drawShedShop(gy){
+  const x0=-20, wd=W*0.22, hg=H*0.26;
+  cx.fillStyle='#8a6b46'; cx.fillRect(x0,gy-hg,wd,hg);
+  cx.fillStyle='#6e5335'; cx.beginPath();
+  cx.moveTo(x0-14,gy-hg); cx.lineTo(x0+wd*0.5,gy-hg-H*0.07); cx.lineTo(x0+wd+14,gy-hg); cx.fill();
+  cx.fillStyle='#5b432a'; cx.fillRect(x0+wd*0.55,gy-hg*0.62,wd*0.3,hg*0.62);
+  cx.fillStyle='rgba(0,0,0,.25)'; cx.fillRect(x0+wd*0.58,gy-hg*0.56,wd*0.24,hg*0.5);
+}
+function drawLaundry(gy){
+  const x0=W*0.02,y0=gy-H*0.38,x1=W*0.26,y1=gy-H*0.35;
+  cx.strokeStyle='#7a6a55'; cx.lineWidth=2;
+  cx.beginPath(); cx.moveTo(x0,y0); cx.quadraticCurveTo((x0+x1)/2,(y0+y1)/2+16,x1,y1); cx.stroke();
+  const cols=['#d96c4f','#e8c85a','#7fa8d9'];
+  for(let i=0;i<3;i++){
+    const t=0.25+i*0.25, mx=lerp(x0,x1,t), my=lerp(y0,y1,t)+14*Math.sin(Math.PI*t)+2;
+    cx.fillStyle=cols[i]; cx.fillRect(mx-9,my,18,24+6*Math.sin(i*2+performance.now()/700));
+  }
+}
+function drawEngine(gy){
+  const c=fwScreenC(), R=fwScreenR(), T=tier();
+  /* base skid */
+  cx.fillStyle='#4a3a26'; cx.fillRect(c.x-R*1.5, gy-8, R*3.2, 12);
+  /* engine block behind wheel */
+  cx.fillStyle='#2e6b4f';
+  cx.fillRect(c.x+R*0.45, c.y-R*0.75, R*0.95, R*0.75+ (gy-c.y));
+  cx.fillStyle='#255741'; cx.fillRect(c.x+R*0.52, c.y-R*0.70, R*0.8, R*0.18);
+  /* cylinder + head */
+  cx.fillStyle='#2e6b4f'; cx.fillRect(c.x+R*0.62, c.y-R*1.25, R*0.5, R*0.55);
+  cx.fillStyle='#1f4a37'; cx.fillRect(c.x+R*0.59, c.y-R*1.32, R*0.56, R*0.1);
+  /* exhaust stack */
+  cx.fillStyle='#54453a'; cx.fillRect(c.x+R*0.84, c.y-R*1.75, R*0.11, R*0.45);
+  /* fuel tank */
+  cx.fillStyle='#b8433a'; cx.beginPath();
+  cx.ellipse(c.x+R*1.22, c.y-R*0.98, R*0.24, R*0.14, 0, 0, TAU); cx.fill();
+  /* belt to small pulley */
+  if (eng.beltOn){
+    cx.strokeStyle='#3a2f24'; cx.lineWidth=Math.max(3,R*0.045);
+    cx.beginPath();
+    cx.moveTo(c.x+R*0.18, c.y-R*0.66);
+    cx.lineTo(c.x+R*1.0, c.y-R*0.30);
+    cx.moveTo(c.x+R*0.05, c.y-R*0.72);
+    cx.lineTo(c.x+R*0.95, c.y-R*0.42);
+    cx.stroke();
+  }
+  drawFlywheel(c, R, T);
+  /* crank handle (only matters when off) */
+  const ca = eng.visAngle*0.9;
+  const hx=c.x+Math.cos(ca)*R*0.34, hy=c.y+Math.sin(ca)*R*0.34;
+  cx.strokeStyle='#333'; cx.lineWidth=Math.max(4,R*0.05);
+  cx.beginPath(); cx.moveTo(c.x,c.y); cx.lineTo(hx,hy); cx.stroke();
+  cx.fillStyle='#8b8b8b'; cx.beginPath(); cx.arc(hx,hy,Math.max(6,R*0.06),0,TAU); cx.fill();
+  if (!eng.on && eng.sputter<0){
+    const bob = 8*Math.sin(performance.now()/300);
+    cx.fillStyle='rgba(20,40,32,.85)';
+    cx.beginPath(); cx.moveTo(hx, hy-R*0.28+bob); cx.lineTo(hx-12,hy-R*0.13+bob); cx.lineTo(hx+12,hy-R*0.13+bob); cx.fill();
+    cx.font='700 '+Math.max(12,R*0.11)+'px system-ui'; cx.fillStyle='rgba(20,40,32,.85)'; cx.textAlign='center';
+    cx.fillText('swipe up', hx, hy-R*0.34+bob);
+  }
+}
+function drawFlywheel(c, R, T){
+  /* motion-blur rings at speed */
+  const fast = eng.rpm>250;
+  cx.save(); cx.translate(c.x,c.y); cx.rotate(eng.visAngle);
+  /* rim */
+  cx.lineWidth=R*0.16;
+  cx.strokeStyle = T===TIERS[4] ? '#5a4a7a' : '#b8433a';
+  cx.beginPath(); cx.arc(0,0,R*0.92,0,TAU); cx.stroke();
+  cx.lineWidth=R*0.03; cx.strokeStyle='rgba(0,0,0,.3)';
+  cx.beginPath(); cx.arc(0,0,R*0.99,0,TAU); cx.stroke();
+  /* spokes */
+  cx.lineWidth=R*0.09; cx.strokeStyle= fast ? 'rgba(70,60,50,.35)' : '#4d4438';
+  for(let i=0;i<6;i++){
+    cx.beginPath(); cx.rotate(TAU/6);
+    cx.moveTo(0,0); cx.lineTo(R*0.85,0); cx.stroke();
+  }
+  /* hub */
+  cx.fillStyle='#3a332a'; cx.beginPath(); cx.arc(0,0,R*0.18,0,TAU); cx.fill();
+  cx.fillStyle='#c9a227'; cx.beginPath(); cx.arc(0,0,R*0.07,0,TAU); cx.fill();
+  cx.restore();
+  /* hairline cracks under overspeed */
+  if (eng.cracks>0.02){
+    cx.save(); cx.translate(c.x,c.y); cx.globalAlpha=eng.cracks;
+    cx.strokeStyle='#1c1c1c'; cx.lineWidth=1.5;
+    for(let i=0;i<5;i++){
+      const a=i*1.3+0.4; cx.beginPath();
+      cx.moveTo(Math.cos(a)*R*0.6,Math.sin(a)*R*0.6);
+      cx.lineTo(Math.cos(a+0.2)*R*0.8,Math.sin(a+0.25)*R*0.8);
+      cx.lineTo(Math.cos(a+0.1)*R*0.95,Math.sin(a+0.12)*R*0.95);
+      cx.stroke();
+    }
+    cx.restore();
+  }
+  if (fast){ /* rim speed streak */
+    cx.strokeStyle='rgba(255,255,255,.18)'; cx.lineWidth=R*0.1;
+    cx.beginPath(); cx.arc(c.x,c.y,R*0.92, eng.visAngle*2%TAU, eng.visAngle*2%TAU+1.1); cx.stroke();
+  }
+}
+function drawArmRamp(gy){
+  const c=fwScreenC(), R=fwScreenR(), a=arm();
+  if (a.mult<=1) return;
+  const L = R*(0.8+a.mult*0.55);
+  const ang = -Math.PI/4;
+  const px=c.x+R*0.75, py=gy-4;
+  cx.save(); cx.translate(px,py); cx.rotate(ang);
+  cx.fillStyle='#8a6b46'; cx.fillRect(0,-R*0.05,L,R*0.09);
+  cx.fillStyle='#6e5335'; cx.fillRect(0,-R*0.05,L*0.12,R*0.09);
+  cx.restore();
+  cx.fillStyle='#54453a'; cx.beginPath(); cx.arc(px,py,R*0.06,0,TAU); cx.fill();
+}
+function drawTireStaged(){
+  if (press) return drawTireAtRim();
+  /* tire waiting on its cradle bottom-right */
+  const R=fwScreenR(), tr=tireScreenR();
+  const x=W*0.82, y=H*0.80-tr;
+  drawTire(x,y,tr, performance.now()/900);
+  cx.fillStyle='#4a3a26'; cx.fillRect(x-tr*0.9, H*0.80-6, tr*1.8, 8);
+}
+function drawTireAtRim(){
+  const p=contactScreen(), tr=tireScreenR();
+  drawTire(p.x,p.y,tr, eng.visAngle*-(tier().r/tire().r));
+  /* launch direction ghost */
+  const ang = launchAngleFor(press.clock);
+  cx.save(); cx.translate(p.x,p.y);
+  cx.strokeStyle='rgba(20,40,32,.6)'; cx.lineWidth=3; cx.setLineDash([7,7]);
+  cx.beginPath(); cx.moveTo(0,0);
+  cx.lineTo(Math.cos(ang)*90, -Math.sin(ang)*90); cx.stroke();
+  cx.setLineDash([]);
+  cx.fillStyle='rgba(20,40,32,.8)'; cx.font='700 13px system-ui'; cx.textAlign='center';
+  cx.fillText(Math.round(ang*180/Math.PI)+'°', Math.cos(ang)*108, -Math.sin(ang)*108);
+  cx.restore();
+}
+function drawTire(x,y,r,rot){
+  cx.save(); cx.translate(x,y); cx.rotate(rot);
+  cx.fillStyle='#23201c'; cx.beginPath(); cx.arc(0,0,r,0,TAU); cx.fill();
+  cx.fillStyle='#8b8578'; cx.beginPath(); cx.arc(0,0,r*0.5,0,TAU); cx.fill();
+  cx.fillStyle='#23201c'; cx.beginPath(); cx.arc(0,0,r*0.2,0,TAU); cx.fill();
+  cx.strokeStyle='rgba(255,255,255,.16)'; cx.lineWidth=r*0.16;
+  for(let i=0;i<8;i++){ cx.beginPath(); cx.arc(0,0,r*0.86,i*TAU/8,i*TAU/8+0.22); cx.stroke(); }
+  cx.restore();
+}
+function drawMechanic(x, gy, scale){
+  const s = Math.min(W,H)*0.16*scale;          /* body height px */
+  const st = mech.state;
+  cx.save(); cx.translate(x,gy);
+  const sit = st==='sit';
+  const bodyH = sit? s*0.62 : s;
+  /* legs */
+  cx.strokeStyle='#5b432a'; cx.lineWidth=s*0.11; cx.lineCap='round';
+  if (sit){
+    cx.beginPath(); cx.moveTo(0,-bodyH*0.35); cx.lineTo(s*0.28,-bodyH*0.1); cx.lineTo(s*0.42,0); cx.stroke();
+    cx.beginPath(); cx.moveTo(0,-bodyH*0.35); cx.lineTo(s*0.20,-bodyH*0.05); cx.lineTo(s*0.36,0); cx.stroke();
+  } else {
+    cx.beginPath(); cx.moveTo(-s*0.08,0); cx.lineTo(-s*0.05,-bodyH*0.42); cx.stroke();
+    cx.beginPath(); cx.moveTo(s*0.1,0); cx.lineTo(s*0.05,-bodyH*0.42); cx.stroke();
+  }
+  /* torso */
+  cx.strokeStyle='#3f6e8c'; cx.lineWidth=s*0.16;
+  cx.beginPath(); cx.moveTo(0,-bodyH*0.4); cx.lineTo(0,-bodyH*0.78); cx.stroke();
+  /* arms */
+  cx.lineWidth=s*0.09; cx.strokeStyle='#3f6e8c';
+  const t=mech.t;
+  if (st==='crank'){
+    const sw = Math.sin(Math.min(1,t*6)*Math.PI);
+    cx.beginPath(); cx.moveTo(0,-bodyH*0.7); cx.lineTo(s*0.4,-bodyH*(0.5+0.3*sw)); cx.stroke();
+  } else if (st==='press'){
+    cx.beginPath(); cx.moveTo(0,-bodyH*0.7); cx.lineTo(s*0.45,-bodyH*0.62); cx.stroke();
+  } else if (st==='watch'){
+    cx.beginPath(); cx.moveTo(0,-bodyH*0.7); cx.lineTo(s*0.22,-bodyH*0.95); cx.stroke(); /* shading eyes */
+  } else if (st==='bonked'||st==='dismay'){
+    cx.beginPath(); cx.moveTo(0,-bodyH*0.7); cx.lineTo(-s*0.25,-bodyH*0.5); cx.stroke();
+    cx.beginPath(); cx.moveTo(0,-bodyH*0.7); cx.lineTo(s*0.25,-bodyH*0.5); cx.stroke();
+  } else {
+    const idle = Math.sin(performance.now()/800)*0.04;
+    cx.beginPath(); cx.moveTo(0,-bodyH*0.7); cx.lineTo(s*(0.28+idle),-bodyH*0.55); cx.stroke();
+  }
+  /* head */
+  cx.fillStyle='#c98d5f'; cx.beginPath(); cx.arc(0,-bodyH*0.88,s*0.13,0,TAU); cx.fill();
+  /* magnificent mustache */
+  cx.strokeStyle='#2c2418'; cx.lineWidth=s*0.035;
+  cx.beginPath(); cx.arc(0,-bodyH*0.855,s*0.075,0.25,Math.PI-0.25); cx.stroke();
+  /* hat (falls back after burst, a beat later) */
+  const hy = (st==='sit')?mech.hatY:0;
+  cx.fillStyle='#c9a227';
+  cx.fillRect(-s*0.14,-bodyH*0.98+hy,s*0.28,s*0.05);
+  cx.fillRect(-s*0.09,-bodyH*1.05+hy,s*0.18,s*0.08);
+  if (st==='bonked'){
+    cx.font='700 '+(s*0.2)+'px system-ui'; cx.textAlign='center'; cx.fillStyle='#2c2418';
+    cx.fillText('✶ ✶', 0, -bodyH*1.2);
+  }
+  cx.restore();
+}
+function drawChunks(){
+  cx.fillStyle='#b8433a';
+  for(const k of chunks){
+    cx.save(); cx.translate(k.x,k.y); cx.rotate(k.rot);
+    cx.globalAlpha=clamp(k.life,0,1);
+    cx.fillRect(-k.s/2,-k.s/4,k.s,k.s/2);
+    cx.restore();
+  }
+  cx.globalAlpha=1;
+}
+function drawShopParts(){
+  for(const p of parts){
+    if(!p.sx) continue;
+    const a = 1-p.t/p.life;
+    if (p.type==='smoke'||p.type==='puff'){
+      cx.fillStyle = p.type==='puff'?'rgba(70,70,70,'+(a*0.5)+')':'rgba(180,180,180,'+(a*0.6)+')';
+      cx.beginPath(); cx.arc(p.x,p.y,4+(1-a)*14,0,TAU); cx.fill();
+    } else if (p.type==='cloth'){
+      cx.fillStyle='hsla('+p.hue+',60%,60%,'+a+')';
+      cx.fillRect(p.x-8,p.y-5,16,10);
+    }
+  }
+}
+/* ------- shop UI: gauges, throttle, press ------- */
+function drawGauges(){
+  const T=tier();
+  const gx=14, gyy=Math.max(104, H*0.13), gr=Math.min(W,H)*0.095;
+  /* dial */
+  cx.save(); cx.translate(gx+gr, gyy+gr);
+  cx.fillStyle='rgba(20,40,32,.8)'; cx.beginPath(); cx.arc(0,0,gr,0,TAU); cx.fill();
+  const a0=Math.PI*0.75, a1=Math.PI*2.25, top=T.burst+150;
+  const aAt=r=>a0+(a1-a0)*clamp(r/top,0,1);
+  cx.lineWidth=gr*0.16;
+  cx.strokeStyle='#7fb069'; cx.beginPath(); cx.arc(0,0,gr*0.78,a0,aAt(T.redline)); cx.stroke();
+  cx.strokeStyle='#e0a83a'; cx.beginPath(); cx.arc(0,0,gr*0.78,aAt(T.redline),aAt(T.burst)); cx.stroke();
+  cx.strokeStyle='#c9372c'; cx.beginPath(); cx.arc(0,0,gr*0.78,aAt(T.burst),a1); cx.stroke();
+  const na=aAt(eng.rpm + (eng.on?Math.sin(performance.now()/32)*7:0));
+  cx.strokeStyle='#f3e9d2'; cx.lineWidth=3;
+  cx.beginPath(); cx.moveTo(0,0); cx.lineTo(Math.cos(na)*gr*0.7,Math.sin(na)*gr*0.7); cx.stroke();
+  cx.fillStyle='#f3e9d2'; cx.font='800 '+gr*0.26+'px system-ui'; cx.textAlign='center';
+  cx.fillText(Math.round(eng.rpm), 0, gr*0.45);
+  cx.font='700 '+gr*0.17+'px system-ui'; cx.fillStyle='rgba(243,233,210,.7)';
+  cx.fillText('RPM', 0, gr*0.62);
+  cx.restore();
+  /* energy readout */
+  cx.fillStyle='rgba(20,40,32,.8)';
+  const ex=gx, ey=gyy+gr*2+10, ew=Math.max(gr*2.6,108);
+  rr(ex,ey,ew,24,8); cx.fill(); cx.fillStyle='#f3e9d2'; cx.font='700 11px system-ui'; cx.textAlign='center';
+  cx.fillText(energyKJ().toFixed(1)+' kJ stored', ex+ew/2, ey+16);
+  /* burst warning */
+  if (eng.warnT>0.1){
+    cx.fillStyle='rgba(201,55,44,'+(0.5+0.5*Math.sin(performance.now()/70))+')';
+    cx.font='800 '+Math.max(15,gr*0.3)+'px system-ui';
+    cx.fillText('SHE CANNOT HOLD', W/2, gyy+10);
+  }
+}
+function drawThrottle(){
+  const tr=throttleRect();
+  cx.fillStyle='rgba(20,40,32,.55)';
+  rr(tr.x,tr.y,tr.w,tr.h,10); cx.fill();
+  const T=tier(), top=T.burst+60;
+  const yAt=r=>tr.y+tr.h*(1-clamp((T.idle+ (r-T.idle))/(top),0,1));
+  /* red zone marker */
+  const yr = tr.y + tr.h*(1 - (T.redline-T.idle)/(top-T.idle));
+  cx.fillStyle='rgba(201,55,44,.5)'; rr(tr.x,tr.y,tr.w,Math.max(0,yr-tr.y),10); cx.fill();
+  const ky = tr.y + tr.h*(1-eng.throttle);
+  cx.fillStyle='#f3e9d2'; rr(tr.x-8,ky-12,tr.w+16,24,8); cx.fill();
+  cx.fillStyle='#2c2418'; cx.font='800 10px system-ui'; cx.textAlign='center';
+  cx.fillText('THR', tr.x+tr.w/2, ky+4);
+}
+function drawPressUI(){
+  const c=contactScreen(), tr2=tireScreenR();
+  /* force gauge arc around tire */
+  const q=press.quality, N=press.N;
+  cx.save(); cx.translate(c.x,c.y);
+  cx.lineWidth=7;
+  cx.strokeStyle='rgba(20,40,32,.3)';
+  cx.beginPath(); cx.arc(0,0,tr2+12,-Math.PI/2,-Math.PI/2+TAU); cx.stroke();
+  const frac=clamp(N/1500,0,1);
+  cx.strokeStyle = N>1050 ? '#c9372c' : (N>550?'#7fb069':'#e0a83a');
+  cx.beginPath(); cx.arc(0,0,tr2+12,-Math.PI/2,-Math.PI/2+TAU*frac); cx.stroke();
+  /* bite quality readout */
+  cx.fillStyle='rgba(20,40,32,.85)'; cx.font='700 12px system-ui'; cx.textAlign='center';
+  const label = N<220?'skidding…':(N>1050?'BOGGING':(press.slip<4?'BITE ✓':'gripping'));
+  cx.fillText(label, 0, -tr2-22);
+  cx.fillText(Math.round(press.vTire)+' m/s', 0, tr2+30);
+  cx.restore();
+}
+function drawAimHintRing(){
+  const c=fwScreenC(), R=fwScreenR();
+  cx.strokeStyle='rgba(243,233,210,.5)'; cx.lineWidth=3; cx.setLineDash([4,9]);
+  cx.beginPath(); cx.arc(c.x,c.y,R+tireScreenR()*0.9,-Math.PI/2-0.07,Math.PI*0.33); cx.stroke();
+  cx.setLineDash([]);
+  if (firstRun){
+    cx.fillStyle='rgba(20,40,32,.8)'; cx.font='700 13px system-ui'; cx.textAlign='center';
+    cx.fillText('hold the rim to press the tire on', c.x+R*0.5, c.y-R-14);
+  }
+}
+function rr(x,y,w,h,r){ cx.beginPath(); cx.moveTo(x+r,y); cx.arcTo(x+w,y,x+w,y+h,r); cx.arcTo(x+w,y+h,x,y+h,r); cx.arcTo(x,y+h,x,y,r); cx.arcTo(x,y,x+w,y,r); cx.closePath(); }
+
+/* ------- FLIGHT VIEW (world meters) ------- */
+function drawFlight(){
+  cx.fillStyle=skyGrad(); cx.fillRect(0,0,W,H);
+  updateCam();
+  const s=cam.s;
+  /* far hills, parallax */
+  cx.fillStyle='#b3cf9b';
+  cx.beginPath();
+  const hor = camScr(0,0).y - 30;
+  cx.moveTo(0,hor);
+  for(let px=0;px<=W;px+=50){ const wx=(px-W/2)/s*0.3+cam.x*0.3; cx.lineTo(px, hor-24-18*Math.sin(wx*0.05+1)); }
+  cx.lineTo(W,hor+8); cx.lineTo(0,hor+8); cx.fill();
+  /* ground */
+  const g0=camScr(0,0);
+  cx.fillStyle='#c2a26b'; cx.fillRect(0,g0.y,W,Math.max(0,H-g0.y));
+  cx.fillStyle='#9cb56e'; cx.fillRect(0,g0.y,W,Math.max(2,s*0.25));
+  /* distance stones every 25 m */
+  cx.fillStyle='rgba(90,70,40,.8)'; cx.font='700 '+clamp(s*0.5,9,14)+'px system-ui'; cx.textAlign='center';
+  for(let m=25;m<=250;m+=25){
+    const p=camScr(m,0);
+    if(p.x<-20||p.x>W+20) continue;
+    cx.fillRect(p.x-2,p.y-s*0.5,4,s*0.5);
+    if (s>2.2) cx.fillText(m+'', p.x, p.y+16);
+  }
+  drawWorldObjects(s);
+  drawGoat(s);
+  drawFlightParts(s);
+  drawWindFlag(s);
+  const f=flight;
+  if (f){
+    /* trail */
+    for(let i=0;i<f.trail.length;i++){
+      const tp=camScr(f.trail[i].x,f.trail[i].y);
+      cx.fillStyle='rgba(60,50,40,'+(i/f.trail.length*0.35)+')';
+      cx.beginPath(); cx.arc(tp.x,tp.y,2.2,0,TAU); cx.fill();
+    }
+    const tp=camScr(f.x,f.y), t=tire();
+    drawTire(tp.x,tp.y,Math.max(3,t.r*s), f.w!==0? -f.w*f.t*0.2 : 0);
+    /* offscreen arrow with altitude */
+    if (tp.y < -10){
+      cx.fillStyle='rgba(20,40,32,.85)';
+      const ax=clamp(tp.x,30,W-30);
+      cx.beginPath(); cx.moveTo(ax,16); cx.lineTo(ax-13,40); cx.lineTo(ax+13,40); cx.fill();
+      cx.font='800 14px system-ui'; cx.textAlign='center'; cx.fillStyle='#1d3a2f';
+      cx.fillText(Math.round(f.y)+' m', ax, 58);
+    }
+    /* live readout */
+    cx.fillStyle='rgba(20,40,32,.75)'; rr(W/2-92,H-46- (H*0.0),184,32,10); cx.fill();
+    cx.fillStyle='#f3e9d2'; cx.font='700 13px system-ui'; cx.textAlign='center';
+    cx.fillText('h '+Math.round(f.y)+' m   ·   d '+Math.round(Math.max(0,f.x))+' m', W/2, H-25);
+    if (AU.windG) AU.windG.gain.value = clamp(Math.hypot(f.vx,f.vy)/70,0,1)*0.1*(f.landed?0:1);
+  }
+  /* the workshop, seen small from outside */
+  drawWorkshopTiny(s);
+}
+function drawWorkshopTiny(s){
+  const p=camScr(SHED.x0,0);
+  const wpx=(SHED.x1-SHED.x0)*s, hpx=SHED.roof*s;
+  cx.fillStyle='#8a6b46'; cx.fillRect(p.x,p.y-hpx,wpx,hpx);
+  cx.fillStyle='#6e5335';
+  cx.beginPath(); cx.moveTo(p.x-4,p.y-hpx); cx.lineTo(p.x+wpx/2,p.y-hpx-1.4*s); cx.lineTo(p.x+wpx+4,p.y-hpx); cx.fill();
+  /* engine dot + flywheel */
+  const ep=camScr(0,0);
+  cx.fillStyle='#2e6b4f'; cx.fillRect(ep.x-0.5*s, ep.y-1.2*s, 1.4*s, 1.2*s);
+  cx.strokeStyle='#b8433a'; cx.lineWidth=Math.max(1.5,s*0.12);
+  cx.beginPath(); cx.arc(ep.x-0.6*s, ep.y-tier().r*s-0.2*s, Math.max(2,tier().r*s),0,TAU); cx.stroke();
+  drawMechFlight(camScr(-1.3,0), s);
+}
+function drawMechFlight(p, s){
+  const h=1.7*s;
+  if (h<7){ cx.fillStyle='#3f6e8c'; cx.fillRect(p.x-1.5,p.y-h,3,h); return; }
+  cx.save(); cx.translate(p.x,p.y);
+  cx.strokeStyle='#5b432a'; cx.lineWidth=h*0.09; cx.lineCap='round';
+  const bonk = mech.state==='bonked';
+  const bh = bonk? h*0.6:h;
+  cx.beginPath(); cx.moveTo(-h*0.05,0); cx.lineTo(-h*0.03,-bh*0.4); cx.stroke();
+  cx.beginPath(); cx.moveTo(h*0.07,0); cx.lineTo(h*0.03,-bh*0.4); cx.stroke();
+  cx.strokeStyle='#3f6e8c'; cx.lineWidth=h*0.13;
+  cx.beginPath(); cx.moveTo(0,-bh*0.4); cx.lineTo(0,-bh*0.75); cx.stroke();
+  cx.beginPath(); cx.moveTo(0,-bh*0.68); cx.lineTo(h*0.16,-bh*(bonk?0.5:0.92)); cx.stroke();
+  cx.fillStyle='#c98d5f'; cx.beginPath(); cx.arc(0,-bh*0.85,h*0.09,0,TAU); cx.fill();
+  cx.fillStyle='#c9a227'; cx.fillRect(-h*0.1,-bh*0.94,h*0.2,h*0.04);
+  if (bonk){ cx.fillStyle='#2c2418'; cx.font='700 '+h*0.16+'px system-ui'; cx.textAlign='center'; cx.fillText('✶', 0,-bh*1.1); }
+  cx.restore();
+}
+function drawWorldObjects(s){
+  /* chai stall */
+  let p=camScr(CHAI.x0,0);
+  const cw=(CHAI.x1-CHAI.x0)*s, chh=CHAI.top*s;
+  cx.fillStyle='#b8433a'; cx.fillRect(p.x,p.y-chh,cw,chh*0.18);
+  cx.fillStyle='#e8c85a'; cx.fillRect(p.x+cw*0.08,p.y-chh*0.82,cw*0.84,chh*0.82);
+  cx.fillStyle='#6e5335'; cx.fillRect(p.x+cw*0.15,p.y-chh*0.5,cw*0.7,chh*0.5);
+  if (s>2){ cx.fillStyle='#2c2418'; cx.font='700 '+clamp(s*0.7,8,13)+'px system-ui'; cx.textAlign='center'; cx.fillText('CHAI', p.x+cw/2, p.y-chh*0.6); }
+  /* water tower */
+  p=camScr(TOWER.x0,0);
+  const tw=(TOWER.x1-TOWER.x0)*s, ty0=TOWER.y0*s, ty1=TOWER.y1*s;
+  cx.strokeStyle='#7a6a55'; cx.lineWidth=Math.max(1.5,s*0.16);
+  cx.beginPath();
+  cx.moveTo(p.x+tw*0.15,p.y); cx.lineTo(p.x+tw*0.3,p.y-ty0);
+  cx.moveTo(p.x+tw*0.85,p.y); cx.lineTo(p.x+tw*0.7,p.y-ty0);
+  cx.moveTo(p.x+tw*0.22,p.y-ty0*0.5); cx.lineTo(p.x+tw*0.78,p.y-ty0*0.5);
+  cx.stroke();
+  cx.fillStyle='#7fa8d9'; rr(p.x+tw*0.1,p.y-ty1,tw*0.8,ty1-ty0,Math.max(2,s*0.4)); cx.fill();
+  cx.fillStyle='#5b432a'; cx.fillRect(p.x+tw*0.1,p.y-ty0-s*0.3,tw*0.8,s*0.3);
+  /* boundary flags */
+  p=camScr(BOUND,0);
+  if (p.x<W+40){
+    cx.strokeStyle='#54453a'; cx.lineWidth=2;
+    cx.beginPath(); cx.moveTo(p.x,p.y); cx.lineTo(p.x,p.y-5*s); cx.stroke();
+    cx.fillStyle='#c9372c'; cx.beginPath(); cx.moveTo(p.x,p.y-5*s); cx.lineTo(p.x+2.2*s,p.y-4.4*s); cx.lineTo(p.x,p.y-3.8*s); cx.fill();
+  }
+}
+function drawGoat(s){
+  const p=camScr(goatX,0);
+  if (p.x<-40||p.x>W+40) return;
+  const h=Math.max(4,0.75*s);
+  cx.save(); cx.translate(p.x,p.y);
+  cx.fillStyle='#e8e2d2';
+  rr(-h*0.6,-h,h*1.2,h*0.62,h*0.2); cx.fill();
+  cx.fillStyle='#e8e2d2'; cx.fillRect(h*0.42,-h*1.35,h*0.3,h*0.5);
+  cx.fillStyle='#d5cbb5'; cx.beginPath(); cx.arc(h*0.57,-h*1.42,h*0.22,0,TAU); cx.fill();
+  cx.strokeStyle='#a89a7c'; cx.lineWidth=Math.max(1,h*0.08);
+  cx.beginPath(); cx.moveTo(h*0.5,-h*1.55); cx.lineTo(h*0.4,-h*1.75); cx.stroke();
+  cx.strokeStyle='#d5cbb5'; cx.lineWidth=Math.max(1,h*0.1);
+  for(const lx of [-0.45,-0.2,0.15,0.4]){ cx.beginPath(); cx.moveTo(h*lx,-h*0.4); cx.lineTo(h*lx,0); cx.stroke(); }
+  cx.restore();
+}
+function drawFlightParts(s){
+  for(const p of parts){
+    if(p.sx) continue;
+    const sp=camScr(p.x,p.y), a=1-p.t/p.life;
+    if (p.type==='dust'){ cx.fillStyle='rgba(160,130,90,'+(a*0.6)+')'; cx.beginPath(); cx.arc(sp.x,sp.y,Math.max(2,(1-a)*s*0.8),0,TAU); cx.fill(); }
+    else if (p.type==='drop'){ cx.fillStyle='rgba(127,168,217,'+a+')'; cx.beginPath(); cx.arc(sp.x,sp.y,Math.max(1.5,s*0.12),0,TAU); cx.fill(); }
+    else if (p.type==='cup'){ cx.fillStyle='rgba(232,200,90,'+a+')'; cx.fillRect(sp.x-2,sp.y-3,4,6); }
+  }
+}
+function drawWindFlag(s){
+  const f=flight; if(!f) return;
+  const wnorm=clamp(f.wind/6,-1,1);
+  cx.save(); cx.translate(W-72, 148);
+  cx.fillStyle='rgba(20,40,32,.75)'; rr(-42,-14,108,32,9); cx.fill();
+  cx.fillStyle='#f3e9d2'; cx.font='700 11px system-ui'; cx.textAlign='left';
+  cx.fillText('wind', -32, 6);
+  cx.strokeStyle='#f3e9d2'; cx.lineWidth=2.5;
+  const bx=26;
+  cx.beginPath(); cx.moveTo(bx,2); cx.lineTo(bx+26*wnorm,2); cx.stroke();
+  if (Math.abs(wnorm)>0.05){
+    const tipx=bx+26*wnorm, dir=Math.sign(wnorm)*6;
+    cx.beginPath(); cx.moveTo(tipx,2); cx.lineTo(tipx-dir,-3); cx.moveTo(tipx,2); cx.lineTo(tipx-dir,7); cx.stroke();
+  } else { cx.beginPath(); cx.arc(bx,2,2.5,0,TAU); cx.stroke(); }
+  cx.restore();
+}
+
+/* ---------------- DOM UI ---------------- */
+const $=id=>document.getElementById(id);
+function toast(txt){
+  const t=document.createElement('div'); t.className='toast'; t.textContent=txt;
+  $('toasts').appendChild(t);
+  setTimeout(()=>{ t.style.transition='opacity .5s'; t.style.opacity='0'; setTimeout(()=>t.remove(),520); }, 2600);
+}
+let hintT=null;
+function hint(txt){
+  const h=$('hint');
+  if (!txt){ h.classList.add('hide'); return; }
+  h.textContent=txt; h.classList.remove('hide');
+}
+function refreshChip(){
+  $('chip').innerHTML = (save.daily.done?'<span class="done">🎯✓ </span>':'🎯 ')+daily.txt+
+    '<br>🚀 '+save.launches+' · best ↑'+save.bestH+'m →'+save.bestD+'m';
+}
+function refreshCardsBadge(){
+  const n=Object.keys(save.cards).length;
+  const b=$('cardsCt'); b.style.display=n?'':'none'; b.textContent=n;
+}
+function buildGarage(){
+  $('garSub').textContent = save.launches+' launches logged · unlocks are earned, not bought';
+  const mk=(list, selKey, fmt)=>list.map((it,i)=>{
+    const locked = it.unlock>save.launches;
+    return '<div class="sel-row '+(locked?'lock':(save[selKey]===i?'on':''))+'" data-k="'+selKey+'" data-i="'+i+'">'+
+      '<div><div class="nm">'+(locked?'🔒 ':'')+it.name+'</div><div class="st">'+fmt(it)+(locked?' · unlock: '+(it.how||it.unlock+' launches'):'')+'</div></div>'+
+      (save[selKey]===i&&!locked?'<div class="tick">✓</div>':'')+'</div>';
+  }).join('');
+  $('engineList').innerHTML = mk(TIERS,'tier',t=>t.m+' kg × '+t.r+' m flywheel · redline '+t.redline);
+  $('tireList').innerHTML  = mk(TIRES,'tire',t=>t.m+' kg · r '+t.r+' m · spin '+t.S+' · '+t.note);
+  $('armList').innerHTML   = mk(ARMS,'arm',a=>a.mult+'× rim speed · '+a.note);
+}
+document.addEventListener('click', e=>{
+  const row=e.target.closest('.sel-row');
+  if (row && !row.classList.contains('lock')){
+    const k=row.dataset.k, i=+row.dataset.i;
+    save[k]=i; persist(); buildGarage();
+    if (k==='tier'){ eng.on=false;eng.rpm=0;eng.warm=false;eng.cranks=0;eng.cranksNeed=4+Math.floor(rand(0,3)); }
+    return;
+  }
+  const cl=e.target.closest('[data-close]');
+  if (cl){ $(cl.dataset.close).classList.remove('open');
+    if (!eng.on && mode==='shop') hint(cranksHintText());
+  }
+});
+function buildCards(){
+  $('cardsGrid').innerHTML = CARDS.map(c=>{
+    const n=save.cards[c.id]||0;
+    return '<div class="fcard '+(n?'got':'mystery')+'">'+
+      '<div class="ico">'+(n?c.ico:'❔')+'</div>'+
+      '<div class="nm">'+(n?c.name:'???')+'</div>'+
+      '<div class="ct">'+(n?('×'+n+' · '+c.desc):'undiscovered')+'</div></div>';
+  }).join('');
+}
+$('garageBtn').onclick=()=>{ buildGarage(); $('garagePanel').classList.add('open'); };
+$('garBtn2').onclick=()=>{ backToShop(); buildGarage(); $('garagePanel').classList.add('open'); };
+$('cardsBtn').onclick=()=>{ buildCards(); $('cardsPanel').classList.add('open'); };
+$('againBtn').onclick=()=>{ backToShop(); };
+$('muteBtn').onclick=()=>{
+  save.muted=!save.muted; persist();
+  $('muteBtn').textContent=save.muted?'🔇':'🔊';
+  if(AU.master) AU.master.gain.value=save.muted?0:0.9;
+};
+$('muteBtn').textContent=save.muted?'🔇':'🔊';
+refreshChip(); refreshCardsBadge();
+hint('Cold morning at the workshop. Swipe up on the crank handle to wake the engine.');
+
+/* ---------------- main loop ---------------- */
+let last=performance.now();
+function frame(now){
+  let dt=Math.min(0.05,(now-last)/1000); last=now;
+  if (mode==='shop'){ updateEngine(dt); updatePress(dt); }
+  else if (mode==='flight'){
+    updateFlight(dt);
+    if (eng.on){ eng.rpm=Math.max(tier().idle, eng.rpm-dt*160); eng.visAngle+=omega()*dt*0.55; scheduleEngineAudio(); }
+  }
+  updateParts(dt);
+  draw();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
