@@ -7,7 +7,11 @@ self.addEventListener("install", (event) => {
   event.waitUntil(
     caches
       .open(CACHE)
-      .then((cache) => cache.addAll(PRECACHE.map((p) => new URL(p, self.registration.scope).href)))
+      .then((cache) =>
+        cache.addAll([
+          ...new Set(PRECACHE.map((p) => new URL(p, self.registration.scope).href)),
+        ])
+      )
       .then(() => self.skipWaiting())
   );
 });

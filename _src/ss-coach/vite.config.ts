@@ -27,7 +27,8 @@ function serviceWorker(): Plugin {
         "icons/icon-maskable-512.png",
         "icons/apple-touch-icon.png",
       ];
-      const manifest = JSON.stringify([...extra, ...assets]);
+      // dedupe: vite's bundle already contains index.html
+      const manifest = JSON.stringify([...new Set([...extra, ...assets])]);
       const template = readFileSync(
         resolve(__dirname, "sw/sw.template.js"),
         "utf8"

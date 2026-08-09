@@ -1,13 +1,17 @@
 /* S&S Coach service worker — offline-first app-shell precache.
    All URLs are relative to the SW's own location so any base path works. */
-const CACHE = "ss-coach-mslgwxnj";
-const PRECACHE = ["./","index.html","manifest.webmanifest","icons/icon-192.png","icons/icon-512.png","icons/icon-maskable-512.png","icons/apple-touch-icon.png","assets/index-C6iC-jKf.css","assets/index-C2rWApKp.js","index.html"];
+const CACHE = "ss-coach-mslhbvlp";
+const PRECACHE = ["./","index.html","manifest.webmanifest","icons/icon-192.png","icons/icon-512.png","icons/icon-maskable-512.png","icons/apple-touch-icon.png","assets/index-C6iC-jKf.css","assets/index-C2rWApKp.js"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches
       .open(CACHE)
-      .then((cache) => cache.addAll(PRECACHE.map((p) => new URL(p, self.registration.scope).href)))
+      .then((cache) =>
+        cache.addAll([
+          ...new Set(PRECACHE.map((p) => new URL(p, self.registration.scope).href)),
+        ])
+      )
       .then(() => self.skipWaiting())
   );
 });
