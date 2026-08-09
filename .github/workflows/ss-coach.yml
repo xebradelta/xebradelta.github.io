@@ -1,0 +1,73 @@
+name: S&S Coach — build & deploy
+
+# This repo publishes GitHub Pages straight from the main branch root
+# (no Pages build step), so "deploying" the app means keeping the committed
+# build output in ss/ in sync with the source in _src/ss-coach/.
+#
+# - On pull requests: build and verify the committed ss/ matches the source.
+# - On pushes to main: build and, if ss/ is stale, commit the fresh output.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "_src/ss-coach/**"
+      - ".github/workflows/ss-coach.yml"
+  pull_request:
+    paths:
+      - "_src/ss-coach/**"
+      - ".github/workflows/ss-coach.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ss-coach-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: _src/ss-coach/package-lock.json
+
+      - name: Install
+        working-directory: _src/ss-coach
+        run: npm ci
+
+      - name: Build
+        working-directory: _src/ss-coach
+        run: npm run build
+
+      - name: Check committed output is current
+        id: diffcheck
+        run: |
+          # sw.js embeds a build timestamp, so ignore it when diffing
+          if git status --porcelain -- ss/ | grep -v 'ss/sw\.js' | grep -q .; then
+            echo "stale=true" >> "$GITHUB_OUTPUT"
+            git status --porcelain -- ss/
+          else
+            echo "stale=false" >> "$GITHUB_OUTPUT"
+            git checkout -- ss/ || true
+          fi
+
+      - name: Fail PR if ss/ is stale
+        if: github.event_name == 'pull_request' && steps.diffcheck.outputs.stale == 'true'
+        run: |
+          echo "::error::ss/ is out of date. Run 'npm run build' in _src/ss-coach and commit the result."
+          exit 1
+
+      - name: Commit fresh build to main
+        if: github.event_name == 'push' && steps.diffcheck.outputs.stale == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add ss/
+          git commit -m "ss: rebuild from _src/ss-coach"
+          git push
