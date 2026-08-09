@@ -1,7 +1,14 @@
 import { useMemo, useState } from "react";
 import { useStore } from "../store";
 import { Heatmap, TonnageChart, WeightOverTime } from "../components/charts";
-import { computePRs, computeStreaks, sessionTonnage } from "../lib/stats";
+import {
+  computePRs,
+  computeStreaks,
+  computeTimeTotals,
+  formatDuration,
+  sessionTonnage,
+  sessionWorkSec,
+} from "../lib/stats";
 import { formatClock, formatDateHuman } from "../lib/time";
 import { formatWeight, kgToLb } from "../lib/weights";
 import { STANDARD_LABELS } from "../lib/program";
@@ -14,6 +21,7 @@ export default function History() {
   const sessions = state.sessions;
   const streaks = computeStreaks(sessions);
   const prs = useMemo(() => computePRs(sessions), [sessions]);
+  const time = useMemo(() => computeTimeTotals(sessions), [sessions]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -61,6 +69,27 @@ export default function History() {
         <div className="row between small faint">
           <span className="num">streak {streaks.current} · best {streaks.best}</span>
           <span className="num">{streaks.thisWeekCount} this week</span>
+        </div>
+      </section>
+
+      <section className="row" style={{ gap: "0.75rem" }} aria-label="Time trained">
+        <div className="card" style={{ flex: 1, textAlign: "center" }}>
+          <div className="num" style={{ fontSize: "1.25rem", fontWeight: 800 }}>
+            {formatDuration(time.weekSec)}
+          </div>
+          <div className="faint small">this week</div>
+        </div>
+        <div className="card" style={{ flex: 1, textAlign: "center" }}>
+          <div className="num" style={{ fontSize: "1.25rem", fontWeight: 800 }}>
+            {formatDuration(time.monthSec)}
+          </div>
+          <div className="faint small">this month</div>
+        </div>
+        <div className="card" style={{ flex: 1, textAlign: "center" }}>
+          <div className="num" style={{ fontSize: "1.25rem", fontWeight: 800 }}>
+            {formatDuration(time.allSec)}
+          </div>
+          <div className="faint small">all time</div>
         </div>
       </section>
 
@@ -164,6 +193,10 @@ export default function History() {
                 <div className="row between">
                   <span className="dim">Tonnage</span>
                   <span className="num">{displayTonnage(sessionTonnage(s))}</span>
+                </div>
+                <div className="row between">
+                  <span className="dim">Time</span>
+                  <span className="num">{formatDuration(sessionWorkSec(s))}</span>
                 </div>
                 {s.test && (
                   <div className="row between">

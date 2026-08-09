@@ -94,6 +94,44 @@ export function computePRs(sessions: SessionLog[]): PersonalRecords {
   };
 }
 
+export function sessionWorkSec(s: SessionLog): number {
+  if (typeof s.workSec === "number" && s.workSec > 0) return s.workSec;
+  return Math.min(Math.max(Math.round((s.finishedAt - s.startedAt) / 1000), 0), 3 * 3600);
+}
+
+export interface TimeTotals {
+  weekSec: number;
+  monthSec: number;
+  allSec: number;
+}
+
+/** Accumulated working time: current week (Mon-based), calendar month, ever. */
+export function computeTimeTotals(sessions: SessionLog[], today = localDateISO()): TimeTotals {
+  const [y, m, d] = today.split("-").map(Number);
+  const dow = (new Date(y, m - 1, d).getDay() + 6) % 7; // 0=Mon
+  const monday = addDays(today, -dow);
+  const monthPrefix = today.slice(0, 7); // "YYYY-MM"
+  let weekSec = 0;
+  let monthSec = 0;
+  let allSec = 0;
+  for (const s of sessions) {
+    const sec = sessionWorkSec(s);
+    allSec += sec;
+    if (s.dateISO >= monday && s.dateISO <= today) weekSec += sec;
+    if (s.dateISO.startsWith(monthPrefix)) monthSec += sec;
+  }
+  return { weekSec, monthSec, allSec };
+}
+
+/** "47 min" under an hour, then "3 h 20 min". */
+export function formatDuration(totalSec: number): string {
+  const min = Math.round(totalSec / 60);
+  if (min < 60) return `${min} min`;
+  const h = Math.floor(min / 60);
+  const r = min % 60;
+  return r === 0 ? `${h} h` : `${h} h ${r} min`;
+}
+
 /** Monday-based week key like "2026-W32" (approximate ISO week, stable). */
 export function isoWeekKey(dateISO: string): string {
   const [y, m, d] = dateISO.split("-").map(Number);

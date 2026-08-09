@@ -153,6 +153,7 @@ export default function TestDay() {
       crisp: null,
       rpe: null,
       notes: "",
+      workSec: Math.round(safeElapsedSec(startedAtRef.current, Date.now(), 3600)),
       test: r,
     };
     const newStandards = r.achieved.filter((s: Standard) => !state.celebrated.includes(s));
@@ -188,7 +189,7 @@ export default function TestDay() {
               units={settings.units}
               value={swingWeight}
               onChange={setSwingWeight}
-              highlight={profile?.bells ?? []}
+              bells={profile?.bells ?? []}
             />
           </div>
           <div className="field">
@@ -198,7 +199,7 @@ export default function TestDay() {
               units={settings.units}
               value={getupWeight}
               onChange={setGetupWeight}
-              highlight={profile?.bells ?? []}
+              bells={profile?.bells ?? []}
             />
           </div>
           <p className="faint small">

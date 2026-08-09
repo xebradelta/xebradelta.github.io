@@ -65,7 +65,7 @@ One versioned document under the `localStorage` key `ss-coach:state`:
 
 ```
 {
-  schemaVersion: 1,
+  schemaVersion: 2,
   profile:   { sex, ageRange, condition, bells[], painFlags[], createdAt },
   settings:  { units, sound, vibration, theme, trainingDays[] },
   swings:    Track & { style },     // see below
@@ -76,6 +76,14 @@ One versioned document under the `localStorage` key `ss-coach:state`:
 }
 ```
 
+- `profile.bells` is the user's **bell library**: arbitrary weights stored
+  in kg (entered in kg or lb, e.g. a 30 lb gym bell is 13.608), editable in
+  onboarding and Settings. Every weight picker and the progression ladder
+  offer exactly these bells; the standard kg sizes are one-tap presets and
+  the fallback ladder for users who haven't added any.
+- Sessions carry `workSec` — working time from the session's first tap to
+  its last rep (cooldown and the summary form excluded). Older v1 payloads
+  are migrated by approximating it from start/finish timestamps.
 - `loadState()` migrates any older/unknown payload up through
   `migrations[n]` steps, then merges over defaults so missing branches never
   crash. Unparseable data is set aside under `ss-coach:corrupt-backup` and
@@ -108,10 +116,12 @@ Swings and get-ups progress on **independent tracks**, each:
   each session the user answers "was every rep powerful and crisp?" — a yes
   *at the prescribed weights* increments `qualityStreak`, a no resets it.
 - **The step.** Once the checklist is complete and the streak reaches 2,
-  the engine proposes bringing in the next standard bell (8→12→…→48 kg) at
-  `heavyCount = 2` (one heavy set/rep per side). Every 2 further crisp
-  sessions it proposes +2 more heavy units. At 10/10 the step completes:
-  `base = next`, the old bell joins `owned[]`, and the cycle restarts.
+  the engine proposes bringing in the next-heavier bell **from the user's
+  own library** (standard 8→12→…→48 kg ladder if they have none) at
+  `heavyCount = 2` (one heavy set/rep per side); jumps over ~34% get an
+  extra be-patient nudge. Every 2 further crisp sessions it proposes +2
+  more heavy units. At 10/10 the step completes: `base = next`, the old
+  bell joins `owned[]`, and the cycle restarts.
 - Everything is advisory: one tap applies a proposal, and manual override
   can set any base/next/heavyCount at any time.
 

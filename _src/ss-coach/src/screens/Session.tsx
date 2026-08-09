@@ -23,7 +23,10 @@ import {
 import { prescribeGetups, prescribeSwings, registerSession } from "../lib/progression";
 import { acquireWakeLock, playCue, releaseWakeLock, unlockAudio, vibrate } from "../lib/cues";
 import { formatClock, localDateISO, safeElapsedSec, formatDateHuman } from "../lib/time";
-import { formatWeight } from "../lib/weights";
+import { formatWeightShort } from "../lib/weights";
+
+/** Relaxed get-up pace: roughly one rep per minute. */
+const GETUP_PACE_SEC = 60;
 
 function newActiveSession(
   plannedSwings: ActiveSession["plannedSwings"],
@@ -44,6 +47,8 @@ function newActiveSession(
     swingsDone: [],
     getupsDone: [],
     restStartedAt: null,
+    getupRepStartedAt: null,
+    lastRepAt: null,
     cooldownDone: false,
   };
 }
@@ -103,6 +108,27 @@ export default function Session() {
     }
   }, [restSec, active?.restStartedAt, cuedRestFor, settings.sound]);
 
+  // Get-up pacer: ~one rep a minute. Subtle cue when the minute elapses.
+  const paceStartedAt = active?.getupRepStartedAt ?? null;
+  const paceSec = paceStartedAt ? safeElapsedSec(paceStartedAt, now, 3600) : 0;
+  const [cuedPaceFor, setCuedPaceFor] = useState<number | null>(null);
+  useEffect(() => {
+    if (!paceStartedAt) {
+      setCuedPaceFor(null);
+      return;
+    }
+    if (paceSec >= GETUP_PACE_SEC && cuedPaceFor !== paceStartedAt) {
+      setCuedPaceFor(paceStartedAt);
+      playCue("tick", settings.sound);
+      vibrate(50, settings.vibration);
+    }
+  }, [paceSec, paceStartedAt, cuedPaceFor, settings.sound, settings.vibration]);
+
+  // Working time: first tap (session start) to most recent rep.
+  const elapsedWorkSec = active
+    ? safeElapsedSec(active.startedAt, active.phase === "cooldown" || active.phase === "summary" ? (active.lastRepAt ?? now) : now)
+    : 0;
+
   const swingSide: Side | "B" = useMemo(() => {
     if (!active) return "B";
     const i = active.swingsDone.length;
@@ -148,9 +174,15 @@ export default function Session() {
       const done = [...a.swingsDone, entry];
       if (done.length >= SWING_SETS) {
         playCue("done", settings.sound);
-        return { ...a, swingsDone: done, phase: "transition", restStartedAt: Date.now() };
+        return {
+          ...a,
+          swingsDone: done,
+          phase: "transition",
+          restStartedAt: Date.now(),
+          lastRepAt: Date.now(),
+        };
       }
-      return { ...a, swingsDone: done, restStartedAt: Date.now() };
+      return { ...a, swingsDone: done, restStartedAt: Date.now(), lastRepAt: Date.now() };
     });
   }
 
@@ -162,7 +194,12 @@ export default function Session() {
 
   function startGetups() {
     playCue("go", settings.sound);
-    touch((a) => ({ ...a, phase: "getups", restStartedAt: null }));
+    touch((a) => ({
+      ...a,
+      phase: "getups",
+      restStartedAt: null,
+      getupRepStartedAt: Date.now(),
+    }));
   }
 
   function logGetup(weightOverride?: number) {
@@ -177,9 +214,15 @@ export default function Session() {
       const done = [...a.getupsDone, entry];
       if (done.length >= GETUP_REPS) {
         playCue("done", settings.sound);
-        return { ...a, getupsDone: done, phase: "cooldown" };
+        return {
+          ...a,
+          getupsDone: done,
+          phase: "cooldown",
+          getupRepStartedAt: null,
+          lastRepAt: Date.now(),
+        };
       }
-      return { ...a, getupsDone: done };
+      return { ...a, getupsDone: done, getupRepStartedAt: Date.now(), lastRepAt: Date.now() };
     });
   }
 
@@ -203,6 +246,9 @@ export default function Session() {
       crisp,
       rpe,
       notes: notes.trim(),
+      workSec: Math.round(
+        safeElapsedSec(active.startedAt, active.lastRepAt ?? Date.now(), 3 * 3600)
+      ),
     };
     // Detect milestones against the current render state, then apply the
     // update as a pure function (side effects don't belong in updaters).
@@ -266,6 +312,9 @@ export default function Session() {
     <div className="session-screen">
       <div className="session-top">
         <span className="phase-label">{phaseTitle[active.phase]}</span>
+        <span className="phase-label num" aria-label="Session time">
+          {formatClock(elapsedWorkSec)}
+        </span>
         <button className="btn subtle small" onClick={() => setShowQuit(true)}>
           End
         </button>
@@ -297,10 +346,10 @@ export default function Session() {
             {swingSide !== "B" ? ` · ${swingSide === "L" ? "Left" : "Right"} arm` : " · Two-arm"}
           </span>
           <div className="giant-number num">
-            {formatWeight(
+            {formatWeightShort(
               active.plannedSwings[active.swingsDone.length]?.weight ?? 0,
               settings.units
-            ).replace(/ (kg|lb)/, "")}
+            )}
             <span style={{ fontSize: "0.35em", color: "var(--ink-dim)" }}>
               {" "}
               {settings.units}
@@ -356,10 +405,10 @@ export default function Session() {
           <div className="giant-number num">
             {active.plannedGetups[active.getupsDone.length] === 0
               ? "—"
-              : formatWeight(
+              : formatWeightShort(
                   active.plannedGetups[active.getupsDone.length] ?? 0,
                   settings.units
-                ).replace(/ (kg|lb)/, "")}
+                )}
             <span style={{ fontSize: "0.35em", color: "var(--ink-dim)" }}>
               {" "}
               {active.plannedGetups[active.getupsDone.length] === 0 ? "no bell" : settings.units}
@@ -373,6 +422,7 @@ export default function Session() {
             change bell
           </button>
           <SetDots total={GETUP_REPS} done={active.getupsDone.length} heavyCount={0} />
+          <GetupPacer seconds={paceSec} />
           <p className="dim small">Slow is smooth. About one rep a minute.</p>
           <button className="tap-big" onClick={() => logGetup()}>
             Rep done
@@ -408,15 +458,19 @@ export default function Session() {
               <span className="dim">Swings</span>
               <strong className="num">
                 {active.swingsDone.reduce((n, s) => n + s.reps, 0)} reps ·{" "}
-                {summarizeWeights(active.swingsDone.map((s) => s.weight))} kg
+                {summarizeWeights(active.swingsDone.map((s) => s.weight), settings.units)}
               </strong>
             </div>
             <div className="row between">
               <span className="dim">Get-ups</span>
               <strong className="num">
                 {active.getupsDone.length} reps ·{" "}
-                {summarizeWeights(active.getupsDone.map((g) => g.weight))} kg
+                {summarizeWeights(active.getupsDone.map((g) => g.weight), settings.units)}
               </strong>
+            </div>
+            <div className="row between">
+              <span className="dim">Working time</span>
+              <strong className="num">{formatClock(elapsedWorkSec)}</strong>
             </div>
           </div>
           <div className="field">
@@ -481,7 +535,7 @@ export default function Session() {
                 ? active.plannedGetups[active.getupsDone.length] ?? 0
                 : active.plannedSwings[active.swingsDone.length]?.weight ?? 16
             }
-            highlight={state.profile?.bells ?? []}
+            bells={state.profile?.bells ?? []}
             onChange={(kg) => {
               setShowWeightPick(false);
               if (active.phase === "getups") logGetup(kg);
@@ -656,8 +710,28 @@ function PartialSetControl({ onLog }: { onLog: (reps: number) => void }) {
   );
 }
 
-function summarizeWeights(ws: number[]): string {
-  if (ws.length === 0) return "0";
+function summarizeWeights(ws: number[], units: "kg" | "lb"): string {
+  if (ws.length === 0) return "—";
   const uniq = [...new Set(ws)];
-  return uniq.length === 1 ? String(uniq[0]) : `${Math.min(...uniq)}–${Math.max(...uniq)}`;
+  if (uniq.length === 1) {
+    return uniq[0] === 0 ? "no bell" : `${formatWeightShort(uniq[0], units)} ${units}`;
+  }
+  return `${formatWeightShort(Math.min(...uniq), units)}–${formatWeightShort(Math.max(...uniq), units)} ${units}`;
+}
+
+/**
+ * The get-up pacer: a bar that drains over the relaxed one-rep minute.
+ * Guidance, not a deadline — it just sits empty once the minute is gone.
+ */
+function GetupPacer({ seconds }: { seconds: number }) {
+  const remaining = Math.max(0, 1 - seconds / GETUP_PACE_SEC);
+  return (
+    <div
+      className="pacer"
+      role="img"
+      aria-label={`About ${Math.max(0, Math.round(GETUP_PACE_SEC - seconds))} seconds left in this rep's minute`}
+    >
+      <i style={{ width: `${remaining * 100}%` }} />
+    </div>
+  );
 }

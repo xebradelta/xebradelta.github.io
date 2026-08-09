@@ -69,6 +69,8 @@ export interface SessionLog {
   crisp: boolean | null;
   rpe: number | null;
   notes: string;
+  /** working time: first tap of the session to the last rep, seconds */
+  workSec: number;
   test?: TestResult;
 }
 
@@ -126,6 +128,10 @@ export interface ActiveSession {
   getupsDone: GetupRepLog[];
   /** wall-clock ms when the current rest began, or null when not resting */
   restStartedAt: number | null;
+  /** wall-clock ms when the current get-up rep began (drives the pacer) */
+  getupRepStartedAt: number | null;
+  /** wall-clock ms of the most recent logged rep/set — end of working time */
+  lastRepAt: number | null;
   cooldownDone: boolean;
 }
 

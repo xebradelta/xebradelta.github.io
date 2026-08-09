@@ -2,7 +2,7 @@ import type { AppState, Settings, SwingTrack, Track } from "./types";
 
 export const STORAGE_KEY = "ss-coach:state";
 export const CORRUPT_BACKUP_KEY = "ss-coach:corrupt-backup";
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 
 export function defaultSettings(): Settings {
   return {
@@ -57,6 +57,23 @@ export function defaultState(): AppState {
  */
 const migrations: Record<number, (s: Record<string, unknown>) => Record<string, unknown>> = {
   0: (s) => ({ ...defaultState(), ...s, schemaVersion: 1 }),
+  // v2: sessions gain workSec (time from first tap to last rep). Older logs
+  // approximate it from start/finish, capped at 3 hours to defuse any
+  // clock-jump artifacts baked into old data.
+  1: (s) => {
+    const sessions = Array.isArray(s.sessions) ? (s.sessions as Record<string, unknown>[]) : [];
+    return {
+      ...s,
+      sessions: sessions.map((sess) => {
+        if (typeof sess.workSec === "number") return sess;
+        const started = typeof sess.startedAt === "number" ? sess.startedAt : 0;
+        const finished = typeof sess.finishedAt === "number" ? sess.finishedAt : started;
+        const sec = Math.round((finished - started) / 1000);
+        return { ...sess, workSec: Math.min(Math.max(sec, 0), 3 * 3600) };
+      }),
+      schemaVersion: 2,
+    };
+  },
 };
 
 export function migrate(raw: Record<string, unknown>): AppState {

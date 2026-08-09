@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { useStore } from "../store";
-import { Segmented, Sheet } from "../components/ui";
+import { BellManager, Segmented, Sheet } from "../components/ui";
 import { downloadBackup, parseBackup } from "../lib/backup";
 import { defaultState, wipeAll } from "../lib/storage";
 import { navigate } from "../router";
@@ -53,7 +53,8 @@ export default function Settings() {
             onChange={(units) => setSettings({ units })}
           />
           <p className="faint small">
-            Bells are always the standard kg sizes — pounds are display only.
+            Display units for every weight in the app. Your bells keep their
+            exact values either way.
           </p>
         </div>
         <div className="field">
@@ -69,6 +70,25 @@ export default function Settings() {
           />
         </div>
       </section>
+
+      {state.profile && (
+        <section className="card stack" aria-label="Your bells">
+          <h2>Your bells</h2>
+          <p className="faint small">
+            The bells you can actually train with — any weight, kg or lb.
+            Every picker and the progression ladder use this list.
+          </p>
+          <BellManager
+            bells={state.profile.bells}
+            units={settings.units}
+            onChange={(bells) =>
+              update((s) =>
+                s.profile ? { ...s, profile: { ...s.profile, bells } } : s
+              )
+            }
+          />
+        </section>
+      )}
 
       <section className="card stack" aria-label="Session cues">
         <h2>Session cues</h2>
