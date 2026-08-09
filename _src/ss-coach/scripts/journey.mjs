@@ -92,6 +92,7 @@ try {
     }
     await page.getByText("Start get-ups").waitFor();
     await clickText("Start get-ups");
+    await page.locator(".pacer").waitFor(); // one-minute pace bar present
     for (let rep = 0; rep < 10; rep++) {
       await page.getByText("Rep done").click();
     }
@@ -161,6 +162,23 @@ try {
   await page.getByText("Session log").waitFor();
   const logCount = await page.locator("details.learn-item").count();
   ok(`history lists 4 sessions (got ${logCount})`, logCount === 4);
+  ok("time-trained totals shown", await page.getByText("all time").isVisible());
+
+  /* ——— custom lb bells: add via Settings, see them in pickers ——— */
+  await page.goto(BASE + "#/settings");
+  await page.getByRole("group", { name: "Units" }).getByRole("button", { name: "Pounds" }).click();
+  await page.getByLabel("Custom bell weight").fill("30");
+  await page.getByRole("group", { name: "Custom bell unit" }).getByRole("button", { name: "lb" }).click();
+  await page.getByRole("button", { name: "Add bell" }).click();
+  await page.getByRole("button", { name: "Remove 30 lb" }).waitFor();
+  await page.goto(BASE + "#/test");
+  ok(
+    "custom 30 lb bell offered in pickers",
+    (await page.getByRole("group", { name: "Swing test weight" }).getByRole("button", { name: "30 lb" }).count()) === 1
+  );
+  await page.goto(BASE + "#/settings");
+  await page.getByRole("button", { name: "Remove 30 lb" }).click();
+  await page.getByRole("group", { name: "Units" }).getByRole("button", { name: "Kilograms" }).click();
 
   /* ——— export ——— */
   await page.goto(BASE + "#/settings");

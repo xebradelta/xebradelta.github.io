@@ -2,10 +2,10 @@ import { useRef, useState } from "react";
 import { useStore } from "../store";
 import { parseBackup } from "../lib/backup";
 import { navigate } from "../router";
-import { KettlebellIcon, Segmented } from "../components/ui";
+import { BellManager, KettlebellIcon, Segmented } from "../components/ui";
 import type { AgeRange, Condition, Sex } from "../lib/types";
 import { fitToOwnedBells, recommendStart } from "../lib/program";
-import { BELL_SIZES, formatWeight } from "../lib/weights";
+import { formatWeight } from "../lib/weights";
 import { defaultGetupTrack, defaultSwingTrack } from "../lib/storage";
 
 const PAIN_OPTIONS = [
@@ -162,24 +162,17 @@ export default function Onboarding() {
       <span className="kicker">Step 2 of 4</span>
       <h1>Your gear &amp; your body</h1>
       <div className="field">
-        <label>Which bells do you have? (skip if none yet)</label>
-        <div className="chips" role="group" aria-label="Bells you own">
-          {BELL_SIZES.map((kg) => (
-            <button
-              key={kg}
-              type="button"
-              className="chip num"
-              aria-pressed={bells.includes(kg)}
-              onClick={() =>
-                setBells((b) =>
-                  b.includes(kg) ? b.filter((x) => x !== kg) : [...b, kg].sort((x, y) => x - y)
-                )
-              }
-            >
-              {kg} kg
-            </button>
-          ))}
-        </div>
+        <label>Which bells can you get your hands on? (skip if none yet)</label>
+        <BellManager
+          bells={bells}
+          units={state.settings.units}
+          onChange={setBells}
+          presetsOpen
+        />
+        <p className="faint small">
+          Any weight works — add your gym's exact bells in kg or lb. You can
+          change this list any time in Settings.
+        </p>
       </div>
       <div className="field">
         <label>Any current aches worth respecting?</label>

@@ -9,7 +9,7 @@ import {
   prescribeGetups,
   prescribeSwings,
 } from "../lib/progression";
-import { formatWeight, nextBell } from "../lib/weights";
+import { formatWeight, formatWeightShort, nextBell } from "../lib/weights";
 import { GETUP_REPS, SWING_SETS } from "../lib/program";
 
 export default function Plan() {
@@ -91,6 +91,7 @@ export default function Plan() {
           <ManualOverride
             lift={editing}
             track={editing === "swings" ? state.swings : state.getups}
+            bells={state.profile?.bells ?? []}
             unitsLabel={settings.units}
             capacity={editing === "swings" ? SWING_SETS : GETUP_REPS}
             onSave={(t) => {
@@ -128,7 +129,8 @@ function TrackCard({
 }) {
   const { state } = useStore();
   const units = state.settings.units;
-  const advice = advise(track, lift);
+  const bells = state.profile?.bells ?? [];
+  const advice = advise(track, lift, bells, (kg) => formatWeight(kg, units));
   const plan =
     lift === "swings"
       ? prescribeSwings(track as SwingTrack).map((p) => p.weight)
@@ -166,7 +168,7 @@ function TrackCard({
           </div>
           <p className="dim small num">
             {track.heavyCount} of {capacity} {unitsWord} at {formatWeight(track.next, units)} —
-            today: {compactPlan(plan)}
+            today: {compactPlan(plan, units)}
           </p>
         </>
       )}
@@ -175,8 +177,8 @@ function TrackCard({
         <fieldset style={{ border: "none" }} className="stack">
           <legend className="faint small" style={{ marginBottom: "0.4rem" }}>
             Own the {track.base === 0 ? "movement" : formatWeight(track.base, units)} — then{" "}
-            {nextBell(track.base) !== null
-              ? `the ${formatWeight(nextBell(track.base)!, units)} comes in`
+            {nextBell(track.base, bells) !== null
+              ? `the ${formatWeight(nextBell(track.base, bells)!, units)} comes in`
               : "stay and enjoy it"}
           </legend>
           {OWNERSHIP_CHECKLIST.map((c) => (
@@ -216,19 +218,20 @@ function TrackCard({
   );
 }
 
-function compactPlan(plan: number[]): string {
+function compactPlan(plan: number[], units: "kg" | "lb"): string {
   const parts: { w: number; n: number }[] = [];
   for (const w of plan) {
     const last = parts[parts.length - 1];
     if (last && last.w === w) last.n++;
     else parts.push({ w, n: 1 });
   }
-  return parts.map((p) => `${p.n}×${p.w}`).join(" + ");
+  return parts.map((p) => `${p.n}×${formatWeightShort(p.w, units)}`).join(" + ");
 }
 
 function ManualOverride({
   lift,
   track,
+  bells,
   unitsLabel,
   capacity,
   onSave,
@@ -236,6 +239,7 @@ function ManualOverride({
 }: {
   lift: "swings" | "getups";
   track: Track;
+  bells: number[];
   unitsLabel: "kg" | "lb";
   capacity: number;
   onSave: (t: Track) => void;
@@ -252,6 +256,7 @@ function ManualOverride({
         <WeightPicker
           label="Working weight"
           units={unitsLabel}
+          bells={bells}
           value={base}
           onChange={setBase}
           allowNone={lift === "getups"}
@@ -272,10 +277,12 @@ function ManualOverride({
         <WeightPicker
           label="Next weight"
           units={unitsLabel}
+          bells={bells}
           value={next ?? -1}
           onChange={(kg) => setNext(kg)}
         />
       </div>
+      <p className="faint small">Missing a size? Add bells in Settings → Your bells.</p>
       {next !== null && (
         <div className="field">
           <label className="num">

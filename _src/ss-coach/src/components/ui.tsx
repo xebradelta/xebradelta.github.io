@@ -1,6 +1,13 @@
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { Units } from "../lib/types";
-import { BELL_SIZES, formatWeight } from "../lib/weights";
+import {
+  BELL_SIZES,
+  bellLadder,
+  formatWeight,
+  lbToKg,
+  normalizeBells,
+  normalizeKg,
+} from "../lib/weights";
 
 export function KettlebellIcon({ size = 24 }: { size?: number }) {
   return (
@@ -83,24 +90,33 @@ export function Sheet({
   );
 }
 
-/** Snap-to-standard-sizes weight picker rendered as big chips. */
+/**
+ * Weight picker rendered as big chips. Offers the user's own bells (or the
+ * standard sizes if they haven't added any). The current value is always
+ * shown even if it's no longer in the library, so old plans stay editable.
+ */
 export function WeightPicker({
   value,
   onChange,
   units,
+  bells = [],
   allowNone = false,
-  highlight = [],
   label,
 }: {
   value: number;
   onChange: (kg: number) => void;
   units: Units;
+  /** the user's bell inventory, kg */
+  bells?: number[];
   allowNone?: boolean;
-  /** bells the user owns get a marker */
-  highlight?: number[];
   label: string;
 }) {
-  const options: number[] = allowNone ? [0, ...BELL_SIZES] : [...BELL_SIZES];
+  const ladder = bellLadder(bells);
+  const options: number[] = allowNone ? [0, ...ladder] : [...ladder];
+  if (value > 0 && !options.some((o) => Math.abs(o - value) < 1e-6)) {
+    options.push(value);
+    options.sort((a, b) => a - b);
+  }
   return (
     <div className="chips" role="group" aria-label={label}>
       {options.map((kg) => (
@@ -108,13 +124,126 @@ export function WeightPicker({
           key={kg}
           type="button"
           className="chip num"
-          aria-pressed={value === kg}
+          aria-pressed={Math.abs(value - kg) < 1e-6}
           onClick={() => onChange(kg)}
         >
           {kg === 0 ? "none" : formatWeight(kg, units)}
-          {highlight.includes(kg) ? " •" : ""}
         </button>
       ))}
+    </div>
+  );
+}
+
+/**
+ * Bell library editor: your bells as removable chips, standard sizes as
+ * one-tap presets, and a free-form add field in kg or lb (so a gym rack of
+ * 5/10/15/20/30 lb bells is a five-tap setup).
+ */
+export function BellManager({
+  bells,
+  units,
+  onChange,
+  presetsOpen = false,
+}: {
+  bells: number[];
+  units: Units;
+  onChange: (bells: number[]) => void;
+  /** show the standard-size presets expanded (used during onboarding) */
+  presetsOpen?: boolean;
+}) {
+  const [customValue, setCustomValue] = useState("");
+  const [customUnit, setCustomUnit] = useState<Units>(units);
+  const owned = normalizeBells(bells);
+
+  function addBell(kg: number) {
+    onChange(normalizeBells([...owned, kg]));
+  }
+  function removeBell(kg: number) {
+    onChange(owned.filter((b) => Math.abs(b - kg) > 1e-6));
+  }
+  function addCustom() {
+    const n = Number(customValue);
+    if (!Number.isFinite(n) || n <= 0 || n > 999) return;
+    addBell(normalizeKg(customUnit === "lb" ? lbToKg(n) : n));
+    setCustomValue("");
+  }
+
+  const presets = BELL_SIZES.filter((s) => !owned.some((b) => Math.abs(b - s) < 1e-6));
+
+  return (
+    <div className="stack" style={{ gap: "0.7rem" }}>
+      {owned.length > 0 ? (
+        <div className="chips" role="group" aria-label="Your bells (tap to remove)">
+          {owned.map((kg) => (
+            <button
+              key={kg}
+              type="button"
+              className="chip num"
+              aria-pressed={true}
+              aria-label={`Remove ${formatWeight(kg, units)}`}
+              onClick={() => removeBell(kg)}
+            >
+              {formatWeight(kg, units)} ✕
+            </button>
+          ))}
+        </div>
+      ) : (
+        <p className="faint small">
+          No bells yet — pickers will offer the standard sizes until you add
+          yours.
+        </p>
+      )}
+      <div className="row" style={{ flexWrap: "wrap", gap: "0.5rem" }}>
+        <input
+          type="number"
+          inputMode="decimal"
+          min={1}
+          max={999}
+          step="any"
+          placeholder="weight"
+          value={customValue}
+          onChange={(e) => setCustomValue(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && addCustom()}
+          aria-label="Custom bell weight"
+          style={{ width: "6.5rem" }}
+        />
+        <div className="seg" role="group" aria-label="Custom bell unit" style={{ flex: "0 0 auto" }}>
+          {(["kg", "lb"] as const).map((u) => (
+            <button
+              key={u}
+              type="button"
+              aria-pressed={customUnit === u}
+              onClick={() => setCustomUnit(u)}
+              style={{ minWidth: "3.2rem" }}
+            >
+              {u}
+            </button>
+          ))}
+        </div>
+        <button type="button" className="btn" onClick={addCustom} disabled={!customValue}>
+          Add bell
+        </button>
+      </div>
+      {presets.length > 0 && (
+        <details open={presetsOpen || undefined}>
+          <summary className="faint small" style={{ cursor: "pointer", minHeight: "32px" }}>
+            Add standard sizes…
+          </summary>
+          <div className="chips" role="group" aria-label="Standard sizes" style={{ marginTop: "0.5rem" }}>
+            {presets.map((kg) => (
+              <button
+                key={kg}
+                type="button"
+                className="chip num"
+                aria-pressed={false}
+                onClick={() => addBell(kg)}
+              >
+                {formatWeight(kg, units)}
+              </button>
+            ))}
+          </div>
+        </details>
+      )}
     </div>
   );
 }

@@ -62,31 +62,46 @@ export type Advice =
 
 /**
  * What the engine would do next for a track. Purely advisory — the user can
- * apply it with one tap or override everything by hand.
+ * apply it with one tap or override everything by hand. The ladder climbed
+ * is the user's own bell inventory (standard sizes if they have none).
  */
-export function advise(t: Track, lift: "swings" | "getups"): Advice {
+export function advise(
+  t: Track,
+  lift: "swings" | "getups",
+  ownedBells: number[] = [],
+  fmt: (kg: number) => string = (kg) => `${kg} kg`
+): Advice {
   const unit = lift === "swings" ? "sets" : "reps";
   if (t.next === null) {
-    const up = nextBell(t.base);
+    const up = nextBell(t.base, ownedBells);
     if (up === null) {
-      return { kind: "hold", reason: "You are at the top of the standard sizes. Own it and enjoy it." };
+      return {
+        kind: "hold",
+        reason:
+          ownedBells.length > 0
+            ? `The ${fmt(t.base)} is the heaviest bell you've added. Own it, enjoy it — and add the next bell in Settings when you find one.`
+            : "You are at the top of the standard sizes. Own it and enjoy it.",
+      };
     }
     if (!checklistComplete(t)) {
       return {
         kind: "hold",
-        reason: `Keep practicing at ${t.base} kg. When every ${unit.slice(0, -1)} is crisp across several sessions, tick off the ownership checklist and the ${up} kg can start coming in.`,
+        reason: `Keep practicing at ${fmt(t.base)}. When every ${unit.slice(0, -1)} is crisp across several sessions, tick off the ownership checklist and the ${fmt(up)} can start coming in.`,
       };
     }
     if (t.qualityStreak < 2) {
       return {
         kind: "hold",
-        reason: `Checklist done — bank a couple more crisp sessions at ${t.base} kg, then bring in the ${up} kg.`,
+        reason: `Checklist done — bank a couple more crisp sessions at ${fmt(t.base)}, then bring in the ${fmt(up)}.`,
       };
     }
+    const bigJump = t.base > 0 && (up - t.base) / t.base > 0.34;
     return {
       kind: "start-step",
       to: up,
-      reason: `You own the ${t.base} kg. Start the ${up} kg with the first two ${unit} of the day, while you are fresh.`,
+      reason: bigJump
+        ? `You own the ${fmt(t.base)}. The ${fmt(up)} is a sizeable jump, so start it with just the first two ${unit} of the day, while you are fresh — and be patient growing from there.`
+        : `You own the ${fmt(t.base)}. Start the ${fmt(up)} with the first two ${unit} of the day, while you are fresh.`,
     };
   }
   // Mid-step: grow the heavy share once the current mix feels crisp.
@@ -95,7 +110,7 @@ export function advise(t: Track, lift: "swings" | "getups"): Advice {
     return {
       kind: "complete-step",
       to: t.next,
-      reason: `All ${cap} ${unit} are at ${t.next} kg — the step is complete. ${t.next} kg is your new working weight.`,
+      reason: `All ${cap} ${unit} are at ${fmt(t.next)} — the step is complete. ${fmt(t.next)} is your new working weight.`,
     };
   }
   if (t.qualityStreak >= 2) {
