@@ -20,16 +20,31 @@ await new Promise((res, rej) => {
 });
 
 const browser = await chromium.launch({ executablePath: "/opt/pw-browsers/chromium" });
-const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+let page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+page.on("pageerror", (e) => console.log("pageerror:", e.message));
+page.on("console", (m) => m.type() === "error" && console.log("console.error:", m.text()));
 
 const shot = (name) => page.screenshot({ path: join(OUT, `${name}.png`) });
+process.on("uncaughtException", async (e) => {
+  console.error(e);
+  try {
+    await shot("ZZ-failure");
+  } catch {}
+  preview.kill();
+  process.exit(1);
+});
 
 await page.goto(BASE);
 await page.getByText("Set me up").waitFor();
 await shot("01-onboarding");
 
-// seed a profile + some history via localStorage for richer screens
-await page.evaluate(() => {
+// Seed a profile + history for richer screens. The app flushes its own
+// in-memory state to localStorage on pagehide, so seeding must happen via
+// an init script on a fresh page (runs before the app boots), not by
+// writing localStorage under a running instance.
+await page.close();
+const seeded = await browser.newPage({ viewport: { width: 390, height: 844 } });
+await seeded.addInitScript(() => {
   const today = new Date();
   const iso = (d) => {
     const x = new Date(today);
@@ -79,8 +94,8 @@ await page.evaluate(() => {
     })
   );
 });
+page = seeded;
 await page.goto(BASE + "#/");
-await page.reload();
 await page.getByText("Today's practice").waitFor();
 await shot("02-today");
 
