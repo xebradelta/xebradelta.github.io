@@ -82,6 +82,22 @@ either way.
 
 ---
 
+## Apps built from source in this repo
+
+One middle ground exists: an app whose **source lives here** in an
+underscore-prefixed folder (which GitHub Pages' Jekyll pass excludes from
+the published site) and whose **built output is committed** to a normal
+tool folder.
+
+- `_src/ss-coach/` → builds into `ss/` → https://xebradelta.github.io/ss/
+
+To change such an app, edit the source, run its build (see the README in
+the source folder), and commit both directories. The workflow in
+`.github/workflows/ss-coach.yml` rebuilds on every push and keeps `ss/`
+honest.
+
+---
+
 ## Notes on bundled (Claude Design) files
 
 Some tools here are **bundled single-file exports**. These are self-contained — the app, fonts, and assets are packed into one HTML
