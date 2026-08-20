@@ -389,6 +389,19 @@ button { font-family: inherit; }
 .group-note { margin: 4px 0 10px; font-size: 13px; color: var(--muted); line-height: 1.45; }
 
 .field-row { display: flex; gap: 10px; }
+.field-inline { display: flex; gap: 10px; align-items: flex-end; }
+.field-inline .field { flex: 1 1 auto; }
+.field input[type="text"] {
+  font: inherit;
+  font-size: 17px;
+  color: var(--ink);
+  padding: 10px 12px;
+  border: 1px solid var(--sheet-line);
+  border-radius: 12px;
+  background: rgba(0,0,0,0.03);
+  width: 100%;
+  letter-spacing: 0.5px;
+}
 .field { display: flex; flex-direction: column; gap: 4px; flex: 1 1 0; font-size: 13px; color: var(--muted); }
 .field input[type="number"] {
   font: inherit;
@@ -417,9 +430,26 @@ input[type="range"] { width: 100%; accent-color: var(--ink); height: 28px; }
   cursor: pointer;
   min-width: 140px;
 }
+.btn-inline { flex: 0 0 auto; min-width: 0; white-space: nowrap; }
+.btn-wide { display: block; width: 100%; margin-top: 10px; }
 .btn-primary { background: var(--ink); color: var(--yellow); }
 .btn-quiet { background: rgba(0,0,0,0.06); color: var(--ink); }
 .btn:active { transform: scale(0.985); }
+
+/* "Enter coordinates instead" — the fallback for anyone who knows them. */
+.advanced { margin-top: 14px; }
+.advanced summary {
+  font-size: 15px;
+  font-weight: 600;
+  color: #0A84FF;
+  cursor: pointer;
+  padding: 6px 0;
+  list-style: none;
+}
+.advanced summary::-webkit-details-marker { display: none; }
+.advanced summary::before { content: "▸ "; font-size: 12px; }
+.advanced[open] summary::before { content: "▾ "; }
+.advanced > *:not(summary) { margin-top: 10px; }
 
 .choice-row { display: flex; gap: 8px; flex-wrap: wrap; }
 .choice {

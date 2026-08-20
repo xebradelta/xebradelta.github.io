@@ -8,7 +8,9 @@
 const STORAGE_KEY = "strikemap.settings.v1";
 
 const DEFAULTS = {
-  home: { lat: 33.3528, lon: -111.7890 },   // Gilbert, AZ (user)
+  // (user) — set by ZIP code, by GPS, or by typing coordinates. zip and label
+  // are display only; lat/lon are what the app measures from.
+  home: { lat: 33.3528, lon: -111.7890, zip: "", label: "Gilbert, AZ" },
   mapCenter: [-111.789, 33.3528],
   mapZoom: 9.3,
   // Bounding box for logging and alert checks (roughly Arizona)
@@ -56,7 +58,12 @@ export function loadSettings() {
   if (!saved || typeof saved !== "object") return CONFIG;
 
   if (saved.home && Number.isFinite(saved.home.lat) && Number.isFinite(saved.home.lon)) {
-    CONFIG.home = { lat: saved.home.lat, lon: saved.home.lon };
+    CONFIG.home = {
+      lat: saved.home.lat,
+      lon: saved.home.lon,
+      zip: typeof saved.home.zip === "string" ? saved.home.zip.slice(0, 5) : "",
+      label: typeof saved.home.label === "string" ? saved.home.label.slice(0, 60) : ""
+    };
   }
   if ([15, 30, 60, 120].includes(saved.trailMinutes)) CONFIG.trailMinutes = saved.trailMinutes;
   if (Number.isFinite(saved.alertRadiusMiles)) {

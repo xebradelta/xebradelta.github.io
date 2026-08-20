@@ -31,6 +31,17 @@ Settings (gear, top left): home location, trail duration, alert radius, alert
 sound, notifications, units, and a strike-history counter with a delete button.
 Everything persists to `localStorage`.
 
+**Setting home** — three ways, in the order most people will want them:
+
+1. **ZIP code.** Type a ZIP, tap *Set from ZIP*, and home moves to that ZIP's
+   centroid: "Home set to 85297 · Gilbert, AZ."
+2. **Use my current location** — one tap, from GPS.
+3. **Enter coordinates instead** — a disclosure holding latitude/longitude for
+   anyone who wants an exact spot.
+
+ZIP lookup is offline and needs no geocoding service: `data/zipcodes.json`
+holds the centroids, precached with the app shell.
+
 ---
 
 ## Files
@@ -41,8 +52,10 @@ strikemap/
 ├── manifest.webmanifest
 ├── sw.js
 ├── css/style.css
+├── data/zipcodes.json ZIP centroids for the covered area
 ├── js/config.js      configuration + persisted settings
 ├── js/geo.js         haversine, bearings, formatting
+├── js/zipcodes.js    offline ZIP lookup
 ├── js/lzw.js         the feed's dictionary-LZW decoder
 ├── js/feed.js        Blitzortung WebSocket client
 ├── js/map.js         MapLibre setup, basemap, strike layers
@@ -89,15 +102,48 @@ To run it as its own repo instead:
 
 ### Bump the cache version on every deploy
 
-`sw.js` starts with `const CACHE = "strikemap-v1"`. The worker is cache-first
+`sw.js` starts with `const CACHE = "strikemap-v2"`. The worker is cache-first
 for the app shell, so **installed phones will keep running old code until that
-string changes**. Bump it (`-v2`, `-v3`, …) in the same commit as any change to
-the HTML, CSS or JS.
+string changes**. Bump it (`-v3`, `-v4`, …) in the same commit as any change to
+the HTML, CSS, JS or `data/zipcodes.json`.
 
 The worker caches the shell and nothing else: map tiles, radar frames and the
 lightning socket are cross-origin and pass straight through, untouched.
 
 ---
+
+## ZIP code data
+
+`data/zipcodes.json` covers **`CONFIG.logBounds` plus a 1 degree margin** — 935
+ZIPs across Arizona and the border strips of NV, UT, CO, NM and CA. That is
+41 KB raw, ~13 KB gzipped, small enough to precache; the full US table would be
+1.85 MB. A ZIP outside the box reports that it is out of area and points the
+user at the coordinate fields — home outside the tracked box would never see a
+strike anyway.
+
+Schema: `{ "zips": { "85234": [lat, lon, city, state], ... } }`.
+
+To regenerate it — a one-off, not a build step:
+
+```bash
+pip install zipcodes
+python3 - <<'EOF'
+import zipcodes, json
+rows = [z for z in zipcodes.list_all()
+        if z.get('lat') and z.get('long') and z.get('active', True)]
+sel = sorted((z for z in rows
+              if 30.0 <= float(z['lat']) <= 38.5
+              and -116.5 <= float(z['long']) <= -107.0),
+             key=lambda z: z['zip_code'])
+zips = {z['zip_code']: [round(float(z['lat']), 4), round(float(z['long']), 4),
+                        z['city'], z['state']] for z in sel}
+json.dump({"count": len(zips), "zips": zips},
+          open("data/zipcodes.json", "w"), separators=(",", ":"))
+EOF
+```
+
+Widen the latitude/longitude filter to cover more of the country, and widen
+`CONFIG.logBounds` to match — the two are meant to agree.
 
 ## How the feed works
 
