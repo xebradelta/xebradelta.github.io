@@ -1,0 +1,15 @@
+{
+  "name": "Strike Map",
+  "short_name": "Strike Map",
+  "description": "Live lightning strikes, hotspots and NEXRAD radar for the Phoenix East Valley.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F5EF4B",
+  "theme_color": "#F5EF4B",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
