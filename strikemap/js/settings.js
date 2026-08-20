@@ -2,6 +2,7 @@
 
 import { CONFIG, updateSettings, saveSettings } from "./config.js";
 import { formatDistance } from "./geo.js";
+import { lookupZip, normalizeZip, preloadZips } from "./zipcodes.js";
 import {
   notificationsSupported, notificationPermission, requestNotificationPermission
 } from "./alerts.js";
@@ -68,6 +69,7 @@ function onKeydown(event) {
  */
 export function initSettings(deps) {
   const sheet = document.getElementById("settings-sheet");
+  const zipInput = document.getElementById("home-zip");
   const latInput = document.getElementById("home-lat");
   const lonInput = document.getElementById("home-lon");
   const homeStatus = document.getElementById("home-status");
@@ -82,8 +84,12 @@ export function initSettings(deps) {
   const clearButton = document.getElementById("history-clear");
 
   function paint() {
+    zipInput.value = CONFIG.home.zip || "";
     latInput.value = CONFIG.home.lat.toFixed(4);
     lonInput.value = CONFIG.home.lon.toFixed(4);
+    homeStatus.textContent = CONFIG.home.label
+      ? `Home: ${CONFIG.home.label}`
+      : `Home: ${CONFIG.home.lat.toFixed(4)}, ${CONFIG.home.lon.toFixed(4)}`;
     radius.value = String(Math.round(CONFIG.alertRadiusMiles));
     radiusLabel.textContent = formatDistance(CONFIG.alertRadiusMiles, CONFIG.units);
     soundToggle.checked = CONFIG.alertSound;
@@ -124,6 +130,7 @@ export function initSettings(deps) {
   }
 
   document.getElementById("btn-settings").addEventListener("click", () => {
+    preloadZips();
     paint();
     paintHistory();
     openSheet(sheet);
@@ -134,6 +141,44 @@ export function initSettings(deps) {
   }
   ensureScrim().addEventListener("click", closeSheet);
 
+  function setHome({ lat, lon, zip = "", label = "" }, message) {
+    updateSettings({ home: { lat, lon, zip, label } });
+    latInput.value = lat.toFixed(4);
+    lonInput.value = lon.toFixed(4);
+    zipInput.value = zip;
+    homeStatus.textContent = message;
+    deps.onHomeChange?.();
+  }
+
+  async function applyZip() {
+    const zip = normalizeZip(zipInput.value);
+    if (!zip) {
+      homeStatus.textContent = "Enter a 5-digit ZIP code.";
+      return;
+    }
+    homeStatus.textContent = "Looking up…";
+    let match;
+    try {
+      match = await lookupZip(zip);
+    } catch {
+      homeStatus.textContent = "Could not load the ZIP code list. Try again, or enter coordinates below.";
+      return;
+    }
+    if (!match) {
+      homeStatus.textContent =
+        `${zip} is outside the area Strike Map covers (Arizona and just over its borders). ` +
+        "Enter coordinates below to put home somewhere else.";
+      return;
+    }
+    setHome({ lat: match.lat, lon: match.lon, zip: match.zip, label: match.label },
+      `Home set to ${match.label}.`);
+  }
+
+  document.getElementById("home-use-zip").addEventListener("click", applyZip);
+  zipInput.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") { event.preventDefault(); applyZip(); }
+  });
+
   document.getElementById("home-save").addEventListener("click", () => {
     const lat = Number(latInput.value);
     const lon = Number(lonInput.value);
@@ -142,18 +187,15 @@ export function initSettings(deps) {
       homeStatus.textContent = "Enter a latitude between -90 and 90 and a longitude between -180 and 180.";
       return;
     }
-    updateSettings({ home: { lat, lon } });
-    homeStatus.textContent = `Home saved: ${lat.toFixed(4)}, ${lon.toFixed(4)}.`;
-    deps.onHomeChange?.();
+    setHome({ lat, lon }, `Home saved: ${lat.toFixed(4)}, ${lon.toFixed(4)}.`);
   });
 
   document.getElementById("home-use-gps").addEventListener("click", async () => {
     homeStatus.textContent = "Getting your location…";
     try {
       const position = await deps.locate();
-      latInput.value = position.lat.toFixed(4);
-      lonInput.value = position.lon.toFixed(4);
-      homeStatus.textContent = "Filled in from GPS. Tap “Save home location” to keep it.";
+      setHome({ lat: position.lat, lon: position.lon },
+        `Home set to your current location: ${position.lat.toFixed(4)}, ${position.lon.toFixed(4)}.`);
     } catch (err) {
       homeStatus.textContent = err?.code === 1
         ? "Location permission was denied."

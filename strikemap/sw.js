@@ -5,7 +5,7 @@
 // would bloat storage and serve stale weather.
 //
 // BUMP THIS VERSION ON EVERY DEPLOY or installed phones will run old code.
-const CACHE = "strikemap-v1";
+const CACHE = "strikemap-v2";
 
 const SHELL = [
   "./",
@@ -22,6 +22,8 @@ const SHELL = [
   "./js/hotspots.js",
   "./js/alerts.js",
   "./js/settings.js",
+  "./js/zipcodes.js",
+  "./data/zipcodes.json",
   "./icons/icon-192.png",
   "./icons/icon-512.png",
   "./icons/apple-touch-icon.png"

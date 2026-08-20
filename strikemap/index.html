@@ -90,21 +90,32 @@
     <section class="group">
       <h3>Home location</h3>
       <p class="group-note">Alerts and distances are measured from here.</p>
-      <div class="field-row">
-        <label class="field">
-          <span>Latitude</span>
-          <input id="home-lat" type="number" inputmode="decimal" step="0.0001" min="-90" max="90">
+
+      <div class="field-inline">
+        <label class="field" for="home-zip">
+          <span>ZIP code</span>
+          <input id="home-zip" type="text" inputmode="numeric" autocomplete="postal-code"
+                 maxlength="10" placeholder="85234" enterkeyhint="done">
         </label>
-        <label class="field">
-          <span>Longitude</span>
-          <input id="home-lon" type="number" inputmode="decimal" step="0.0001" min="-180" max="180">
-        </label>
+        <button id="home-use-zip" class="btn btn-primary btn-inline" type="button">Set from ZIP</button>
       </div>
-      <div class="btn-row">
-        <button id="home-use-gps" class="btn btn-quiet" type="button">Use current location</button>
-        <button id="home-save" class="btn btn-primary" type="button">Save home location</button>
-      </div>
+      <button id="home-use-gps" class="btn btn-quiet btn-wide" type="button">Use my current location</button>
       <p id="home-status" class="group-note" role="status" aria-live="polite"></p>
+
+      <details class="advanced">
+        <summary>Enter coordinates instead</summary>
+        <div class="field-row">
+          <label class="field">
+            <span>Latitude</span>
+            <input id="home-lat" type="number" inputmode="decimal" step="0.0001" min="-90" max="90">
+          </label>
+          <label class="field">
+            <span>Longitude</span>
+            <input id="home-lon" type="number" inputmode="decimal" step="0.0001" min="-180" max="180">
+          </label>
+        </div>
+        <button id="home-save" class="btn btn-primary btn-wide" type="button">Save home location</button>
+      </details>
     </section>
 
     <section class="group">
