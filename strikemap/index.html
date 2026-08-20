@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<title>Strike Map</title>
+<meta name="description" content="Live lightning strikes, strike-density hotspots and animated NEXRAD radar for the Phoenix East Valley.">
+<meta name="theme-color" content="#F5EF4B">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Strike Map">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+<link rel="icon" href="./icons/icon-192.png" sizes="192x192" type="image/png">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@6.4.1/dist/maplibre-gl.css">
+<link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+
+<header class="app-header">
+  <div class="header-row">
+    <button id="btn-settings" class="round-btn" type="button" aria-label="Settings" aria-haspopup="dialog">
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path fill="currentColor" d="M19.14 12.94a7.6 7.6 0 0 0 .06-.94 7.6 7.6 0 0 0-.06-.94l2.03-1.58a.5.5 0 0 0 .12-.62l-1.92-3.32a.5.5 0 0 0-.6-.22l-2.39.96a7.3 7.3 0 0 0-1.63-.94l-.36-2.54a.5.5 0 0 0-.5-.42h-3.84a.5.5 0 0 0-.5.42l-.36 2.54c-.59.24-1.13.56-1.63.94l-2.39-.96a.5.5 0 0 0-.6.22L2.65 8.86a.5.5 0 0 0 .12.62l2.03 1.58c-.04.31-.06.62-.06.94s.02.63.06.94l-2.03 1.58a.5.5 0 0 0-.12.62l1.92 3.32c.13.22.39.3.6.22l2.39-.96c.5.38 1.04.7 1.63.94l.36 2.54c.04.24.25.42.5.42h3.84c.25 0 .46-.18.5-.42l.36-2.54c.59-.24 1.13-.56 1.63-.94l2.39.96c.22.08.47 0 .6-.22l1.92-3.32a.5.5 0 0 0-.12-.62ZM12 15.6A3.6 3.6 0 1 1 15.6 12 3.6 3.6 0 0 1 12 15.6Z"/>
+      </svg>
+    </button>
+    <h1 class="app-title">Strike Map</h1>
+    <button id="btn-locate" class="round-btn" type="button" aria-label="Show my location">
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path fill="currentColor" d="M21.43 2.57a1 1 0 0 0-1.05-.23L2.9 8.86a1 1 0 0 0 .06 1.89l7.3 2.24 2.24 7.3a1 1 0 0 0 1.88.07l6.52-17.48a1 1 0 0 0-.47-1.31Z"/>
+      </svg>
+    </button>
+  </div>
+
+  <div class="segmented" role="tablist" aria-label="View">
+    <span class="seg-pill" aria-hidden="true"></span>
+    <button class="seg is-active" type="button" role="tab" id="tab-latest"   data-tab="latest"   aria-selected="true"  aria-controls="map">Latest</button>
+    <button class="seg"           type="button" role="tab" id="tab-hotspots" data-tab="hotspots" aria-selected="false" aria-controls="map">Hotspots</button>
+    <button class="seg"           type="button" role="tab" id="tab-radar"    data-tab="radar"    aria-selected="false" aria-controls="map">Radar</button>
+  </div>
+</header>
+
+<main class="map-wrap">
+  <div id="map" role="region" aria-label="Lightning map"></div>
+
+  <div id="alert-banner" class="alert-banner" role="status" aria-live="polite"></div>
+
+  <div class="overlay overlay-top">
+    <div id="status-chip" class="chip" aria-live="polite">Connecting…</div>
+    <button id="btn-info" class="round-btn round-btn-sm" type="button" aria-label="Legend and data sources" aria-haspopup="dialog">
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path fill="currentColor" d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm1 15h-2v-6h2Zm0-8h-2V7h2Z"/>
+      </svg>
+    </button>
+  </div>
+
+  <div id="empty-hotspots" class="empty-card" hidden>
+    <div class="empty-bolt" aria-hidden="true">⚡</div>
+    <h2>No strike history yet</h2>
+    <p>Leave the app open during a storm and hotspots build automatically.</p>
+  </div>
+
+  <div id="radar-controls" class="radar-controls" hidden>
+    <button id="radar-play" class="radar-btn" type="button" aria-label="Pause radar loop">
+      <svg class="icon-pause" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M7 5h4v14H7zm6 0h4v14h-4z"/></svg>
+      <svg class="icon-play" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M7 4.5v15l13-7.5z"/></svg>
+    </button>
+    <span id="radar-time" class="radar-time">—</span>
+  </div>
+
+  <div class="attribution">
+    <span>Lightning data: Blitzortung.org and contributors (non-commercial use)</span>
+    <span>Radar: NOAA NEXRAD via Iowa Environmental Mesonet</span>
+    <span>Imagery: Esri, Maxar, Earthstar Geographics</span>
+  </div>
+</main>
+
+<div id="scrim" class="scrim" hidden></div>
+
+<!-- Settings -->
+<section id="settings-sheet" class="sheet" role="dialog" aria-modal="true" aria-labelledby="settings-title" hidden>
+  <div class="sheet-grab" aria-hidden="true"></div>
+  <div class="sheet-head">
+    <h2 id="settings-title">Settings</h2>
+    <button class="sheet-close" type="button" data-close-sheet aria-label="Close settings">Done</button>
+  </div>
+  <div class="sheet-body">
+
+    <section class="group">
+      <h3>Home location</h3>
+      <p class="group-note">Alerts and distances are measured from here.</p>
+      <div class="field-row">
+        <label class="field">
+          <span>Latitude</span>
+          <input id="home-lat" type="number" inputmode="decimal" step="0.0001" min="-90" max="90">
+        </label>
+        <label class="field">
+          <span>Longitude</span>
+          <input id="home-lon" type="number" inputmode="decimal" step="0.0001" min="-180" max="180">
+        </label>
+      </div>
+      <div class="btn-row">
+        <button id="home-use-gps" class="btn btn-quiet" type="button">Use current location</button>
+        <button id="home-save" class="btn btn-primary" type="button">Save home location</button>
+      </div>
+      <p id="home-status" class="group-note" role="status" aria-live="polite"></p>
+    </section>
+
+    <section class="group">
+      <h3>Trail duration</h3>
+      <p class="group-note">How long a strike stays on the map.</p>
+      <div class="choice-row" id="trail-choices" role="radiogroup" aria-label="Trail duration">
+        <button class="choice" type="button" role="radio" data-trail="15"  aria-checked="false">15 min</button>
+        <button class="choice" type="button" role="radio" data-trail="30"  aria-checked="false">30 min</button>
+        <button class="choice" type="button" role="radio" data-trail="60"  aria-checked="true">60 min</button>
+        <button class="choice" type="button" role="radio" data-trail="120" aria-checked="false">2 hr</button>
+      </div>
+    </section>
+
+    <section class="group">
+      <h3>Alerts</h3>
+      <label class="field field-slider" for="alert-radius">
+        <span>Alert radius <b id="alert-radius-label">25 mi</b></span>
+        <input id="alert-radius" type="range" min="1" max="100" step="1" value="25">
+      </label>
+      <label class="switch-row" for="alert-sound">
+        <span>Alert sound</span>
+        <input id="alert-sound" class="switch" type="checkbox" role="switch">
+      </label>
+      <label class="switch-row" for="alert-notify">
+        <span>Notifications</span>
+        <input id="alert-notify" class="switch" type="checkbox" role="switch">
+      </label>
+      <p id="notify-status" class="group-note" role="status" aria-live="polite"></p>
+    </section>
+
+    <section class="group">
+      <h3>Units</h3>
+      <div class="choice-row" id="unit-choices" role="radiogroup" aria-label="Units">
+        <button class="choice" type="button" role="radio" data-units="mi" aria-checked="true">Miles</button>
+        <button class="choice" type="button" role="radio" data-units="km" aria-checked="false">Kilometres</button>
+      </div>
+    </section>
+
+    <section class="group">
+      <h3>Strike history</h3>
+      <p id="history-count" class="group-note">—</p>
+      <button id="history-clear" class="btn btn-quiet" type="button">Delete strike history</button>
+    </section>
+
+  </div>
+</section>
+
+<!-- Legend / credits -->
+<section id="info-sheet" class="sheet" role="dialog" aria-modal="true" aria-labelledby="info-title" hidden>
+  <div class="sheet-grab" aria-hidden="true"></div>
+  <div class="sheet-head">
+    <h2 id="info-title">Legend</h2>
+    <button class="sheet-close" type="button" data-close-sheet aria-label="Close legend">Done</button>
+  </div>
+  <div class="sheet-body">
+    <section class="group">
+      <h3>Strike age</h3>
+      <ul class="legend">
+        <li><i class="dot dot-red"></i> Under 5 minutes old</li>
+        <li><i class="dot dot-orange"></i> 5 to 20 minutes</li>
+        <li><i class="dot dot-gold"></i> 20 minutes and older</li>
+      </ul>
+      <p class="group-note">Dots fade as they age and disappear at the end of the trail duration. Tap one for its time, distance and direction from home.</p>
+    </section>
+    <section class="group">
+      <h3>Radar</h3>
+      <p class="group-note">Eleven NEXRAD frames, 50 minutes ago to now, looping oldest to newest. Live strikes stay drawn on top.</p>
+    </section>
+    <section class="group">
+      <h3>Hotspots</h3>
+      <p class="group-note">Density of every strike this app has logged inside the bounding box, over the last 30 days.</p>
+    </section>
+    <section class="group">
+      <h3>Data sources</h3>
+      <ul class="credits">
+        <li>Lightning data: Blitzortung.org and contributors (non-commercial use)</li>
+        <li>Radar: NOAA NEXRAD via Iowa Environmental Mesonet</li>
+        <li>Imagery: Esri, Maxar, Earthstar Geographics</li>
+      </ul>
+      <p class="group-note">Personal, non-commercial project. Not a warning system — never use it to make safety decisions.</p>
+    </section>
+  </div>
+</section>
+
+<script type="module" src="./js/app.js"></script>
+</body>
+</html>
