@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<!-- Design prototype on a domain the business does not own. Keep it out of
+     search results so it can never be mistaken for the live site. -->
+<meta name="robots" content="noindex, nofollow" />
+<title>Action Collectibles — Mesa, Arizona (design prototype)</title>
+<meta name="description" content="Unaffiliated design prototype for Action Collectibles, a collectibles shop in Mesa, Arizona. Not the live business website." />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23F4EFE3'/%3E%3Ctext x='16' y='23' font-family='Arial Narrow,Arial' font-weight='bold' font-size='19' text-anchor='middle' fill='%23A62F23'%3EAC%3C/text%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="assets/site.css" />
+</head>
+<body>
+
+<a class="skip-link" href="#main">Skip to content</a>
+
+<!-- PROTOTYPE DISCLOSURE — remove for any build the business publishes -->
+<div class="proto-bar">
+  <div class="wrap">
+    <strong>Design prototype</strong>
+    <span>An unaffiliated redesign concept &mdash; not the live Action Collectibles website.</span>
+  </div>
+</div>
+
+<div class="utility">
+  <div class="wrap">
+    <p>Collectibles shop in Mesa, Arizona</p>
+    <a href="https://maps.app.goo.gl/QG6UQcyyXAePn3Jx9" target="_blank" rel="noopener noreferrer">Get directions</a>
+  </div>
+</div>
+
+<header class="masthead">
+  <div class="wrap">
+    <a class="brand" href="./">
+      <span class="mark">Action <em>Collectibles</em></span>
+    </a>
+
+    <button class="nav-toggle" id="nav-toggle" type="button" aria-expanded="false" aria-controls="nav">
+      <span class="bars" aria-hidden="true"><i></i><i></i><i></i></span>
+      Menu
+    </button>
+
+    <nav class="nav" id="nav" aria-label="Main">
+      <a href="#browse">Browse</a>
+      <a href="#shelves">Latest finds</a>
+      <a href="#visit">Visit</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+
+  <!-- COVER -->
+  <section class="cover wrap">
+    <div class="cover-head">
+      <p class="eyebrow">Mesa, Arizona</p>
+      <h1>Your next great find</h1>
+      <p class="sub">Action figures, cards, comics and collectibles in Mesa, Arizona.</p>
+    </div>
+
+    <div class="cover-figure plate r-21x9" role="img" aria-label="Photograph not yet supplied: a shelf, or a small group of real products with space around them">
+      <div class="plate-inner">
+        <p class="plate-label">Photograph reserved</p>
+        <p class="plate-subject">A shelf, or a small group of real products with space around them</p>
+        <p class="plate-meta">Wide, centred, generous margin · 21 / 9</p>
+      </div>
+    </div>
+
+    <div class="cover-actions">
+      <a class="btn" href="#browse">Explore the collections</a>
+      <p class="where"><strong>1230 S Gilbert Rd, Suite G5</strong> — Mesa, AZ 85204</p>
+      <a class="link-arrow" href="#visit">Visit the shop <span aria-hidden="true">&rarr;</span></a>
+    </div>
+  </section>
+
+  <!-- BROWSE BY COLLECTION -->
+  <section class="section" id="browse">
+    <div class="wrap">
+      <div class="section-head">
+        <h2>Browse by collection</h2>
+        <p class="lede">Six shelves worth knowing. Explore the collections here — for the latest availability, call or visit us on Instagram.</p>
+      </div>
+
+      <div class="collection-grid" id="collection-grid">
+        <noscript>
+          <p style="padding:24px 0">
+            <a href="collections/?c=action-figures">Action Figures</a> ·
+            <a href="collections/?c=cards-pokemon">Cards &amp; Pok&eacute;mon</a> ·
+            <a href="collections/?c=statues-funko">Statues &amp; Funko</a> ·
+            <a href="collections/?c=comics">Comics</a> ·
+            <a href="collections/?c=plushies-gifts">Plushies &amp; Gifts</a> ·
+            <a href="collections/?c=sports">Sports</a>
+          </p>
+        </noscript>
+      </div>
+    </div>
+  </section>
+
+  <!-- ON THE SHELVES -->
+  <section class="section band" id="shelves">
+    <div class="wrap">
+      <div class="section-head">
+        <h2>On the shelves</h2>
+        <p class="lede">We don&rsquo;t list stock online yet.</p>
+      </div>
+      <div id="shelves-body">
+        <noscript>
+          <p><a href="https://www.instagram.com/azactioncollectibles/" target="_blank" rel="noopener noreferrer">See the latest finds on Instagram</a></p>
+        </noscript>
+      </div>
+    </div>
+  </section>
+
+  <!-- VISIT -->
+  <section class="section visit" id="visit">
+    <div class="wrap">
+      <div class="section-head">
+        <h2>Visit the shop</h2>
+        <p class="lede">Come and dig through it in person &mdash; that&rsquo;s still the best way to find something.</p>
+      </div>
+
+      <!-- Actionable detail comes first in the DOM so mobile gets it before the
+           photograph; the desktop grid reorders the photograph to the left. -->
+      <div class="visit-grid">
+        <div>
+          <dl id="visit-details"></dl>
+          <noscript>
+            <dl>
+              <dt>Address</dt>
+              <dd><address class="addr">1230 S Gilbert Rd<span class="suite">Suite G5</span>Mesa, AZ 85204</address></dd>
+              <dt>Phone</dt>
+              <dd><a href="tel:+16028567841">602-856-7841</a></dd>
+              <dt>Hours</dt>
+              <dd>
+                <span class="seasonal">Summer hours</span>
+                <span class="hours-row"><span>Wednesday &ndash; Friday</span><span>12:30 &ndash; 6:30 p.m.</span></span>
+                <span class="hours-row"><span>Saturday &ndash; Sunday</span><span>11:30 a.m. &ndash; 6:30 p.m.</span></span>
+                <span class="hours-row closed"><span>Monday &ndash; Tuesday</span><span>Closed</span></span>
+                <p class="note">Hours can change &mdash; call ahead if you&rsquo;re making a special trip.</p>
+              </dd>
+            </dl>
+          </noscript>
+          <a class="btn" href="https://maps.app.goo.gl/QG6UQcyyXAePn3Jx9" target="_blank" rel="noopener noreferrer">Get directions</a>
+        </div>
+
+        <div class="visit-figure">
+          <div class="plate r-4x3" role="img" aria-label="Photograph not yet supplied: storefront with the signage and Suite G5 legible">
+            <div class="plate-inner">
+              <p class="plate-label">Photograph reserved</p>
+              <p class="plate-subject">Storefront with the signage and Suite G5 legible</p>
+              <p class="plate-meta">Straight on from the parking lot, daylight · 4 / 3</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="rows">
+      <p class="name">Action Collectibles</p>
+      <nav aria-label="Footer">
+        <a href="https://www.instagram.com/azactioncollectibles/" target="_blank" rel="noopener noreferrer">Instagram</a>
+        <a href="mailto:azactioncollectibles@gmail.com">azactioncollectibles@gmail.com</a>
+      </nav>
+    </div>
+    <p class="disclosure">
+      Design prototype, built September 2026. Not affiliated with, endorsed by, or operated by
+      Action Collectibles; the live website is elsewhere. Business name, address, phone and hours
+      are reproduced from a design brief for layout purposes. Hours are unconfirmed. No online
+      ordering exists here and none is implied.
+    </p>
+  </div>
+</footer>
+
+<script src="assets/content.js"></script>
+<script src="assets/site.js"></script>
+</body>
+</html>
