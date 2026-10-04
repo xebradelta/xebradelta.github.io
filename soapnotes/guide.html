@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#123d40"><meta name="description" content="How to set up and use SOAPnotes for wilderness first aid assessment and SOAP documentation."><title>SOAPnotes Guide</title><link rel="icon" href="icon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>
+:root{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#152e33;background:#eef3f3;font-size:16px;line-height:1.6;--ink:#123d40;--accent:#106668;--line:#cbd9dc;--muted:#4e646b}
+*{box-sizing:border-box}
+body{margin:0;background:#eef3f3}
+a{color:var(--accent);text-underline-offset:2px}
+a:focus-visible{outline:3px solid #e4aa36;outline-offset:3px}
+header{background:var(--ink);color:#fff;padding:20px max(16px,calc((100vw - 760px)/2));padding-top:max(20px,env(safe-area-inset-top))}
+header .eyebrow{font-size:.75rem;letter-spacing:.16em;font-weight:700;text-transform:uppercase;color:#bfe1df}
+header h1{font-size:1.65rem;line-height:1.2;margin:5px 0 12px}
+header a{color:#fff}
+.back{display:inline-flex;align-items:center;min-height:44px;border:1px solid #689193;border-radius:10px;padding:8px 14px;font-weight:650;text-decoration:none}
+main{max-width:800px;margin:auto;padding:16px 16px 48px}
+.card{border:1px solid var(--line);background:#fff;border-radius:14px;padding:18px;margin-bottom:14px;overflow-wrap:break-word}
+.notice{padding:12px 14px;border-radius:10px;background:#fff4da;border:1px solid #dec389;margin-bottom:14px}
+.notice strong{color:#563d09}
+h2{font-size:1.3rem;line-height:1.3;margin:0 0 8px;color:var(--ink)}
+h3{font-size:1.05rem;margin:18px 0 6px;color:var(--ink)}
+p{margin:6px 0 12px}
+ol,ul{padding-left:1.3rem;margin:6px 0 12px}
+li{margin:4px 0}
+.muted{color:var(--muted)}
+.tag{display:inline-block;font-size:.75rem;font-weight:700;letter-spacing:.08em;background:var(--ink);color:#fff;border-radius:6px;padding:1px 7px;margin-right:6px;vertical-align:1px}
+.toc ol{columns:2;column-gap:24px}
+.toc li{break-inside:avoid}
+dl{margin:6px 0}
+dt{font-weight:700;margin-top:10px}
+dd{margin:2px 0 0}
+code{font-family:inherit;font-weight:650;background:#eef3f3;border-radius:5px;padding:0 5px}
+footer{font-size:.85rem;color:var(--muted);text-align:center;margin-top:22px}
+@media (max-width:520px){.toc ol{columns:1}}
+</style></head>
+<body>
+<header><div class="eyebrow">SOAPnotes · Guide</div><h1>How to use this</h1><a class="back" href="./">← Back to the app</a></header>
+<main>
+
+<div class="notice"><strong>Care comes first.</strong> SOAPnotes is a notebook, not a medical device. It doesn't diagnose, give treatment advice or call for help. If someone is unresponsive, isn't breathing normally, is bleeding severely or faces another threat to life, get help and give care within your training. Write things down afterward.</div>
+
+<nav class="card toc" aria-label="Contents"><h2>Contents</h2><ol>
+<li><a href="#what">What it is</a></li>
+<li><a href="#setup">Set it up before you need it</a></li>
+<li><a href="#flow">The 2-minute version</a></li>
+<li><a href="#tabs">The five tabs</a></li>
+<li><a href="#reassess">Reassessment and reminders</a></li>
+<li><a href="#share">Sharing the note at handoff</a></li>
+<li><a href="#patients">Several patients and practice</a></li>
+<li><a href="#backup">Backups and moving devices</a></li>
+<li><a href="#status">What the status messages mean</a></li>
+<li><a href="#limits">Limits and privacy</a></li>
+</ol></nav>
+
+<section class="card" id="what"><h2>What it is</h2>
+<p>SOAPnotes walks you through a wilderness first aid patient assessment and turns what you enter into a <strong>SOAP note</strong>:</p>
+<ul>
+<li><strong>S</strong>ubjective: what the patient tells you, such as their complaint, symptoms and history.</li>
+<li><strong>O</strong>bjective: what you find, such as the scene, the primary survey, the head-to-toe exam and vital signs.</li>
+<li><strong>A</strong>ssessment: your problem list.</li>
+<li><strong>P</strong>lan: what you'll do about each problem.</li>
+</ul>
+<p>It follows the SOLO SOAP note and patient assessment checklist. It works offline once it's set up, saves as you type, and keeps everything on your device.</p>
+</section>
+
+<section class="card" id="setup"><h2>Set it up before you need it</h2>
+<p>Do this at home with a signal, not at the trailhead.</p>
+<h3>iPhone</h3>
+<ol>
+<li>Open <strong>xebradelta.github.io/soapnotes/</strong> in <strong>Safari</strong>.</li>
+<li>Tap <strong>Share → Add to Home Screen</strong>. If you see an <em>Open as Web App</em> option, turn it on.</li>
+<li>Open SOAPnotes <strong>from the Home Screen icon</strong> while you're still online. Wait until the badge under the title says <code>Offline copy ready</code>.</li>
+</ol>
+<h3>Android</h3>
+<ol>
+<li>Open the same address in <strong>Chrome</strong>.</li>
+<li>Tap <strong>⋮ → Add to Home screen</strong> (or <strong>Install app</strong>).</li>
+<li>Open it from the new icon and wait for <code>Offline copy ready</code>.</li>
+</ol>
+<h3>Test it</h3>
+<ol>
+<li>Turn on <strong>Airplane Mode</strong>.</li>
+<li>Fully close the app and open it again from the Home Screen icon.</li>
+<li>Start a practice entry, close the app, reopen it, and check that your entry is still there.</li>
+</ol>
+<p>If any of that fails, carry a paper SOAP form as a backup.</p>
+<p class="muted">Use the Home Screen icon every time. On iPhone, the Home Screen app and Safari can keep <em>separate</em> records, so notes you saved in one won't show up in the other.</p>
+</section>
+
+<section class="card" id="flow"><h2>The 2-minute version</h2>
+<ol>
+<li>Open the app. If this is a new person, tap <strong>＋ New</strong>.</li>
+<li>Work through the tabs at the bottom from left to right: <span class="tag">01</span>Assess → <span class="tag">02</span>History → <span class="tag">03</span>Vitals → <span class="tag">04</span>SOAP → <span class="tag">05</span>Save / Help. The button at the bottom of each tab takes you to the next one.</li>
+<li>Every field is optional, and the app saves as you type. Fill in what you know and move on.</li>
+<li>Take a new set of vitals each time you reassess, and save a <strong>re-SOAP</strong> on the SOAP tab.</li>
+<li>When you hand the patient over, open <strong>Save / Help</strong> and share, copy, print or download the note.</li>
+</ol>
+</section>
+
+<section class="card" id="tabs"><h2>The five tabs</h2>
+
+<h3><span class="tag">01</span>Assess</h3>
+<p><strong>Patient &amp; incident:</strong> name or an identifier, date and time, age (include units, such as “6 months”), location or coordinates, chief complaint, and how the injury or illness happened.</p>
+<p><strong>Scene size-up, Primary survey and Head-to-toe exam:</strong> each item has a status and a box for findings.</p>
+<dl>
+<dt>Not assessed</dt><dd>The default. You haven't looked at this yet.</dd>
+<dt>Assessed</dt><dd>You checked it. This <em>doesn't</em> mean it was normal, so write what you found in the box.</dd>
+<dt>Concern noted</dt><dd>Something is wrong or needs watching. Describe it.</dd>
+<dt>Not applicable / Unable to assess</dt><dd>Use these instead of leaving the item blank, so the note shows you thought about it.</dd>
+</dl>
+<p class="muted">The exam regions are prompts for what to write down. They aren't instructions to move an injured person. Follow your training.</p>
+
+<h3><span class="tag">02</span>History</h3>
+<p>AMPLE: <strong>A</strong>llergies, <strong>M</strong>edications, <strong>P</strong>ast pertinent history, <strong>L</strong>ast intake and output, <strong>E</strong>vents leading up to the incident. Write “denies” or “unknown” when that's the answer. A blank box doesn't mean “no”. There's also a box for other symptoms, which is a good place for the patient's own words.</p>
+
+<h3><span class="tag">03</span>Vitals</h3>
+<p>Each set of vitals has its own time stamp. Tap <strong>Use current time</strong>, enter what you measured (level of consciousness, orientation, breathing rate and effort, heart rate and pulse quality, and skin color, temperature and moisture), then tap <strong>Save vital set</strong>. Nothing carries over from the previous set. Each saved set goes into the log below the form, newest first, where you can <strong>Edit</strong> or <strong>Delete</strong> it. Rates have to be whole numbers.</p>
+
+<h3><span class="tag">04</span>SOAP</h3>
+<p>Your answers from the first three tabs fill in the S and O sections automatically. On this tab you add the <strong>A</strong> and the <strong>P</strong>:</p>
+<ul>
+<li>Up to three <strong>problem and plan</strong> pairs.</li>
+<li><strong>Care given &amp; patient response.</strong> Include times, and only record care you actually gave.</li>
+<li><strong>Rescue survey / handoff:</strong> how the group is doing, your evacuation plan, what help you asked for and how, and who took over care and when.</li>
+<li><strong>Ongoing assessment:</strong> a reassessment reminder and re-SOAPs. See the next section.</li>
+</ul>
+
+<h3><span class="tag">05</span>Save / Help</h3>
+<p>Share or export the finished note, back up all your records, read the offline setup steps, and delete records.</p>
+</section>
+
+<section class="card" id="reassess"><h2>Reassessment and reminders</h2>
+<ol>
+<li>On the <strong>SOAP</strong> tab, set the <strong>Reminder interval</strong>. It starts at 15 minutes. Then tap <strong>Start / restart reminder</strong>. A countdown bar appears near the top of the screen.</li>
+<li>When the reminder is due, reassess the patient. Save a new set of vitals on the <strong>Vitals</strong> tab, then write what changed in <strong>Reassessment observations</strong>.</li>
+<li>Tap <strong>Save timestamped re-SOAP</strong>. This stores a frozen copy of the complete note as it is right now and restarts the countdown.</li>
+</ol>
+<p>Saved re-SOAPs are listed under <strong>Saved reassessments</strong> and are added to the end of the exported note, so the person taking over can see how things changed over time.</p>
+<p class="muted">The reminder only shows on screen while the app is open. It won't buzz or alert you with the phone locked. If the patient's condition changes, reassess right away and don't wait for the timer.</p>
+</section>
+
+<section class="card" id="share"><h2>Sharing the note at handoff</h2>
+<p>On <strong>Save / Help</strong>, open <strong>Preview full SOAP note</strong> and check it first. Then choose one of these:</p>
+<ul>
+<li><strong>Share note</strong> opens your phone's share sheet so you can send it by text, email, AirDrop and so on.</li>
+<li><strong>Copy text</strong> copies the note so you can paste it anywhere.</li>
+<li><strong>Download .txt</strong> saves a plain-text file.</li>
+<li><strong>Print / PDF</strong> prints the note, or saves it as a PDF from the print screen.</li>
+</ul>
+<p>Sending or exporting a note is the only time patient information leaves your device. Send it only to people who should have it.</p>
+</section>
+
+<section class="card" id="patients"><h2>Several patients and practice</h2>
+<p>Tap <strong>＋ New</strong> to start another record. Your earlier records are kept. Switch between them with <strong>Current patient / practice scenario</strong> at the top of the screen. Each record has its own vitals, reminder and re-SOAPs.</p>
+<p>For class scenarios, put something like “Practice 3 – ankle” in the name field so practice records are easy to tell apart. Delete them later from <strong>Save / Help → Delete records</strong>.</p>
+</section>
+
+<section class="card" id="backup"><h2>Backups and moving devices</h2>
+<p>Your records live only in the browser storage of this one device. If the phone clears website data, you remove the app, or you switch browsers, the records can be lost.</p>
+<ul>
+<li><strong>Export all records</strong> saves one backup file (<code>.json</code>) with every patient in it. Do this after class and after every real handoff. The file isn't encrypted, so store it with care.</li>
+<li><strong>Import backup</strong> adds the records from a backup file as <em>new copies</em> marked “(imported)”. It never overwrites the records you already have.</li>
+<li><strong>Download offline HTML</strong> saves the app itself as a single file, with no patient data in it. You can use it as a backup copy in any browser that runs JavaScript. The iPhone Files preview won't run it.</li>
+</ul>
+</section>
+
+<section class="card" id="status"><h2>What the status messages mean</h2>
+<dl>
+<dt><code>Saved on this device · time</code></dt><dd>All good. This shows the time of the last save.</dd>
+<dt><code>Offline copy ready</code></dt><dd>The app will open without a signal.</dd>
+<dt><code>Preparing offline copy</code></dt><dd>The app is still downloading its offline copy. Stay online for a moment.</dd>
+<dt><code>Not saved — export a backup</code></dt><dd>The device storage is full or blocked. Keep the app open and use <strong>Export all records</strong> or <strong>Copy text</strong> right away.</dd>
+<dt><code>Storage needs attention</code></dt><dd>The app couldn't read your saved records. It hasn't overwritten them. Export any new work, then import a backup if you have one.</dd>
+<dt><code>Offline setup failed</code> / <code>Offline cache unavailable</code></dt><dd>This browser can't keep an offline copy. Use Safari on iPhone or Chrome on Android, and don't use a private window.</dd>
+</dl>
+</section>
+
+<section class="card" id="limits"><h2>Limits and privacy</h2>
+<ul>
+<li>There's no account, cloud sync, GPS tracking, background alert or emergency calling.</li>
+<li>Nothing is sent anywhere unless you share or export it yourself.</li>
+<li>Anyone who can unlock your phone can open your records. Delete old ones you don't need.</li>
+<li>The app is adapted from SOLO course forms to support your class. Follow your instructor's current guidance and stay within your training.</li>
+</ul>
+</section>
+
+<footer><a href="./">← Back to SOAPnotes</a></footer>
+</main>
+</body></html>
