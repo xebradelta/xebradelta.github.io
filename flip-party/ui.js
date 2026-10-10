@@ -144,7 +144,7 @@
   function shell(content) {
     return h(
       "div",
-      { class: "shell" },
+      { class: "shell page-" + page },
       h(
         "header",
         { class: "header" },
@@ -240,65 +240,72 @@
       ),
     );
   }
+  function deckCover(p, compact = false) {
+    const group = F.coverGroup(p), variant = (p.number || 0) % 4;
+    return h(
+      "div",
+      { class: "deck-cover cover-group-" + group + " cover-variant-" + variant +
+          (p.name.length > 28 || p.name.split(" ").some(w => w.length > 10) ? " long-title" : "") + (compact ? " compact-cover" : "") },
+      h("span", { class: "cover-category" }, p.number
+        ? "FLIP PARTY · " + String(p.number).padStart(3, "0") : "MADE BY YOU"),
+      h("h3", {}, p.name),
+      h("div", { class: "cover-art" }, F.illustration(group)),
+      h("span", { class: "cover-rule" },
+        ({ charades: "ACT IT OUT", sounds: "MAKE SOME NOISE", impressions: "TAKE THE SPOTLIGHT" })[p.modes[0]] || "GIVE A LITTLE CLUE"),
+    );
+  }
+  function collections() {
+    const features = [
+      { cls: "family", heading: "Family night, sorted.", description: "A little of everything. A laugh for everyone.", numbers: [120, 37, 85], target: 120, label: "Play the family mix" },
+      { cls: "spotlight", heading: "Your time to shine.", description: "Big gestures. Silly sounds. Zero stage fright.", numbers: [109, 111, 112], target: 109, label: "Explore Act It Out" },
+    ];
+    return h("section", { class: "collections", "aria-label": "Featured collections" },
+      features.map(f => h("article", { class: "collection collection-" + f.cls },
+        h("div", { class: "collection-copy" },
+          h("span", { class: "eyebrow" }, f.cls === "family" ? "THE EVERYONE COLLECTION" : "THE SHOWTIME COLLECTION"),
+          h("h2", {}, f.heading),
+          h("p", {}, f.description),
+          btn(f.label + " →", () => {
+            const p = builtins.find(p => p.number === f.target);
+            prefs({ mode: p.modes[0] }, false);
+            openPack(p);
+          }, "collection-action")),
+        h("div", { class: "collection-decks", "aria-hidden": true },
+          f.numbers.map(n => deckCover(builtins.find(p => p.number === n), true))))));
+  }
+  function scrapbookPreview() {
+    const recent = store.memory.history.slice(0, 3);
+    return h("section", { class: "scrapbook" },
+      h("div", { class: "section-title" },
+        h("div", {}, h("h2", {}, "Good times, saved."), h("p", {}, "Your party scrapbook, right on this device.")),
+        btn("View history →", () => go("history"), "small outline")),
+      h("div", { class: "memory-grid" }, recent.length ? recent.map(r =>
+        btn([h("span", { class: "memory-points" }, F.score(r.attempts, r.settings.challenge) + " pts"),
+          h("strong", {}, r.settings.teamLabel || r.settings.packNames?.join(" + ") || "Party round"),
+          h("small", {}, new Date(r.date || r.startedAt || r.endedAt).toLocaleDateString() +
+            (r.settings.practice ? " · Practice" : r.abandoned ? " · Abandoned" : " · Timed round"))],
+          () => { viewResult = r; go("results"); }, "memory-card")) :
+        h("div", { class: "memory-empty" }, h("span", { "aria-hidden": true }, "✦"),
+          h("div", {}, h("strong", {}, "The first laugh is just a round away."),
+            h("p", {}, "Play a pack and your scores will appear here.")))));
+  }
   function home() {
     return [
-      h(
-        "section",
-        { class: "hero" },
-        h(
-          "div",
-          {},
-          h("div", { class: "eyebrow" }, "A good time is on the cards"),
-          h("h1", {}, "Pass the phone.", h("br"), "Start the party."),
-          h(
-            "p",
-            {},
-            "Big clues. Wild guesses. One phone on your forehead. Pick your people, pick a pack, and let the good times flip.",
-          ),
-          h(
-            "div",
-            { class: "actions" },
-            btn("Quick play  ↗", quick, "dark"),
-            btn(
-              "Mix packs  ＋",
-              () => {
-                mixing = !mixing;
-                selected.clear();
-                render();
-              },
-              "white",
-            ),
-          ),
-        ),
-        h(
-          "div",
-          { class: "hero-art", "aria-hidden": true },
-          h("span", { class: "burst" }, "✳︎"),
-          h(
-            "div",
-            { class: "party-card" },
-            h("small", {}, "Clue crew, you’re up"),
-            "ROBOT",
-            h("br"),
-            "DOING BALLET",
-            h("div", { class: "dots" }, "●  ●  ●"),
-          ),
-          h("span", { class: "squiggle" }, "〰︎"),
-        ),
-      ),
-      h(
-        "div",
-        { class: "ribbon" },
-        h("span", {}, "↕ Tilt to score"),
-        h("span", {}, builtins.length + " free packs"),
-        h(
-          "span",
-          {},
-          Object.keys(F.DATA.cards).length.toLocaleString() +
-            " canonical cards",
-        ),
-        h("span", {}, "✈ Play offline"),
-      ),
+      h("section", { class: "hero" },
+        h("div", { class: "hero-copy" },
+          h("div", { class: "eyebrow" }, "YOUR PEOPLE. ONE PHONE. ALL THE FUN."),
+          h("h1", {}, "Little clues.", h("br"), "Big laughs."),
+          h("p", {}, "Pick a deck. Hold it to your forehead. Let your favourite people do the explaining."),
+          h("div", { class: "actions" },
+            btn("Quick play →", quick, "primary", { "aria-label": "Quick play  ↗" }),
+            btn("Mix packs  ＋", () => { mixing = !mixing; selected.clear(); render(); }, "white"))),
+        h("div", { class: "hero-art", "aria-hidden": true }, F.partyIllustration())),
+      h("div", { class: "ribbon" },
+        h("span", {}, "↕ Tilt or tap"),
+        h("span", {}, builtins.length + " free decks"),
+        h("span", {}, "✦ No ads, just laughs"),
+        h("span", {}, "✈ Play offline")),
+      collections(),
       interrupted &&
         notice(
           "An interrupted round is saved. Resume it from an explicit pause, or discard it.",
@@ -321,7 +328,8 @@
       h(
         "div",
         { class: "section-title" },
-        h("h2", {}, "Find your party pack"),
+        h("div", {}, h("h2", {}, "Pick your party deck"),
+          h("p", {}, "Find a new favourite. There’s something for every clue crew.")),
         h(
           "div",
           { class: "actions" },
@@ -396,6 +404,7 @@
       ),
       h("div", { id: "pack-grid", class: "grid" }),
       h("div", { id: "mix-area" }),
+      scrapbookPreview(),
       h(
         "p",
         { class: "footer" },
@@ -420,26 +429,9 @@
           "article",
           { class: "pack" + (selected.has(p.id) ? " selected" : "") },
           btn(
-            h(
-              "div",
-              { class: "pack-top" },
-              h(
-                "span",
-                {
-                  class: "pack-icon",
-                  style: "--pack-tint:" + p.color + "22",
-                  "aria-hidden": true,
-                },
-                p.icon,
-              ),
-              h(
-                "span",
-                { class: "pack-number" },
-                p.number
-                  ? "PACK " + String(p.number).padStart(3, "0")
-                  : "PERSONAL",
-              ),
-            ),
+            [deckCover(p), h("div", { class: "meta" },
+              h("strong", {}, count + " cards"), " · " + p.ageGuidance,
+              h("br"), modeLabels[p.modes[0]] || "Classic clues")],
             () => openPack(p),
             "pack-open",
             {
@@ -471,20 +463,6 @@
         );
       }),
     );
-    grid.querySelectorAll(".pack-open").forEach((b, i) => {
-      const p = ps[i],
-        count = available([p]).length;
-      b.append(
-        h("h3", {}, p.name),
-        h(
-          "div",
-          { class: "meta" },
-          count + " cards · " + p.ageGuidance,
-          h("br"),
-          modeLabels[p.modes[0]] || "Classic clues",
-        ),
-      );
-    });
     if (!ps.length)
       grid.append(
         h(
@@ -2524,7 +2502,7 @@
           "Content review: " + F.DATA.reviewDate + ". " + F.DATA.contentNote,
         ),
         notice(
-          "Tilt has synthetic automated coverage. Real iPhone/Android sensor reliability and installation acceptance are not tested on physical devices in this build. Follow the included physical-device checklist before treating tilt as release-verified.",
+          "Physical phone tilt and direct local-file launch were verified by the project owner before this visual update. This build rechecks the sensor workflow with synthetic readings. Device models, browser versions, and installed airplane-mode acceptance still need to be recorded in the included checklist.",
         ),
       ),
     );

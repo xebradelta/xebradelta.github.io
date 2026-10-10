@@ -1,7 +1,7 @@
 "use strict";
-const VERSION = "1.0.0-f54cb33c8023",
+const VERSION = "1.2.0-abc881d87590",
   CACHE = "flip-party-" + VERSION,
-  FILES = ["index.html","style.css","data.js","engine.js","gesture.js","storage.js","ui.js","offline.js","manifest.webmanifest","icons/icon.svg","icons/icon-192.png","icons/icon-512.png"],
+  FILES = ["index.html","style.css","data.js","engine.js","gesture.js","storage.js","artwork.js","ui.js","offline.js","manifest.webmanifest","icons/icon.svg","icons/icon-192.png","icons/icon-512.png"],
   base = new URL("./", self.location.href);
 const urls = FILES.map((path) => new URL(path, base).href),
   marker = new URL("__complete__", base).href;

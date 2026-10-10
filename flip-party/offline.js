@@ -1,7 +1,7 @@
 (function (root) {
   "use strict";
   const FP = (root.FP = root.FP || {});
-  FP.VERSION = "1.0.0";
+  FP.VERSION = "1.2.0";
   FP.offline = {
     status: root.FLIP_STANDALONE
       ? "Portable edition · all files embedded"
